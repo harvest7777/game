@@ -13,7 +13,10 @@ export function contentArt(): SpriteArt[] {
   }));
   return [
     ...new Set<SpriteArt>([
-      ...Object.values(characters).map((def) => def.sprite.art),
+      ...Object.values(characters).flatMap((def) => [
+        def.sprite.art,
+        def.gravestone,
+      ]),
       ...Object.values(projectiles).map((def) => def.sprite.art),
       ...Object.values(enemies).map((def) => def.sprite.art),
       ...icons,

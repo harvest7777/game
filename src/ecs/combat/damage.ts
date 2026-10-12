@@ -30,11 +30,10 @@ export function damageSystem(world: World, _dt: number): void {
   }
 }
 
-// Removes whatever died this tick. The player doesn't die yet: it stays at 0
-// health so testing isn't interrupted.
+// Removes whatever died this tick, the player included. Only Invulnerable
+// keeps something alive, by never losing health in the first place.
 export function deathSystem(world: World, _dt: number): void {
   for (const { entity } of world.events.deaths) {
-    if (world.components.playerControlled.has(entity)) continue;
     world.events.despawns.push(entity);
   }
 }

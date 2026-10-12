@@ -171,6 +171,7 @@ export function testCharacter(
     hitbox: { r: 0.4 },
     health: 500,
     speed: 5,
+    gravestone: { kind: "static", file: "test/gravestone" },
     ...changes,
   };
 }

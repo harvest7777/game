@@ -1,8 +1,10 @@
 // Writes the starter 8x8 sprites to public/sprites as PNGs. It's a one-off
 // seed: once the files exist, edit them in a pixel editor and don't rerun this
-// unless you want to reset them.
+// unless you want to reset them. Name sprites to write only those, so new
+// starter art can be added without touching what's been edited.
 //
 //   node scripts/generate-sprites.mjs
+//   node scripts/generate-sprites.mjs characters/gravestone
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -622,7 +624,21 @@ SPRITES["items/lance"] = [
   "o.......",
 ];
 
+// A plain headstone with two engraved lines.
+SPRITES["characters/gravestone"] = [
+  "........",
+  "..MMMM..",
+  ".MttttM.",
+  ".MtmmtM.",
+  ".MttttM.",
+  ".MtmmtM.",
+  ".MttttM.",
+  "MMMMMMMM",
+];
+
+const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
+  if (only.length > 0 && !only.includes(name)) continue;
   const rows = Array.isArray(sprite) ? sprite : sprite.rows;
   const palette = Array.isArray(sprite)
     ? PALETTE

@@ -1,4 +1,5 @@
 import { cameraSystem } from "./camera/system";
+import { gravestoneSystem } from "./character/system";
 import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
 import { hitSystem } from "./combat/hits";
@@ -31,7 +32,8 @@ import type { System, World } from "./world";
 // moves on the tick it's fired. Hits are found once everything has moved;
 // each step of hit, damage, death and removal reads the events the step
 // before it recorded. Floating text ages before new damage numbers are
-// spawned, so a new number starts at age 0.
+// spawned, so a new number starts at age 0. Gravestones go down before
+// cleanup removes whoever died.
 export const tickSystems: System[] = [
   cameraSystem,
   playerInputSystem,
@@ -51,6 +53,7 @@ export const tickSystems: System[] = [
   floatingTextSystem,
   damageTextSystem,
   deathSystem,
+  gravestoneSystem,
   soundSystem,
   outboxSystem,
   cleanupSystem,

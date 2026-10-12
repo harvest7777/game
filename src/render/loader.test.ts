@@ -171,6 +171,7 @@ describe("the real manifest", () => {
   it("has art for every character", () => {
     for (const id of characterIds) {
       expect(manifest.sprites, id).toContain(characters[id].sprite.art);
+      expect(manifest.sprites, id).toContain(characters[id].gravestone);
     }
   });
 

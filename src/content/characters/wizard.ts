@@ -27,4 +27,5 @@ export const wizard: CharacterDef = {
   health: 500,
   speed: 5,
   startingWeapon: apprenticeStaff,
+  gravestone: { kind: "static", file: "characters/gravestone" },
 };

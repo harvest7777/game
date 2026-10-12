@@ -2,9 +2,9 @@ import type { Vec2 } from "../shared/physics/math";
 import type { SpriteArt } from "./art";
 
 // Which band an entity is drawn in. The renderer owns the actual order
-// (player on top of projectiles on top of enemies, all above the ground and
-// below walls).
-export type SpriteLayer = "enemy" | "projectile" | "player";
+// (player on top of projectiles on top of enemies on top of things lying on
+// the ground, like gravestones, all above the floor and below walls).
+export type SpriteLayer = "ground" | "enemy" | "projectile" | "player";
 
 // RGBA, each channel 0..1.
 export type Color = [number, number, number, number];

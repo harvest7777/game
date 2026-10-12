@@ -6,13 +6,10 @@ import {
   type KeybindPreset,
 } from "./ecs/input/actions";
 import { commandHotkeys, type Command } from "./ecs/input/commands";
-import { itemIds, items, type ItemId } from "./content/items";
 import type { Vec2 } from "./ecs/shared/physics/math";
-import { enemies, enemyIds, type EnemyId } from "./content/enemies";
-import { spawnCrowd, spawnEnemy } from "./ecs/enemy/spawn";
 import { runTick } from "./ecs/tick";
-import { createTiles, setWall } from "./ecs/tiles";
-import { createWorld } from "./ecs/world";
+import { loadLevel } from "./ecs/level/load";
+import { levels } from "./content/levels";
 import { createManifest } from "./render/assets";
 import { contentArt } from "./content/art";
 import { characters } from "./content/characters";
@@ -20,7 +17,7 @@ import { spawnCharacter } from "./ecs/character/spawn";
 import { drawHud, FLASH_SECONDS, layoutHud, uiScreen } from "./hud/draw";
 import { hudPointer, type PointerEvent } from "./hud/input";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
-import { createRenderDebug } from "./render/debug";
+import { installDebugPanel } from "./debug/panel";
 import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
@@ -37,51 +34,11 @@ const canvas = document.getElementById("game") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 if (!gl) throw new Error("WebGL2 isn't available");
 
-// A walled test map, big enough to stress test crowds in, with a few
-// obstacles to walk around near the middle where the player starts.
-const MAP_SIZE = 128;
-// Where the original 32x32 test area sits, in the middle of the map.
-const MIDDLE = 48;
-const tiles = createTiles(MAP_SIZE, MAP_SIZE);
-for (let i = 0; i < MAP_SIZE; i++) {
-  setWall(tiles, i, 0);
-  setWall(tiles, i, MAP_SIZE - 1);
-  setWall(tiles, 0, i);
-  setWall(tiles, MAP_SIZE - 1, i);
-}
-for (const [x, y] of [
-  [12, 12],
-  [13, 12],
-  [14, 12],
-  [12, 13],
-  [12, 14],
-  [20, 18],
-  [21, 18],
-  [20, 19],
-  [8, 22],
-]) {
-  setWall(tiles, MIDDLE + x, MIDDLE + y);
-}
-
-const world = createWorld(tiles);
-const player = spawnCharacter(world, characters.wizard, {
-  x: MIDDLE + 16,
-  y: MIDDLE + 16,
-});
-world.components.invulnerable.set(player, true);
+const { world, spawn } = loadLevel(levels.nexus);
+// Who's being played: replaced on respawn. Once they die, the entity has no
+// components left, so everything reading it finds nothing.
+let player = spawnCharacter(world, characters.wizard, spawn);
 world.camera.target = player;
-
-// Something to fight: dummies that just take hits, and enemies that shoot
-// back once you're close.
-for (const [id, x, y] of [
-  ["dummy", 20, 14],
-  ["dummy", 22, 16],
-  ["slime", 7, 26],
-  ["archer", 26, 26],
-  ["boar", 26, 6],
-] as const) {
-  spawnEnemy(world, enemies[id], { x: MIDDLE + x, y: MIDDLE + y });
-}
 
 const manifest = createManifest(contentArt());
 const art = await buildAtlas(
@@ -122,78 +79,20 @@ function unlockAudio() {
 window.addEventListener("keydown", unlockAudio);
 window.addEventListener("pointerdown", unlockAudio);
 
-// Debug renders, toggled from the overlay.
-const renderDebug = createRenderDebug();
-const hitboxToggle = document.getElementById(
-  "debugHitboxes",
-) as HTMLInputElement;
-const fontToggle = document.getElementById("debugFont") as HTMLInputElement;
-fontToggle.addEventListener("change", () => {
-  renderDebug.font = fontToggle.checked;
-  fontToggle.blur();
-});
-hitboxToggle.addEventListener("change", () => {
-  renderDebug.hitboxes = hitboxToggle.checked;
-  // Don't keep focus, or movement keys like space would toggle it again.
-  hitboxToggle.blur();
-});
-
-// One-off requests (number keys, debug buttons) waiting for the next tick.
+// One-off requests (number keys, the HUD, debug buttons) waiting for the
+// next tick.
 const pendingCommands: Command[] = [];
 
-// Debug: a few weapons to try, given on the first tick.
-for (const item of [
-  items.hasteStaff,
-  items.serpentStaff,
-  items.cometStaff,
-  items.mireStaff,
-  items.spiralStaff,
-  items.boomerang,
-  items.lance,
-  items.prejudiceStaff,
-]) {
-  pendingCommands.push({ kind: "give", item });
-}
+const debug = installDebugPanel(world, pendingCommands, () => player);
+debug.characterSpawned(player);
 
-// Debug item giver: puts the picked item in the first empty slot.
-const itemPicker = document.getElementById("debugItem") as HTMLSelectElement;
-for (const id of itemIds) itemPicker.add(new Option(items[id].name, id));
-document.getElementById("debugGive")!.addEventListener("click", (event) => {
-  pendingCommands.push({
-    kind: "give",
-    item: items[itemPicker.value as ItemId],
-  });
-  (event.currentTarget as HTMLButtonElement).blur();
-});
-
-// Enemy spawner: puts the picked enemy a few tiles from the player, toward
-// where it's aiming, or a crowd of them around there.
-const enemyPicker = document.getElementById("debugEnemy") as HTMLSelectElement;
-const enemyCount = document.getElementById("debugCount") as HTMLInputElement;
-for (const id of enemyIds) enemyPicker.add(new Option(id, id));
-document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
-  const at = world.components.position.get(player)!;
-  const aim = world.components.shooter.get(player)?.aim ??
-    world.components.facing.get(player) ?? { x: 1, y: 0 };
-  const center = { x: at.x + aim.x * 4, y: at.y + aim.y * 4 };
-  const def = enemies[enemyPicker.value as EnemyId];
-  const count = Math.max(1, Math.floor(Number(enemyCount.value) || 1));
-  if (count === 1) spawnEnemy(world, def, center);
-  else spawnCrowd(world, def, center, count);
-  (event.currentTarget as HTMLButtonElement).blur();
-});
-
-// Invulnerability, on to start with so stress tests can't kill you.
-const invulnerableToggle = document.getElementById(
-  "debugInvulnerable",
-) as HTMLInputElement;
-invulnerableToggle.addEventListener("change", () => {
-  if (invulnerableToggle.checked) {
-    world.components.invulnerable.set(player, true);
-  } else {
-    world.components.invulnerable.delete(player);
-  }
-  invulnerableToggle.blur();
+// Shown while there's no character: brings a fresh one back at the spawn.
+const respawnButton = document.getElementById("respawn") as HTMLButtonElement;
+respawnButton.addEventListener("click", () => {
+  player = spawnCharacter(world, characters.wizard, spawn);
+  world.camera.target = player;
+  debug.characterSpawned(player);
+  respawnButton.blur();
 });
 
 // Controls picker, remembered between visits.
@@ -341,6 +240,7 @@ function callback() {
     accumulator -= TIME_PER_TICK_MS;
   }
   takeOutbox(currentTime / 1000);
+  respawnButton.hidden = world.components.character.has(player);
 
   render(currentTime / 1000);
 
@@ -349,7 +249,7 @@ function callback() {
 }
 
 // Reacts to what the simulation reported this frame: an item landing in one
-// of the player's slots makes that slot flash.
+// of the player's slots makes that slot flash, and sounds play.
 function takeOutbox(time: number) {
   const sounds: SoundMessage[] = [];
   for (const message of world.outbox.splice(0)) {
@@ -362,7 +262,10 @@ function takeOutbox(time: number) {
   hudState.flashes = hudState.flashes.filter(
     (flash) => time - flash.at < FLASH_SECONDS,
   );
-  const at = world.components.position.get(player);
+  // Heard from wherever the camera is, so a dead player still hears.
+  const { target } = world.camera;
+  const at =
+    target === undefined ? undefined : world.components.position.get(target);
   if (at) soundPlayer.play(sounds, { at, angle: world.camera.angle });
 }
 
@@ -388,7 +291,7 @@ function render(time: number) {
     frameArt,
     alpha,
     time,
-    renderDebug,
+    debug.renderDebug,
     (out) =>
       drawHud(
         out,

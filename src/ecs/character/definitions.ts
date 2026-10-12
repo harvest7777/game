@@ -1,6 +1,7 @@
 import type { Speed } from "../input/components";
 import type { ItemDef } from "../inventory/items";
 import type { Hitbox } from "../movement/components";
+import type { SpriteArt } from "../sprite/art";
 import type { Sprite } from "../sprite/components";
 
 // What a playable character is: a class to pick from the character list.
@@ -16,4 +17,6 @@ export type CharacterDef = {
   speed: Speed;
   // Worn from the start.
   startingWeapon?: ItemDef;
+  // Left where it dies.
+  gravestone: SpriteArt;
 };

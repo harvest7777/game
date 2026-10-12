@@ -296,6 +296,34 @@ describe("runTick", () => {
       });
     });
 
+    it("kill the player once its health runs out", () => {
+      const { world } = withPlayerHealth();
+      const player = [...world.components.playerControlled][0][0];
+      world.components.health.get(player)!.hp = 1;
+      spawnEnemy(world, SLIME, { x: START.x + 3, y: START.y });
+
+      for (let i = 0; i < 20; i++) runTick(world, DT);
+
+      expect(world.components.health.has(player)).toBe(false);
+      expect(world.components.position.has(player)).toBe(false);
+    });
+
+    it("can't hurt an invulnerable player, though their shots still hit", () => {
+      const { world, hp } = withPlayerHealth();
+      const player = [...world.components.playerControlled][0][0];
+      world.components.invulnerable.set(player, true);
+      spawnEnemy(world, SLIME, { x: START.x + 3, y: START.y });
+
+      let hits = 0;
+      for (let i = 0; i < 20; i++) {
+        runTick(world, DT);
+        hits += world.events.hits.filter((h) => h.target === player).length;
+      }
+
+      expect(hits).toBeGreaterThan(0);
+      expect(hp()).toBe(500);
+    });
+
     it("leave the player alone out of range", () => {
       const { world, hp } = withPlayerHealth();
       spawnEnemy(world, SLIME, { x: START.x + 9, y: START.y });

@@ -24,9 +24,21 @@ Game content is data, one file per thing under `src/content/`: `projectiles/`, `
 
 To add something, add its file and list it in its folder's index.
 
+# Levels
+
+A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile: `#` wall, `.` floor, `P` the floor tile characters spawn on (exactly one). What each character means is the `TILE_LEGEND` table in `level/load.ts`, so a new kind of tile is a new entry. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
+
+The game starts in the **nexus**: a safe plus of four 9-wide arms meeting where characters spawn, with nothing hostile in it.
+
+# Debug panel
+
+`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), an item giver and an enemy spawner. Every new character is handed a kit of weapons to try.
+
 # Characters
 
 The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, health, speed and starting weapon. `spawnCharacter` makes it player-controlled on the `player` team at full health, wearing its starting weapon, with a `Character` component recording its class.
+
+Characters die like anything else. `gravestoneSystem` leaves the class's `gravestone` art where one died, on the `ground` sprite layer under everything, for good, and moves a camera that was following the character onto it. The overlay's respawn button, shown while there's no character, spawns a fresh one at the level's spawn.
 
 # Units
 
@@ -70,7 +82,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
 2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. It records a `damaged` event with the amount dealt, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
 3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
-4. `deathSystem` queues the dead for removal. The player doesn't die yet: it stays at 0.
+4. `deathSystem` queues the dead for removal, the player included. Only `invulnerable` keeps something alive.
 5. `cleanupSystem` removes everything queued.
 
 # Enemies

@@ -112,11 +112,11 @@ describe("deathSystem", () => {
     expect(world.events.despawns).toEqual([target]);
   });
 
-  it("doesn't remove the player", () => {
+  it("removes the player too", () => {
     const { world, target } = setup();
     world.components.playerControlled.set(target, true);
     world.events.deaths.push({ entity: target });
     deathSystem(world, 0.05);
-    expect(world.events.despawns).toHaveLength(0);
+    expect(world.events.despawns).toEqual([target]);
   });
 });

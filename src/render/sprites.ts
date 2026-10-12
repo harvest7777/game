@@ -18,9 +18,10 @@ const WALK_CYCLE = [1, 0, 2, 0];
 
 // Lower draws first, so the player ends up on top.
 const LAYER_ORDER: Record<SpriteLayer, number> = {
-  enemy: 0,
-  projectile: 1,
-  player: 2,
+  ground: 0,
+  enemy: 1,
+  projectile: 2,
+  player: 3,
 };
 
 // Where to draw an entity between ticks: `alpha` is how far the current frame
