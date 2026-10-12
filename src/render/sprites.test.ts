@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import { addSprite } from "../ecs/bundles";
 import { createCamera } from "../ecs/camera/resource";
 import type { Vec2 } from "../ecs/shared/physics/math";
-import type { Sprite, SpriteLayer } from "../ecs/sprite/components";
+import type { Color, Sprite, SpriteLayer } from "../ecs/sprite/components";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type Entity, type World } from "../ecs/world";
 import type { Art } from "./art";
 import type { Manifest } from "./assets";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
+import { MAX_REACH } from "./distance";
 import {
   interpolatedPosition,
+  marginOf,
   OUTLINE_THICKNESS,
   pushSprites,
   WALK_FPS,
@@ -462,5 +464,19 @@ describe("pushSprites", () => {
     const { world, view } = setup();
     addAt(world, CENTER, { name: "ghost" });
     expect(() => draw(world, view)).toThrow();
+  });
+});
+
+describe("marginOf", () => {
+  it("stops at the distance map's reach for big glows", () => {
+    const sprite: Sprite = {
+      name: "slime",
+      layer: "enemy",
+      outline: {
+        color: [1, 1, 0, 1] as Color,
+        glow: { radius: 9, pulseHz: 0 },
+      },
+    };
+    expect(marginOf(sprite)).toBe(MAX_REACH);
   });
 });

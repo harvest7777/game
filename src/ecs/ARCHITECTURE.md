@@ -215,6 +215,8 @@ Rings are drawn by the shader (a quad with `ring > 0`), so they need no art.
 
 Both happen in the fragment shader, not in the art, so any sprite can get any color at runtime. A sprite with an outline is drawn on a quad enlarged by `margin` sprite pixels. Transparent pixels within 0.2 sprite pixels of an opaque one get the outline color. With a glow, pixels further out up to `glow.radius` get a fading version of it, pulsing at `glow.pulseHz`.
 
+How far each pixel is from the art comes from a **distance map** baked when the atlas loads (`distance.ts`): one byte per atlas texel, the distance from its center to the nearest opaque texel of its own sprite, reaching 5 texels past each sprite (sprites are packed 10 apart so maps never overlap). The shader samples it once, smoothly, for glows, instead of searching the texels around every pixel, which was what made thousands of overlapping glowing shots slow. Smooth sampling rounds off pixel corners, so within a texel of the art, where the crisp outline is, it measures exactly from just the 3×3 texels around the pixel. Glows reach at most 4 sprite pixels.
+
 ## Art
 
 Sprites are separate 8x8 PNGs under `public/sprites/` so they're easy to edit. `src/render/assets.ts` lists which files each sprite name and tile type uses. At load, every file is packed into one atlas canvas with 1 px of padding and uploaded to the GPU once. To add art, drop in a PNG and reference it in the manifest. A test fails if the manifest names a file that doesn't exist.

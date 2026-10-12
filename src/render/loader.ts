@@ -1,9 +1,11 @@
 import { packAtlas, type PackedRect } from "./atlas";
 import { manifestFiles, type Manifest, type SpriteFile } from "./assets";
+import { distanceField, FIELD_REACH } from "./distance";
 
 // Transparent pixels between sprites in the atlas so sampling never bleeds
-// into a neighbour.
-const PADDING = 1;
+// into a neighbour, and so each sprite's distance map has room around it
+// that no other sprite's overlaps.
+const PADDING = 2 * FIELD_REACH;
 const MAX_ATLAS_WIDTH = 2048;
 
 export type LoadedImage = { width: number; height: number };
@@ -32,6 +34,9 @@ export type Atlas<Canvas> = {
   regions: Map<SpriteFile, PackedRect>;
   // Measured from the art, for every font glyph.
   glyphs: Map<SpriteFile, GlyphMetrics>;
+  // How far each texel is from its sprite's art, for outlines and glows
+  // (see distanceField).
+  distances: Uint8Array;
 };
 
 // Loads every file the manifest uses and draws them all into one canvas, so
@@ -65,12 +70,21 @@ export async function buildAtlas<Image extends LoadedImage, Canvas>(
     }
   }
 
+  const all = canvas.pixels(0, 0, packing.width, packing.height);
+  const distances = distanceField(
+    (x, y) => all[(y * packing.width + x) * 4 + 3] > 127,
+    packing.width,
+    packing.height,
+    regions.values(),
+  );
+
   return {
     canvas,
     width: packing.width,
     height: packing.height,
     regions,
     glyphs,
+    distances,
   };
 }
 

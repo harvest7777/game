@@ -1,9 +1,6 @@
 import type { FrameSections } from "./frame";
+import { DECODE_DISTANCE } from "./distance";
 import { FLOATS_PER_QUAD, QUAD_LAYOUT, type QuadBuffer } from "./quads";
-
-// Largest outline/glow reach the shader searches, in sprite pixels. Glow
-// radii above this are cut off.
-const MAX_REACH = 4;
 
 const VERTEX_SHADER = `#version 300 es
 in vec4 a_corners01;
@@ -59,11 +56,12 @@ void main() {
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 
-const int MAX_REACH = ${MAX_REACH};
 const float OUTLINE = 0.2;
 const float TAU = 6.2831853;
 
 uniform sampler2D u_atlas;
+// One byte per atlas texel: how far it is from its sprite's art.
+uniform sampler2D u_distances;
 uniform float u_time;
 
 in vec2 v_texel;
@@ -91,6 +89,16 @@ vec4 fetch(ivec2 t) {
     t.x = 2 * left + int(v_region.z) - 1 - t.x;
   }
   return texelFetch(u_atlas, t, 0);
+}
+
+// The baked distance byte (0-1) for texel t of the (possibly mirrored)
+// sprite.
+float fetchDistance(ivec2 t) {
+  if (v_flipMargin.x > 0.5) {
+    int left = int(v_region.x);
+    t.x = 2 * left + int(v_region.z) - 1 - t.x;
+  }
+  return texelFetch(u_distances, t, 0).r;
 }
 
 // A thin anti-aliased circle at v_ring of the quad's half-size, for debug
@@ -133,16 +141,31 @@ void main() {
   }
   if (v_outline.a == 0.0) discard;
 
-  // Distance from this point to the nearest opaque texel's square.
-  float nearest = 1e9;
-  for (int dy = -MAX_REACH; dy <= MAX_REACH; dy++) {
-    for (int dx = -MAX_REACH; dx <= MAX_REACH; dx++) {
-      ivec2 t = here + ivec2(dx, dy);
-      if (!inRegion(t) || fetch(t).a <= 0.5) continue;
-      vec2 lo = vec2(t);
-      vec2 gap = max(vec2(0.0), max(lo - v_texel, v_texel - (lo + 1.0)));
-      nearest = min(nearest, length(gap));
+  // Distance from this point to the art. Smoothly sampled from the baked
+  // map (mirrored the same way as the art when flipped), which is close
+  // enough for glows but rounds off pixel corners.
+  vec2 p = v_texel;
+  if (v_flipMargin.x > 0.5) p.x = 2.0 * v_region.x + v_region.z - p.x;
+  float v = texture(u_distances, p / vec2(textureSize(u_distances, 0))).r;
+  float nearest = max(0.0, ${DECODE_DISTANCE});
+
+  // Within a texel of the art, where crisp outlines are drawn, measure
+  // exactly instead: any opaque texel that close is one of the 3x3 around
+  // this one. Skipped when even this texel's corners are further than that
+  // (its center is at most 0.71 from them).
+  v = fetchDistance(here);
+  if (${DECODE_DISTANCE} <= 1.75) {
+    float exact = 1e9;
+    for (int dy = -1; dy <= 1; dy++) {
+      for (int dx = -1; dx <= 1; dx++) {
+        ivec2 t = here + ivec2(dx, dy);
+        if (!inRegion(t) || fetch(t).a <= 0.5) continue;
+        vec2 lo = vec2(t);
+        vec2 gap = max(vec2(0.0), max(lo - v_texel, v_texel - (lo + 1.0)));
+        exact = min(exact, length(gap));
+      }
     }
+    if (exact <= 1.0) nearest = exact;
   }
 
   if (nearest <= OUTLINE) {
@@ -178,11 +201,13 @@ export type Renderer = {
 export function createRenderer(
   gl: WebGL2RenderingContext,
   atlas: TexImageSource,
+  distances: { data: Uint8Array; width: number; height: number },
 ): Renderer {
   const program = link(gl, VERTEX_SHADER, FRAGMENT_SHADER);
   const uScreen = gl.getUniformLocation(program, "u_screen");
   const uTime = gl.getUniformLocation(program, "u_time");
   const uAtlas = gl.getUniformLocation(program, "u_atlas");
+  const uDistances = gl.getUniformLocation(program, "u_distances");
 
   // Uploaded once; every frame samples this one texture.
   const texture = gl.createTexture();
@@ -190,6 +215,26 @@ export function createRenderer(
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlas);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  // Sampled smoothly, so distances between texel centers blend.
+  const distanceTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, distanceTexture);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.R8,
+    distances.width,
+    distances.height,
+    0,
+    gl.RED,
+    gl.UNSIGNED_BYTE,
+    distances.data,
+  );
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -252,6 +297,9 @@ export function createRenderer(
       gl.uniform1i(uAtlas, 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform1i(uDistances, 1);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, distanceTexture);
 
       gl.bindVertexArray(vao);
       gl.bindBuffer(gl.ARRAY_BUFFER, instances);

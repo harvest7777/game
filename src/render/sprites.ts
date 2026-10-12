@@ -1,4 +1,5 @@
 import { weaponDef } from "../ecs/projectile/weapons";
+import { MAX_REACH } from "./distance";
 import type { Entity, World } from "../ecs/world";
 import type { Sprite, SpriteLayer } from "../ecs/sprite/components";
 import type { Vec2 } from "../ecs/shared/physics/math";
@@ -140,10 +141,12 @@ export function pushSprites(
   }
 }
 
-// Sprite pixels the quad needs past the art for its outline or glow.
+// Sprite pixels the quad needs past the art for its outline or glow, up to
+// as far as the distance map reaches (bigger glows are cut off there).
 export function marginOf(sprite: Sprite): number {
   if (!sprite.outline) return 0;
-  return Math.max(OUTLINE_THICKNESS, sprite.outline.glow?.radius ?? 0);
+  const glow = sprite.outline.glow?.radius ?? 0;
+  return Math.min(MAX_REACH, Math.max(OUTLINE_THICKNESS, glow));
 }
 
 // Which file to draw and whether to mirror it. Walkers pick a facing from the

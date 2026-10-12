@@ -122,7 +122,11 @@ const art = await buildAtlas(
     };
   },
 );
-const renderer = createRenderer(gl, art.canvas.canvas);
+const renderer = createRenderer(gl, art.canvas.canvas, {
+  data: art.distances,
+  width: art.width,
+  height: art.height,
+});
 
 // Debug renders, toggled from the overlay.
 const renderDebug = createRenderDebug();
