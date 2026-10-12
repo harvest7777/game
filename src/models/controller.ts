@@ -12,7 +12,7 @@ export const Action = {
 
 export type Action = (typeof Action)[keyof typeof Action];
 
-export type ClientAction = Extract<Action, "ROTATE_LEFT" | "ROTATE_RIGHT">;
+export type CameraAction = Extract<Action, "ROTATE_LEFT" | "ROTATE_RIGHT">;
 
 export type Keybinds = Record<string, Action>;
 
@@ -21,4 +21,6 @@ export const playerKeybinds: Keybinds = {
   KeyR: Action.Left,
   KeyS: Action.Down,
   KeyT: Action.Right,
+  KeyW: Action.RotateLeft,
+  KeyP: Action.RotateRight,
 };

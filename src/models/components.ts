@@ -3,17 +3,17 @@
  * These should never be responsible for handling behavior or updates.
  */
 
-type Position = {
+export type Position = {
   x: number;
   y: number;
-}
+};
 
-type State = {
+export type State = {
   hitpoints: number;
   manapoints: number;
-}
+};
 
-type Stats = {
+export type Stats = {
   health: number;
   mana: number;
   speed: number;
@@ -22,22 +22,8 @@ type Stats = {
   wisdom: number;
   attack: number;
   dexterity: number;
-}
+};
 
-type Velocity = {
+export type Velocity = {
   tilesPerSecond: number;
-}
-
-type Entity = {
-  position: Position;
-  stats: Stats;
-  state: State;
-  velocity: Velocity;
-}
-
-type Player = {
-  position: Position;
-  stats: Stats;
-  state: State;
-  velocity: Velocity;
-}
+};

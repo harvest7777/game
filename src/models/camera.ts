@@ -1,4 +1,4 @@
-type Camera = {
+export type Camera = {
   deltaAngle: number;
   rotationDegreesPerSecond: number;
 };

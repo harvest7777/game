@@ -1,0 +1,13 @@
+#!/bin/sh
+# Block pushes to main unless the test suite passes.
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "pre-push: running tests before pushing to main"
+    npm test || {
+      echo "pre-push: tests failed, push aborted"
+      exit 1
+    }
+    exit 0
+  fi
+done
