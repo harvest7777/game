@@ -81,7 +81,7 @@ export async function createSoundPlayer(
         const gain = context.createGain();
         const panner = context.createStereoPanner();
         source.buffer = buffer;
-        gain.gain.value = mix.gain;
+        gain.gain.value = mix.gain * (message.volume ?? 1);
         panner.pan.value = mix.pan;
         source.connect(gain).connect(panner).connect(context.destination);
         source.addEventListener("ended", () => active.delete(source), {

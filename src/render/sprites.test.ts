@@ -632,3 +632,33 @@ describe("floor layer", () => {
     expect(files.indexOf("imp-idle-0")).toBeLessThan(files.indexOf("orb"));
   });
 });
+
+describe("standing sprites", () => {
+  // An 8x8 body with a 0.4-tile hitbox at CENTER, on `layer`.
+  function body(layer: SpriteLayer, scale = 1) {
+    const { world, view } = setup();
+    const e = addAt(world, CENTER, { art: ORB, layer, scale });
+    world.components.hitbox.set(e, { r: 0.4 });
+    const [quad] = draw(world, view);
+    const feet = worldToScreen(view, CENTER);
+    return { quad, feet };
+  }
+
+  it("rests an enemy's art on the bottom of its hitbox", () => {
+    const { quad, feet } = body("enemy");
+    expect(quad.corners[2].y).toBeCloseTo(feet.y + 0.4 * TILE_PIXELS);
+  });
+
+  it("stands a big sprite on its hitbox too, rising above it", () => {
+    const { quad, feet } = body("enemy", 3);
+    expect(quad.corners[2].y).toBeCloseTo(feet.y + 0.4 * TILE_PIXELS);
+    expect(quad.corners[0].y).toBeCloseTo(
+      feet.y + 0.4 * TILE_PIXELS - 3 * TILE_PIXELS,
+    );
+  });
+
+  it("keeps things that aren't bodies centered on their position", () => {
+    const { quad, feet } = body("projectile");
+    expect((quad.corners[0].y + quad.corners[2].y) / 2).toBeCloseTo(feet.y);
+  });
+});

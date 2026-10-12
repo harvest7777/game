@@ -28,7 +28,7 @@ To add something, add its file and list it in its folder's index.
 
 A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile, and its `legend` says what each character is: a wall (optionally in its own `WallDef` style, a top and side image), void (black, flat, and as solid as a wall), or a `GroundDef` to walk on, which can be the spawn (exactly one). Levels share the standard legend in `content/levels/legend.ts`: `#` wall, `,` grass, `=` wood, `~` water, `P` the wood characters spawn on. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
 
-A `GroundDef` (one file each under `src/content/grounds/`) is its tile art, an optional `speedScale` and an optional `hazard`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed. Projectiles don't care.
+A `GroundDef` (one file each under `src/content/grounds/`) is its tile art, an optional `speedScale` and an optional `hazard`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed, and lava to 30%. Projectiles don't care.
 
 A `hazard` (`{ damage, every }`) burns characters standing on the ground, like `lava`. `hazardSystem` runs after movement and keeps a `HazardExposure` timer on each `player`-team entity standing on hazardous ground: every `every` seconds on it deals `damage` through `applyDamage`, ignoring defense. Stepping off drops the timer, so a quick hop across is free. Enemies never burn.
 
@@ -252,6 +252,8 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 
+Bodies (sprites on the enemy and player layers that have a hitbox) are drawn standing on their hitbox: the art is lifted until its bottom rests on the bottom of the hitbox circle (`spriteLift`), so the hitbox is at their feet however tall the art, and their health bars and floating numbers move with it. They still sort and hide behind walls by where they stand. Everything else (projectiles, bags, portals) is centered on its position.
+
 Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. `Sprite.scale` draws the art bigger or smaller, outline included.
 
 Walkers with `attack` art thrust their weapon for the first half of each shot interval, so the attack pulses with the fire rate. Only the body changes: the legs keep the walk cycle, so attacking while walking works in every direction. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
@@ -308,7 +310,7 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), st
 
 ## Sound
 
-Weapons author their firing sound, played once per volley; one without a sound fires quietly, so crowds of ordinary enemies don't drown everything out. Projectile definitions author their player-hit and enemy-hit sounds, and enemy definitions their death sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
+Weapons author their firing sound, played once per volley (the player's own at half volume, since they never stop); one without a sound fires quietly, so crowds of ordinary enemies don't drown everything out. Projectile definitions author their player-hit and enemy-hit sounds, and enemy definitions their death sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
 
 Playback lives in `src/audio/`, outside the ECS. WAV files under `public/sounds/` are loaded into Web Audio buffers. The player position is the listener: sounds are full volume within 2 tiles, fade to silence at 18, and pan in the camera's rotated screen space. The browser plays the nearest requests first with at most 32 voices, so enemy crowds cannot create unbounded audio nodes. Audio resumes on the first keyboard or pointer interaction, as browsers require.
 

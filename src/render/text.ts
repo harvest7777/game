@@ -5,6 +5,7 @@ import type { QuadBuffer } from "./quads";
 import {
   interpolatedPosition,
   SPRITE_PIXELS_PER_TILE,
+  spriteLift,
   spritePixels,
 } from "./sprites";
 import { GLYPH_CELL, pushText } from "./textLayout";
@@ -49,8 +50,10 @@ export function pushFloatingText(
     const raised = (text.lift + text.rise * eased) * view.pixelsPerTile;
     const anchor = text.follows ?? entity;
     const spriteHeight = spritePixels(world, anchor, art).height;
+    const lift = spriteLift(world, anchor, art) * view.pixelsPerTile;
     const bottom =
       center.y -
+      lift -
       (spriteHeight / 2) * (view.pixelsPerTile / SPRITE_PIXELS_PER_TILE) -
       raised;
     const top = bottom - tall;

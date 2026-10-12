@@ -14,7 +14,14 @@ export type ItemMovedMessage = {
   to: SlotRef;
 };
 
-export type SoundMessage = { kind: "sound"; sound: SoundId; at: Vec2 };
+// A sound to play at `at`, `volume` times as loud as it's recorded (1 if
+// unset).
+export type SoundMessage = {
+  kind: "sound";
+  sound: SoundId;
+  at: Vec2;
+  volume?: number;
+};
 
 // `entity` asked to go through a portal to `to`.
 export type TravelMessage = { kind: "travel"; entity: Entity; to: string };

@@ -16,7 +16,10 @@ export function lootSystem(world: World, _dt: number): void {
       world.random,
       world.lootMultiplier,
     );
-    if (items.length > 0) spawnLootBags(world, items, at);
+    if (items.length === 0) continue;
+    spawnLootBags(world, items, at);
+    // One sound for the whole drop, however many bags it took.
+    world.events.soundCues.push({ sound: "bagDrop", at: { ...at } });
   }
 }
 

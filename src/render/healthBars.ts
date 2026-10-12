@@ -6,6 +6,7 @@ import {
   interpolatedPosition,
   marginOf,
   SPRITE_LAYERS,
+  spriteLift,
   SPRITE_PIXELS_PER_TILE,
   spritePixels,
 } from "./sprites";
@@ -66,7 +67,11 @@ export function pushHealthBars(
     const position = interpolatedPosition(world, entity, alpha);
     if (!position || health.max <= 0) continue;
 
-    const center = worldToScreen(view, position);
+    const feet = worldToScreen(view, position);
+    const center = {
+      x: feet.x,
+      y: feet.y - spriteLift(world, entity, art) * view.pixelsPerTile,
+    };
     // Below the sprite as drawn, outline and glow included, so big or
     // glowing sprites don't cover their own bar.
     const sprite = world.components.sprite.get(entity);
@@ -87,7 +92,7 @@ export function pushHealthBars(
     if (offScreen) continue;
 
     const fraction = Math.max(0, Math.min(1, health.value / health.max));
-    const depth = depthOf(view, center.y);
+    const depth = depthOf(view, feet.y);
     pushRect(
       out,
       left - BORDER,

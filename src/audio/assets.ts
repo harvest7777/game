@@ -13,6 +13,7 @@ export const sounds = {
   bossExpose: "enemies/boss-expose",
   travel: "world/travel",
   drink: "items/drink",
+  bagDrop: "items/bag-drop",
 } as const;
 
 export type SoundId = keyof typeof sounds;

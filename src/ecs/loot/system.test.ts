@@ -128,3 +128,17 @@ describe("bag drops", () => {
     }
   });
 });
+
+describe("bag drop sound", () => {
+  it("plays once where the enemy died when it drops anything", () => {
+    const world = createWorld(createTiles(10, 10), () => 0, loot);
+    const enemy = spawnEnemy(world, testEnemy({ loot: table }), { x: 4, y: 6 });
+    world.events.deaths.push({ entity: enemy });
+
+    lootSystem(world, 0.05);
+
+    expect(world.events.soundCues).toEqual([
+      { sound: "bagDrop", at: { x: 4, y: 6 } },
+    ]);
+  });
+});

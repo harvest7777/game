@@ -1,6 +1,9 @@
 import type { SoundMessage } from "../outbox";
 import type { World } from "../world";
 
+// How loud the player's own shots are, against everything else.
+export const PLAYER_SHOT_VOLUME = 0.5;
+
 // Turns gameplay events into semantic sound requests for the browser. It runs
 // before cleanup, while hit and death targets still have their components.
 export function soundSystem(world: World, _dt: number): void {
@@ -12,7 +15,14 @@ export function soundSystem(world: World, _dt: number): void {
 
   for (const shot of world.events.shotsFired) {
     if (!shot.weapon.sound) continue;
-    sounds.push({ kind: "sound", sound: shot.weapon.sound, at: shot.at });
+    const players = world.components.playerControlled.has(shot.owner);
+    sounds.push({
+      kind: "sound",
+      sound: shot.weapon.sound,
+      at: shot.at,
+      // The player's own shots never stop, so they sit back in the mix.
+      ...(players && { volume: PLAYER_SHOT_VOLUME }),
+    });
   }
 
   for (const hit of world.events.hits) {

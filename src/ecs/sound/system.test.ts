@@ -5,7 +5,7 @@ import { spawnEnemy } from "../enemy/spawn";
 import { fireProjectile } from "../projectile/spawn";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
-import { soundSystem } from "./system";
+import { PLAYER_SHOT_VOLUME, soundSystem } from "./system";
 
 describe("soundSystem", () => {
   it("turns one volley into one firing sound", () => {
@@ -23,6 +23,28 @@ describe("soundSystem", () => {
 
     expect(world.outbox).toEqual([
       { kind: "sound", sound: "magicFire", at: { x: 2, y: 4 } },
+    ]);
+  });
+
+  it("plays the player's own shots at half volume", () => {
+    const world = createWorld(createTiles(10, 10));
+    const player = spawn(world);
+    world.components.playerControlled.set(player, true);
+    world.events.shotsFired.push({
+      weapon: testWeapon({ sound: "magicFire" }),
+      owner: player,
+      at: { x: 2, y: 4 },
+    });
+
+    soundSystem(world, 0.05);
+
+    expect(world.outbox).toEqual([
+      {
+        kind: "sound",
+        sound: "magicFire",
+        at: { x: 2, y: 4 },
+        volume: PLAYER_SHOT_VOLUME,
+      },
     ]);
   });
 

@@ -76,6 +76,23 @@ export function lootBagTint(
   return [brightness, brightness, brightness, 1];
 }
 
+// Layers whose sprites are bodies standing on the ground, drawn up from
+// their feet rather than around their middle.
+const STANDING: ReadonlySet<SpriteLayer> = new Set(["enemy", "player"]);
+
+// How far, in tiles, an entity's sprite is drawn above its position: a
+// standing body's art is lifted until its bottom rests on the bottom of its
+// hitbox, so the hitbox sits at its feet however tall the art is. Anything
+// else (projectiles, bags, portals) stays centered on its position.
+export function spriteLift(world: World, entity: Entity, art?: Art): number {
+  const sprite = world.components.sprite.get(entity);
+  const hitbox = world.components.hitbox.get(entity);
+  if (!sprite || !hitbox || !STANDING.has(sprite.layer)) return 0;
+  const height =
+    spritePixels(world, entity, art).height / SPRITE_PIXELS_PER_TILE;
+  return height / 2 - hitbox.r;
+}
+
 // The art's true pixel dimensions after visual scale. Most sprites are 8px,
 // but bosses can use larger clips; UI anchored to a sprite must not assume a
 // one-tile body.
@@ -138,7 +155,9 @@ export function pushSprites(
     if (only !== undefined && sprite.layer !== only) continue;
     const position = interpolatedPosition(world, entity, alpha);
     if (!position) continue;
-    const center = worldToScreen(view, position);
+    const feet = worldToScreen(view, position);
+    const lift = spriteLift(world, entity, art) * view.pixelsPerTile;
+    const center = { x: feet.x, y: feet.y - lift };
     const { file, flipX } = pickFrame(world, entity, sprite, view, alpha, time);
     const region = regionOf(art, file);
     const margin = marginOf(sprite);
@@ -162,7 +181,8 @@ export function pushSprites(
     placed.push({
       entity,
       layer: LAYER_ORDER[sprite.layer],
-      depth: center.y,
+      // Where it stands, so a wall hides it by its feet, however tall.
+      depth: feet.y,
       center,
       sprite,
       file,

@@ -72,6 +72,7 @@ const rush = lowpass(700);
 const crack = lowpass(1500);
 const swirl = lowpass(600);
 const gulp = lowpass(800);
+const pouch = lowpass(450);
 
 const cues = {
   // A staff's spell leaving it: a soft breath of air with a little body.
@@ -152,6 +153,20 @@ const cues = {
       later > 0 ? Math.sin(2 * Math.PI * 140 * later) * decay(later, 25) : 0;
     const liquid = gulp(noise()) * 0.2;
     return (first * 0.4 + second * 0.4 + liquid) * envelope(t, d, 0.005) * 0.5;
+  }),
+  // Loot dropping: a soft cha-ching, two coin clinks over the bag landing.
+  "items/bag-drop": wav(0.35, (t, d) => {
+    const clink = (start, pitch) => {
+      const at = t - start;
+      if (at < 0) return 0;
+      const ring =
+        Math.sin(2 * Math.PI * pitch * at) +
+        Math.sin(2 * Math.PI * pitch * 2.4 * at) * 0.35;
+      return ring * decay(at, 22);
+    };
+    const coins = clink(0, 880) * 0.22 + clink(0.09, 1180) * 0.2;
+    const landing = pouch(noise()) * decay(t, 30) * 1.2;
+    return (coins + landing) * envelope(t, d, 0.002) * 0.5;
   }),
 };
 

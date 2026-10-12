@@ -6,6 +6,7 @@ import type { Art } from "./art";
 import type { Manifest } from "./assets";
 import { buildFrame, cameraAngle, cameraCenter, frameView } from "./frame";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
+import { spriteLift } from "./sprites";
 
 const manifest: Manifest = {
   sprites: [],
@@ -235,8 +236,11 @@ describe("buildFrame", () => {
     const [sprite] = readQuads(out).filter((q) => fileOf(q) === "orb");
     const centerX = (sprite.corners[0].x + sprite.corners[2].x) / 2;
     const centerY = (sprite.corners[0].y + sprite.corners[2].y) / 2;
+    // The player stands on the focus point, its sprite lifted to stand on
+    // its hitbox.
+    const lift = spriteLift(world, player, art) * view.pixelsPerTile;
     expect(centerX).toBeCloseTo(view.focus.x, 3);
-    expect(centerY).toBeCloseTo(view.focus.y, 3);
+    expect(centerY).toBeCloseTo(view.focus.y - lift, 3);
   });
 
   it("starts from an empty buffer each frame", () => {
