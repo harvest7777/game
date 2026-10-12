@@ -12,6 +12,7 @@ import type { Health } from "./combat/components";
 import type { Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
 import { createEvents, type Events } from "./events";
+import type { OutboxMessage } from "./outbox";
 import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
 import type { Projectile, Shooter, Team } from "./projectile/components";
@@ -65,6 +66,7 @@ export type World = {
   input: Input;
   camera: Camera;
   events: Events;
+  outbox: OutboxMessage[];
   // Random number in [0, 1), for anything random like damage rolls. Tests
   // swap it for a predictable one.
   random: () => number;
@@ -82,6 +84,7 @@ export function createWorld(
     input: { held: new Set(), commands: [] },
     camera: createCamera(),
     events: createEvents(),
+    outbox: [],
     random,
     components: {
       position: createStore(),

@@ -57,7 +57,7 @@ export function giveItem(h: Holdings, item: Item): number | undefined {
   return index;
 }
 
-function sameSlot(a: SlotRef, b: SlotRef): boolean {
+export function sameSlot(a: SlotRef, b: SlotRef): boolean {
   if (a.in === "equipment" && b.in === "equipment") return a.slot === b.slot;
   if (a.in === "inventory" && b.in === "inventory") return a.index === b.index;
   return false;

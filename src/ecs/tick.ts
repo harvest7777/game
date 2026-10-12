@@ -7,6 +7,7 @@ import { brainSystem } from "./enemy/brain";
 import { phaseSystem } from "./enemy/phaseSystem";
 import { damageTextSystem, floatingTextSystem } from "./text/system";
 import { clearEvents } from "./events";
+import { outboxSystem } from "./outbox";
 import { playerInputSystem } from "./input/system";
 import { inventorySystem } from "./inventory/system";
 import { movementSystem } from "./movement/system";
@@ -44,6 +45,7 @@ const systems: System[] = [
   floatingTextSystem,
   damageTextSystem,
   deathSystem,
+  outboxSystem,
   cleanupSystem,
 ];
 

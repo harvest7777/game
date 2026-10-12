@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placePanel, uiPixel } from "./state";
+import { createHudState, placePanel, restorePanels, uiPixel } from "./state";
 
 const size = { w: 20, h: 10 };
 const screen = { w: 300, h: 200 };
@@ -42,5 +42,44 @@ describe("uiPixel", () => {
     expect(uiPixel(1)).toBe(4);
     expect(uiPixel(2)).toBe(8);
     expect(uiPixel(1.25)).toBe(5);
+  });
+});
+
+describe("restorePanels", () => {
+  const defaults = createHudState().panels;
+
+  it("keeps valid saved placements", () => {
+    const saved = { equipment: { corner: "topLeft", x: 3, y: 4 } };
+    expect(restorePanels(saved)).toEqual({
+      ...defaults,
+      equipment: { corner: "topLeft", x: 3, y: 4 },
+    });
+  });
+
+  it("falls back to the defaults for anything broken", () => {
+    expect(restorePanels(null)).toEqual(defaults);
+    expect(restorePanels("nonsense")).toEqual(defaults);
+    expect(
+      restorePanels({
+        equipment: { corner: "middle", x: 1, y: 1 },
+        inventory: { corner: "topLeft", x: "1", y: 1 },
+      }),
+    ).toEqual(defaults);
+    expect(
+      restorePanels({ equipment: { corner: "topLeft", x: -5, y: Infinity } }),
+    ).toEqual(defaults);
+  });
+
+  it("rounds saved positions to whole UI pixels", () => {
+    expect(
+      restorePanels({ equipment: { corner: "topLeft", x: 40.75, y: 37.5 } })
+        .equipment,
+    ).toEqual({ corner: "topLeft", x: 41, y: 38 });
+  });
+
+  it("ignores panels it doesn't know", () => {
+    expect(
+      restorePanels({ minimap: { corner: "topLeft", x: 1, y: 1 } }),
+    ).toEqual(defaults);
   });
 });

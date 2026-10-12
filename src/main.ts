@@ -16,8 +16,9 @@ import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
 import { manifest } from "./render/assets";
-import { drawHud } from "./hud/draw";
-import { createHudState, uiPixel } from "./hud/state";
+import { drawHud, FLASH_SECONDS, layoutHud, uiScreen } from "./hud/draw";
+import { hudPointer, type PointerEvent } from "./hud/input";
+import { createHudState, restorePanels, uiPixel } from "./hud/state";
 import { createRenderDebug } from "./render/debug";
 import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
@@ -185,6 +186,13 @@ controlsPicker.addEventListener("change", () => {
 
 const quads = new QuadBuffer();
 const hudState = createHudState();
+try {
+  hudState.panels = restorePanels(
+    JSON.parse(localStorage.getItem("hudPanels") ?? "null"),
+  );
+} catch {
+  // Unreadable or unavailable storage: keep the default layout.
+}
 
 let accumulator: number = 0;
 let lastFrameTime: number = performance.now();
@@ -209,7 +217,47 @@ let cursor: Vec2 | undefined;
 let lastView: View | undefined;
 canvas.addEventListener("mousemove", (event) => {
   cursor = { x: event.clientX, y: event.clientY };
+  toHud(event, "move");
 });
+canvas.addEventListener("mousedown", (event) => {
+  if (event.button === 0) toHud(event, "down");
+});
+// On the window so letting go outside the game still ends a drag.
+window.addEventListener("mouseup", (event) => {
+  if (event.button === 0) toHud(event, "up");
+});
+canvas.addEventListener("mouseleave", () => {
+  hudPointer(hudState, { kind: "leave" }, [], { w: 0, h: 0 });
+});
+
+// Passes a mouse event to the HUD in UI pixels, queues whatever it asks for,
+// and saves the layout when a panel is dropped.
+function toHud(event: MouseEvent, kind: "move" | "down" | "up") {
+  const dpr = window.devicePixelRatio;
+  const pixel = uiPixel(dpr);
+  const screen = uiScreen(
+    Math.round(canvas.clientWidth * dpr),
+    Math.round(canvas.clientHeight * dpr),
+    pixel,
+  );
+  const panels = layoutHud(world, player, hudState, screen);
+  const x = (event.clientX * dpr) / pixel;
+  const y = (event.clientY * dpr) / pixel;
+  const time = event.timeStamp / 1000;
+  const pointer: PointerEvent = { kind, x, y, time };
+  const droppingPanel = kind === "up" && hudState.press?.panel?.id;
+
+  const { commands, used } = hudPointer(hudState, pointer, panels, screen);
+  pendingCommands.push(...commands);
+  if (used) event.preventDefault();
+  if (droppingPanel) {
+    try {
+      localStorage.setItem("hudPanels", JSON.stringify(hudState.panels));
+    } catch {
+      // Not saved, but the panel still moved.
+    }
+  }
+}
 
 function cursorInWorld(): Vec2 | undefined {
   if (!cursor || !lastView) return undefined;
@@ -244,11 +292,25 @@ function callback() {
     runTick(world, TICK_SECONDS);
     accumulator -= TIME_PER_TICK_MS;
   }
+  takeOutbox(currentTime / 1000);
 
   render(currentTime / 1000);
 
   lastFrameTime = currentTime;
   requestAnimationFrame(callback);
+}
+
+// Reacts to what the simulation reported this frame: an item landing in one
+// of the player's slots makes that slot flash.
+function takeOutbox(time: number) {
+  for (const message of world.outbox.splice(0)) {
+    if (message.kind === "itemMoved" && message.entity === player) {
+      hudState.flashes.push({ ref: message.to, at: time });
+    }
+  }
+  hudState.flashes = hudState.flashes.filter(
+    (flash) => time - flash.at < FLASH_SECONDS,
+  );
 }
 
 // Draws between the last two ticks: alpha is how far into the next tick the
@@ -284,6 +346,7 @@ function render(time: number) {
         width,
         height,
         uiPixel(dpr),
+        time,
       ),
   );
   renderer.draw(quads, sections, width, height, time);

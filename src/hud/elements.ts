@@ -7,10 +7,11 @@ import type { Rect } from "./state";
 // Panels only describe these; drawing and (later) clicking both work from
 // the same list, so what you see is what you can click.
 export type HudElement =
-  // A filled box with a 1-pixel border.
-  | { kind: "box"; rect: Rect; fill: Color; border: Color }
+  // A filled box with a 1-pixel border; `ref` if it's an item slot's box.
+  | { kind: "box"; rect: Rect; fill: Color; border: Color; ref?: SlotRef }
   // A sprite from the manifest, drawn 1 UI pixel per art pixel, outlined.
-  | { kind: "icon"; rect: Rect; sprite: string }
+  // `ref` says which slot's item it is, so it can be dragged.
+  | { kind: "icon"; rect: Rect; sprite: string; ref?: SlotRef }
   // Text with its glyph cells' top at `y`, centered on `x` if asked.
   | {
       kind: "text";
@@ -22,7 +23,9 @@ export type HudElement =
       align?: "left" | "center";
     }
   // Where an item slot is, for clicking. Not drawn.
-  | { kind: "slot"; rect: Rect; ref: SlotRef };
+  | { kind: "slot"; rect: Rect; ref: SlotRef }
+  // Where the panel can be grabbed to move it. Not drawn.
+  | { kind: "handle"; rect: Rect };
 
 // A panel's contents: its size and what's in it.
 export type PanelLayout = { w: number; h: number; elements: HudElement[] };
@@ -34,4 +37,9 @@ export const HUD_COLORS = {
   slot: [0.16, 0.15, 0.18, 1] as Color,
   slotBorder: [0.3, 0.28, 0.3, 1] as Color,
   dimLabel: [0.38, 0.36, 0.4, 1] as Color,
+  title: [0.85, 0.75, 0.5, 1] as Color,
+  hoverBorder: [0.95, 0.85, 0.55, 1] as Color,
 };
+
+// How faint an item looks in the slot it's being dragged out of.
+export const DRAGGED_FROM_ALPHA = 0.35;

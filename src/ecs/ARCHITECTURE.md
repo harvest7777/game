@@ -179,13 +179,22 @@ Damage numbers are drawn in the bold font at 0.48 of a tile tall, centered over 
 
 The HUD lives in `src/hud/`, outside the ECS, and is drawn with the same renderer as the game: same atlas, outline shader and font, so it looks of a piece with the world.
 
-- **It's a view.** It reads the world (e.g. `equipmentView`) and never changes it. Clicking will send the same commands the hotkeys do.
-- **`HudState` is client-side.** It holds where each panel sits, as a screen corner plus an offset, so panels stay put when the window resizes. Dragging a panel will just change its offset.
-- **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text, and invisible slot areas for clicking), in UI pixels relative to the panel. Drawing turns elements into quads; clicking will hit-test the same list, so what you see is what you can click.
-- **UI scale is its own.** One UI pixel is one art pixel, at 4 CSS pixels rounded to whole device pixels, so the HUD stays crisp and doesn't change size when the world zooms.
-- It's drawn in the overlay, after floating text and before debug renders.
+- **It's a view.** It reads the world (`equipmentView`, `inventoryView`) and never changes it. Clicks become the same commands the number keys send (`move`, `equip`), queued for the next tick.
+- **`HudState` is client-side:** where each panel sits (a screen corner plus a whole-UI-pixel offset, saved in the browser), what's hovered and since when, what's pressed or dragged, the last click, and which slots are flashing.
+- **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text, invisible `slot` and `handle` areas), in UI pixels relative to the panel. Each panel has a title bar to grab it by. Drawing turns elements into quads; `hitTest` reads the same list, so what you see is what you can click.
+- **Input is a pure state machine** (`hudPointer`): pointer events in, commands out, plus whether the HUD used the event.
+  - Press an item and drag it past 2 UI pixels to move it; dropping on any slot sends `move` (swaps, equips and unequips all follow the inventory rules).
+  - Double-click an inventory item to equip it, or a worn item to put it in the first empty inventory slot.
+  - Drag a panel by its frame; on release it attaches to its nearest screen corner, kept on screen.
+- **Feedback:** the hovered slot's border lights up, a dragged item follows the pointer with a faint copy left behind, and a slot an item lands in flashes white (fed by the outbox).
+- **Tooltips** appear after hovering an item for 0.3 s, never while dragging, beside the pointer and kept on screen. `itemTooltip` works them out from the item, weapon and projectile definitions: name, kind, damage (×shots), rate, range (the farthest the projectile's real path gets) and traits.
+- **UI scale is its own.** One UI pixel is one art pixel, at 4 CSS pixels rounded to whole device pixels, so the HUD stays crisp whatever the world zoom.
 
-The first panel is **equipment**: weapon, ability, armor and ring slots in a row, bottom-right. Each shows its item's icon, or a dim letter for its kind (W, S, A, R) when empty.
+Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty) and **inventory** (8 slots, numbered by the key that equips them), stacked bottom-right by default.
+
+## Outbox
+
+`world.outbox` carries what the simulation tells the outside world, starting with `itemMoved` (copied from events by `outboxSystem` at the end of each tick). It isn't cleared per tick: the client drains it after running the frame's ticks, so a frame that ran two ticks still sees both. Sound and network messages belong here too.
 
 ## Debug renders
 

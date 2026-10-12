@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { addHoldings } from "../ecs/inventory/bundle";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
-import type { HudElement } from "./elements";
+import { HUD_COLORS, type HudElement } from "./elements";
 import {
   equipmentPanel,
   equipmentView,
@@ -83,11 +83,33 @@ describe("equipmentPanel", () => {
 
   it("shows a dim letter in each empty slot", () => {
     const { elements } = equipmentPanel({ ...empty, weapon: lance });
-    expect(ofKind(elements, "text").map((t) => t.text)).toEqual([
+    const dim = ofKind(elements, "text").filter(
+      (t) => t.tint === HUD_COLORS.dimLabel,
+    );
+    expect(dim.map((t) => t.text)).toEqual([
       SLOT_LABELS.ability,
       SLOT_LABELS.armor,
       SLOT_LABELS.ring,
     ]);
+  });
+
+  it("has a title bar to grab it by, above the slots", () => {
+    const { w, elements } = equipmentPanel(empty);
+    const [title] = ofKind(elements, "text");
+    const [handle] = ofKind(elements, "handle");
+    expect(title.text).toBe("Equipment");
+    expect(handle.rect).toMatchObject({ x: 0, y: 0, w });
+    for (const slot of ofKind(elements, "slot")) {
+      expect(slot.rect.y).toBeGreaterThanOrEqual(handle.rect.h);
+    }
+  });
+
+  it("tags each icon with its slot so it can be dragged", () => {
+    const { elements } = equipmentPanel({ ...empty, weapon: lance });
+    expect(ofKind(elements, "icon")[0].ref).toEqual({
+      in: "equipment",
+      slot: "weapon",
+    });
   });
 
   it("draws the panel frame first, under everything", () => {
