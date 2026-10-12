@@ -598,6 +598,10 @@ const STAFF_GEMS = {
     [220, 70, 110],
     [255, 180, 200],
   ],
+  demonfireStaff: [
+    [230, 60, 20],
+    [255, 180, 80],
+  ],
   leafStaff: [
     [110, 190, 50],
     [210, 250, 150],
@@ -755,6 +759,333 @@ SPRITES["portals/abyss"] = {
     c: [255, 170, 60, 255], // bright inner edge
   },
 };
+
+// Abyss of Demons ground: red brick floors, charred stone corridors and
+// cooled lava crust. Each tiles with itself.
+SPRITES["tiles/abyss-brick"] = {
+  rows: [
+    "bbbmbbbb",
+    "bBbmbbbB",
+    "bbbmbbbb",
+    "mmmmmmmm",
+    "bbbbbbbm",
+    "bbBbbbbm",
+    "bbbbbbbm",
+    "mmmmmmmm",
+  ],
+  colors: {
+    b: [96, 28, 28, 255], // brick
+    B: [124, 42, 36, 255], // brick highlight
+    m: [52, 14, 16, 255], // mortar
+  },
+};
+SPRITES["tiles/charred-stone"] = {
+  rows: [
+    "sssSsssc",
+    "ssssssss",
+    "cssssSss",
+    "sssssssc",
+    "sSssssss",
+    "ssssccss",
+    "sssssssS",
+    "ssSsssss",
+  ],
+  colors: {
+    s: [46, 42, 44, 255], // stone
+    S: [64, 58, 58, 255], // lighter fleck
+    c: [28, 26, 28, 255], // soot
+  },
+};
+SPRITES["tiles/cooled-lava"] = {
+  rows: [
+    "kkkkKkkk",
+    "kokkkkkK",
+    "kkoykkkk",
+    "Kkkkokkk",
+    "kkkkkkok",
+    "kKkkkkko",
+    "okkkKkkk",
+    "kokkkkkk",
+  ],
+  colors: {
+    k: [34, 24, 24, 255], // crust
+    K: [52, 36, 32, 255], // raised crust
+    o: [196, 78, 30, 255], // crack glow
+    y: [250, 150, 50, 255], // hottest crack
+  },
+};
+
+// Abyss of Demons enemies, all facing the viewer.
+const DEMON_COLORS = {
+  r: [196, 48, 40, 255], // demon skin
+  R: [120, 22, 24, 255], // demon shadow
+  y: [255, 214, 80, 255], // glowing eyes
+  h: [230, 218, 196, 255], // horns
+  w: [78, 18, 30, 255], // wings
+  a: [70, 70, 82, 255], // armor
+  A: [116, 116, 128, 255], // armor highlight
+  s: [206, 206, 216, 255], // steel
+  n: [110, 70, 40, 255], // hilt
+  p: [90, 30, 110, 255], // robe
+  P: [134, 62, 154, 255], // robe highlight
+  o: [255, 120, 240, 255], // mage orb
+  G: [124, 92, 90, 255], // brute hide
+  g: [90, 62, 60, 255], // brute fists and feet
+  i: [92, 92, 104, 255], // brute helmet
+  W: [240, 236, 220, 255], // fangs
+};
+const DEMONS = {
+  // A small winged imp.
+  "enemies/imp": [
+    "........",
+    "..h..h..",
+    ".wrrrrw.",
+    "wwryryww",
+    "w.rrrr.w",
+    "...RR...",
+    "..r..r..",
+    "........",
+  ],
+  "enemies/demon": [
+    "h......h",
+    ".hrrrrh.",
+    ".rrrrrr.",
+    ".ryrryr.",
+    "rrRrrRrr",
+    "r.rrrr.r",
+    ".RR..RR.",
+    ".RR..RR.",
+  ],
+  // Armored, a blade held up on its left.
+  "enemies/demon-warrior": [
+    "h.....hs",
+    ".rrrrr.s",
+    ".ryrry.s",
+    "aaaaaaas",
+    ".aAaaA.n",
+    ".rrrrr..",
+    ".RR.RR..",
+    ".RR.RR..",
+  ],
+  // Robed, holding an orb out.
+  "enemies/demon-mage": [
+    "..hrrh..",
+    "..ryyr..",
+    ".ppppp.o",
+    "pppPppp.",
+    ".ppppp..",
+    ".pPpPp..",
+    "ppppppp.",
+    "pp.p.pp.",
+  ],
+  "enemies/brute": [
+    "........",
+    ".GGGGGG.",
+    "GGyGGyGG",
+    "GGGRRGGG",
+    "gGGGGGGg",
+    "gGGGGGGg",
+    ".GG..GG.",
+    ".gg..gg.",
+  ],
+  "enemies/brute-warrior": [
+    "..iiii..",
+    ".iiiiii.",
+    "GGyGGyGG",
+    "GGGRRGGG",
+    "gaaaaaag",
+    "gGaAAaGg",
+    ".GG..GG.",
+    ".gg..gg.",
+  ],
+  // Malphas's hulking guard, fangs bared, drawn large.
+  "enemies/malphas-protector": [
+    "h.hhhh.h",
+    "hRRRRRRh",
+    "RRyRRyRR",
+    "RRRWWRRR",
+    "aRRRRRRa",
+    "aaRRRRaa",
+    ".RR..RR.",
+    "RRR..RRR",
+  ],
+};
+for (const [name, rows] of Object.entries(DEMONS)) {
+  SPRITES[name] = { rows, colors: DEMON_COLORS };
+}
+// A small living flame Malphas calls in.
+SPRITES["enemies/malphas-flamer"] = {
+  rows: [
+    "...y....",
+    "..yoy...",
+    ".yoOoy..",
+    ".oOwOo..",
+    ".oOOOo..",
+    "..oOo...",
+    "...o....",
+    "........",
+  ],
+  colors: {
+    o: [240, 110, 30, 255], // flame
+    O: [255, 170, 60, 255], // bright flame
+    y: [255, 220, 90, 255], // tip
+    w: [255, 250, 230, 255], // core
+  },
+};
+
+// Abyss shots. Projectile art points right.
+SPRITES["projectiles/fireball"] = {
+  rows: [
+    "........",
+    "..ooo...",
+    ".oOOOo..",
+    "oOyywOo.",
+    "oOyywOo.",
+    ".oOOOo..",
+    "..ooo...",
+    "........",
+  ],
+  colors: {
+    o: [220, 70, 24, 255], // outer flame
+    O: [255, 150, 50, 255], // flame
+    y: [255, 220, 100, 255], // hot
+    w: [255, 252, 236, 255], // core
+  },
+};
+SPRITES["projectiles/demon-blade"] = {
+  rows: [
+    "...ss...",
+    "....ss..",
+    ".....ss.",
+    ".....sS.",
+    ".....sS.",
+    ".....ss.",
+    "....ss..",
+    "...ss...",
+  ],
+  colors: {
+    s: [230, 80, 70, 255], // blade edge
+    S: [255, 210, 200, 255], // gleam
+  },
+};
+
+// Archdemon Malphas, 16x16, one set of three frames per clip. Like the
+// Slime King, each stage's progress picks its frame, and the poses are broad
+// so tells read at a glance: gold for casts, violet for summons, white for
+// the dash and slam.
+const MALPHAS_CLIPS = [
+  "idle",
+  "castTell",
+  "cast",
+  "summonTell",
+  "summon",
+  "dashTell",
+  "dash",
+  "slam",
+  "exposed",
+  "frenzyTell",
+  "frenzy",
+  "collapse",
+];
+const MALPHAS_COLORS = {
+  ...DEMON_COLORS,
+  v: [170, 90, 255, 255], // summoning runes
+  u: [255, 255, 255, 255], // dash streak, slam shock
+  c: [255, 236, 120, 255], // exposed core
+};
+
+function malphasFrame(clip, frame) {
+  const grid = Array.from({ length: 16 }, () => Array(16).fill("."));
+  const put = (x, y, color) => {
+    if (x >= 0 && x < 16 && y >= 0 && y < 16) grid[y][x] = color;
+  };
+  const low = clip === "slam" || clip === "collapse" || clip === "dashTell";
+  const top = low ? 5 : 3;
+  const bottom = 15;
+
+  // Wings, spread wider while casting and summoning.
+  const spread = ["cast", "summon", "frenzy"].includes(clip) ? 1 : 0;
+  for (let y = top + 1; y < top + 7; y++) {
+    put(1 - spread, y, "w");
+    put(2 - spread, y + 1, "w");
+    put(14 + spread, y, "w");
+    put(13 + spread, y + 1, "w");
+  }
+  // Body.
+  for (let y = top; y <= bottom - 2; y++) {
+    const inset = y === top ? 2 : y > bottom - 5 ? 1 : 0;
+    for (let x = 3 + inset; x <= 12 - inset; x++) {
+      const edge = x === 3 + inset || x === 12 - inset;
+      put(x, y, edge ? "R" : "r");
+    }
+  }
+  // Legs.
+  for (let y = bottom - 1; y <= bottom; y++) {
+    put(5, y, "R");
+    put(6, y, "R");
+    put(9, y, "R");
+    put(10, y, "R");
+  }
+  // Horns.
+  put(4, top - 1, "h");
+  put(3, top - 2, "h");
+  put(11, top - 1, "h");
+  put(12, top - 2, "h");
+  // Eyes and fangs, shut while collapsed.
+  if (clip !== "collapse") {
+    put(6, top + 2, "y");
+    put(9, top + 2, "y");
+  }
+  put(7, top + 4, "W");
+  put(8, top + 4, "W");
+
+  if (["castTell", "frenzyTell"].includes(clip)) {
+    const reach = 1 + frame;
+    for (let x = 3 - reach; x <= 12 + reach; x++) {
+      if (x < 3 || x > 12) put(x, top + 3, "y");
+    }
+  }
+  if (["cast", "frenzy"].includes(clip)) {
+    put(0, top + 2 + frame, "y");
+    put(15, top + 2 + frame, "y");
+    put(7 - frame, 1, "y");
+    put(8 + frame, 1, "y");
+  }
+  if (["summonTell", "summon"].includes(clip)) {
+    // Runes rising from the ground around it.
+    for (let x = 2; x < 14; x += 3) put(x, bottom - frame, "v");
+    if (clip === "summon") for (let x = 4; x <= 11; x++) put(x, top - 1, "v");
+  }
+  if (clip === "dashTell") {
+    for (let x = 3; x < 13; x += 2) put(x, bottom, "u");
+  }
+  if (clip === "dash") {
+    for (let x = 0; x < 3 + frame * 2; x++) put(x, top + 6, "u");
+  }
+  if (clip === "slam") {
+    const reach = 1 + frame * 2;
+    for (let x = 3 - reach; x <= 12 + reach; x++) {
+      if (x < 3 || x > 12) put(x, bottom, "u");
+    }
+  }
+  if (["exposed", "collapse"].includes(clip)) {
+    for (let y = top + 6; y <= top + 8; y++) {
+      for (let x = 6; x <= 9; x++) put(x, y, "c");
+    }
+    put(7, top + 7, "u");
+    put(8, top + 7, "u");
+  }
+  return grid.map((row) => row.join(""));
+}
+
+for (const clip of MALPHAS_CLIPS) {
+  for (const frame of [0, 1, 2]) {
+    SPRITES[`enemies/malphas/${clip}-${frame}`] = {
+      rows: malphasFrame(clip, frame),
+      colors: MALPHAS_COLORS,
+    };
+  }
+}
 
 const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {

@@ -1,0 +1,14 @@
+import type { ProjectileDef } from "../../ecs/projectile/definitions";
+import { DEMON_BLADE_ART, ENEMY_SHOT, HIT_SOUND } from "./shared";
+
+// A demon warrior's slash: hard-hitting, but it barely leaves its
+// arm.
+export const demonBlade: ProjectileDef = {
+  speed: 8,
+  damage: [45, 60],
+  lifetime: 0.35,
+  hitbox: { r: 0.3 },
+  sprite: { art: DEMON_BLADE_ART, outline: ENEMY_SHOT },
+  sound: HIT_SOUND,
+  faceDirection: true,
+};

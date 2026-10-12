@@ -19,6 +19,19 @@ import { twinHelix } from "./twinHelix";
 import { leafVolley } from "./leafVolley";
 import { forkedNeedles } from "./forkedNeedles";
 import { bloom } from "./bloom";
+import { impShot } from "./impShot";
+import { demonVolley } from "./demonVolley";
+import { demonSlash } from "./demonSlash";
+import { mageRing } from "./mageRing";
+import { bruteShotgun } from "./bruteShotgun";
+import { bruteRing } from "./bruteRing";
+import { protectorPinwheel } from "./protectorPinwheel";
+import { flamerBreath } from "./flamerBreath";
+import { malphasRing } from "./malphasRing";
+import { malphasVolley } from "./malphasVolley";
+import { malphasShockwave } from "./malphasShockwave";
+import { malphasFrenzy } from "./malphasFrenzy";
+import { demonfireStaff } from "./demonfireStaff";
 
 // Every weapon, by id.
 export const weapons = {
@@ -42,6 +55,19 @@ export const weapons = {
   leafVolley,
   forkedNeedles,
   bloom,
+  impShot,
+  demonVolley,
+  demonSlash,
+  mageRing,
+  bruteShotgun,
+  bruteRing,
+  protectorPinwheel,
+  flamerBreath,
+  malphasRing,
+  malphasVolley,
+  malphasShockwave,
+  malphasFrenzy,
+  demonfireStaff,
 } satisfies Record<string, WeaponDef>;
 
 export type WeaponId = keyof typeof weapons;

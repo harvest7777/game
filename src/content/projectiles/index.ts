@@ -18,6 +18,18 @@ import { leafEdge } from "./leafEdge";
 import { needle } from "./needle";
 import { petal } from "./petal";
 import { bud } from "./bud";
+import { impFire } from "./impFire";
+import { demonFireball } from "./demonFireball";
+import { demonBlade } from "./demonBlade";
+import { mageOrb } from "./mageOrb";
+import { bruteShot } from "./bruteShot";
+import { protectorFlame } from "./protectorFlame";
+import { flamerFlame } from "./flamerFlame";
+import { malphasFlame } from "./malphasFlame";
+import { malphasLance } from "./malphasLance";
+import { malphasShock } from "./malphasShock";
+import { malphasCurl } from "./malphasCurl";
+import { demonfire } from "./demonfire";
 
 // Every kind of projectile, by id.
 export const projectiles = {
@@ -40,6 +52,18 @@ export const projectiles = {
   needle,
   petal,
   bud,
+  impFire,
+  demonFireball,
+  demonBlade,
+  mageOrb,
+  bruteShot,
+  protectorFlame,
+  flamerFlame,
+  malphasFlame,
+  malphasLance,
+  malphasShock,
+  malphasCurl,
+  demonfire,
 } satisfies Record<string, ProjectileDef>;
 
 export type ProjectileId = keyof typeof projectiles;
