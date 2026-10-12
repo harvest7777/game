@@ -1,11 +1,6 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
-import {
-  Action,
-  actionsFromKeys,
-  keybindPresets,
-  type KeybindPreset,
-} from "./ecs/input/actions";
+import { Action, actionsFromKeys } from "./ecs/input/actions";
 import { commandHotkeys, type Command } from "./ecs/input/commands";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { runTick } from "./ecs/tick";
@@ -15,10 +10,18 @@ import { createManifest } from "./render/assets";
 import { contentArt } from "./content/art";
 import { characters } from "./content/characters";
 import { spawnCharacter } from "./ecs/character/spawn";
-import { drawHud, FLASH_SECONDS, layoutHud, uiScreen } from "./hud/draw";
+import {
+  drawHud,
+  FLASH_SECONDS,
+  layoutHud,
+  uiScreen,
+  updateHpBars,
+} from "./hud/draw";
 import { hudPointer, type PointerEvent } from "./hud/input";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
 import { installDebugPanel } from "./debug/panel";
+import { hudHotkey } from "./hud/hotkeys";
+import { installSettings } from "./settings/panel";
 import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
@@ -96,37 +99,16 @@ respawnButton.addEventListener("click", () => {
   respawnButton.blur();
 });
 
-// Controls picker, remembered between visits.
-const controlsPicker = document.getElementById(
-  "settingsControls",
-) as HTMLSelectElement;
-let keybinds = keybindPresets.default;
-try {
-  const saved = localStorage.getItem("controls");
-  if (saved && saved in keybindPresets) {
-    controlsPicker.value = saved;
-    keybinds = keybindPresets[saved as KeybindPreset];
-  }
-} catch {
-  // Storage can be unavailable (private windows); the default still works.
-}
-controlsPicker.addEventListener("change", () => {
-  const preset = controlsPicker.value as KeybindPreset;
-  keybinds = keybindPresets[preset];
-  inputs.clear();
-  try {
-    localStorage.setItem("controls", preset);
-  } catch {
-    // Not remembered, but still switched.
-  }
-  controlsPicker.blur();
-});
+const settings = installSettings(() => inputs.clear());
 
 const quads = new QuadBuffer();
+// Where saved panel positions live. Bumped when the layout changes shape,
+// so an old save doesn't place panels for a layout that's gone.
+const HUD_PANELS_KEY = "hudPanels.v2";
 const hudState = createHudState();
 try {
   hudState.panels = restorePanels(
-    JSON.parse(localStorage.getItem("hudPanels") ?? "null"),
+    JSON.parse(localStorage.getItem(HUD_PANELS_KEY) ?? "null"),
   );
 } catch {
   // Unreadable or unavailable storage: keep the default layout.
@@ -145,6 +127,13 @@ window.addEventListener("keydown", (event) => {
     event.target instanceof HTMLInputElement &&
     event.target.type !== "checkbox"
   ) {
+    return;
+  }
+  if (
+    !event.repeat &&
+    hudHotkey(hudState, settings.hudKeybinds(), event.code)
+  ) {
+    event.preventDefault();
     return;
   }
   inputs.add(event.code);
@@ -197,10 +186,10 @@ function toHud(event: MouseEvent, kind: "move" | "down" | "up"): boolean {
     Math.round(canvas.clientHeight * dpr),
     pixel,
   );
-  const panels = layoutHud(world, player, hudState, screen);
+  const time = event.timeStamp / 1000;
+  const panels = layoutHud(world, player, hudState, screen, time);
   const x = (event.clientX * dpr) / pixel;
   const y = (event.clientY * dpr) / pixel;
-  const time = event.timeStamp / 1000;
   const pointer: PointerEvent = { kind, x, y, time };
   const droppingPanel = kind === "up" && hudState.press?.panel?.id;
 
@@ -209,7 +198,7 @@ function toHud(event: MouseEvent, kind: "move" | "down" | "up"): boolean {
   if (used) event.preventDefault();
   if (droppingPanel) {
     try {
-      localStorage.setItem("hudPanels", JSON.stringify(hudState.panels));
+      localStorage.setItem(HUD_PANELS_KEY, JSON.stringify(hudState.panels));
     } catch {
       // Not saved, but the panel still moved.
     }
@@ -244,7 +233,7 @@ function callback() {
   // TICKS_PER_SECOND regardless of frame timing.
   accumulator += deltaTime;
   while (accumulator >= TIME_PER_TICK_MS) {
-    world.input.held = actionsFromKeys(inputs, keybinds);
+    world.input.held = actionsFromKeys(inputs, settings.keybinds());
     if (shooting) world.input.held.add(Action.Shoot);
     world.input.commands = pendingCommands.splice(0);
     world.input.aim = cursorInWorld();
@@ -252,6 +241,7 @@ function callback() {
     accumulator -= TIME_PER_TICK_MS;
   }
   takeOutbox(currentTime / 1000);
+  updateHpBars(hudState, world, player, currentTime / 1000);
   respawnButton.hidden = world.components.character.has(player);
 
   render(currentTime / 1000);

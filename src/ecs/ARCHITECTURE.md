@@ -61,7 +61,7 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 # Controls
 
-Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout; it starts off, and holding the left mouse button on the game shoots either way. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
+Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout; it starts off, and holding the left mouse button on the game shoots either way. The overlay's settings (`src/settings/panel.ts`) switch presets and rebind HUD keys, remembering both in the browser. Only `main.ts` sees keys; everything else works with actions.
 
 # Camera and movement input
 
@@ -203,7 +203,7 @@ Walkers with `attack` art thrust their weapon for the first half of each shot in
 
 ## Health bars
 
-Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: green, yellow below half, red below a quarter. Bars are solid quads (`fill`), so they need no art. They're drawn at the start of the sprite section, so every sprite (enemies, projectiles, the player) covers them, and at their owner's depth, so a wall that hides an entity hides its bar too.
+Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: blending smoothly from green when full through yellow at half to red when empty (`healthColor`, shared with the HUD). Bars are solid quads (`fill`), so they need no art. They're drawn layer by layer with the sprites, each just before its own layer's sprites: an enemy's sprite covers its bar, and the player's bar shows over enemies and their bars. Each is at its owner's depth, so a wall that hides an entity hides its bar too.
 
 ## Fonts and text
 
@@ -227,13 +227,17 @@ The HUD lives in `src/hud/`, outside the ECS, and is drawn with the same rendere
 - **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text, invisible `slot` areas), in UI pixels relative to the panel. A panel is just its slot squares (12 UI pixels, an 8×8 icon with a pixel of room inside a lighter border, 2 apart), with nothing behind them. Drawing turns elements into quads; `hitTest` reads the same list, so what you see is what you can click.
 - **Input is a pure state machine** (`hudPointer`): pointer events in, commands out, plus whether the HUD used the event.
   - Press an item and drag it past 2 UI pixels to move it; dropping on any slot sends `move` (swaps, equips and unequips all follow the inventory rules).
-  - Double-click an inventory item to equip it, or a worn item to put it in the first empty inventory slot.
-  - In **edit mode** (`editMode`, no way to turn it on yet), pressing anywhere on a panel grabs the whole panel instead; on release it attaches to its nearest screen corner, kept on screen.
+  - Double-click an inventory item to equip it, or a worn item to take it off (`unequip`, into the first empty inventory slot).
+  - In **edit mode** (`editMode`, no way to turn it on yet), pressing anywhere on a panel grabs its whole group instead; on release the group's screen-placed panel attaches to its nearest screen corner, kept on screen.
 - **Feedback:** the hovered slot's border lights up, a dragged item follows the pointer with a faint copy left behind, and a slot an item lands in flashes white (fed by the outbox).
 - **Tooltips** appear after hovering an item for 0.3 s, never while dragging, beside the pointer and kept on screen, drawn at half the HUD's scale. `itemTooltip` works them out from the item, weapon and projectile definitions: name, kind, damage (×shots), rate, range (the farthest the projectile's real path gets) and traits.
 - **UI scale is its own.** One UI pixel is one art pixel, at 6 CSS pixels rounded to whole device pixels, so the HUD stays crisp whatever the world zoom.
 
-Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty) and **inventory** (8 slots, numbered by the key that equips them), stacked bottom-right by default.
+Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), the **health** bar just above it, and the **inventory** (8 slots, numbered by the key that equips them) to its right, bottoms lined up, in the bottom-right corner. A panel is placed either against a screen corner or attached to another panel (`above` it or to its `right`), so a group moves together, and hiding one panel never moves the others.
+
+**HUD hotkeys** (`hotkeys.ts`) change only the HUD and never reach the game: G toggles the inventory, rebindable in settings to any key the game isn't using.
+
+**HP bar** (`hpBar.ts`) is render-only, so it serves the player now and bosses later: give it health and a width and it lays out a frame, the fill in `healthColor`, and `hp/max` in the regular font with a pixel of room around it, all at half the HUD's size (a panel can have its own smaller pixels, `PanelLayout.scale`). Damage shows as a white chunk of what was lost, which holds for 0.15 s then shrinks to the new health over 0.4 s, slowly at first and then faster (eased in, cubed); more damage while it shrinks extends it from where it's got to. That memory (`HpBarState`) lives in `HudState.hpBars`, stepped once a frame by `updateHpBars`.
 
 ## Outbox
 

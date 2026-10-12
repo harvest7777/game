@@ -10,6 +10,7 @@ import {
   drawHud,
   FLASH_SECONDS,
   layoutHud,
+  updateHpBars,
   pushElements,
   TOOLTIP_DELAY,
   tooltipPixel,
@@ -17,6 +18,7 @@ import {
 import type { SlotRef } from "../ecs/inventory/components";
 import { DRAGGED_FROM_ALPHA, HUD_COLORS, type HudElement } from "./elements";
 import { createHudState } from "./state";
+import { HP_BAR_COLORS } from "./hpBar";
 
 const LANCE = testItem({ name: "Lance", icon: "items/lance" });
 
@@ -61,6 +63,37 @@ describe("pushElements", () => {
     expect(inner.outline).toEqual([0, 0, 1, 1]);
     expect(inner.corners[0]).toEqual({ x: 8, y: 12 });
     expect(inner.corners[2]).toEqual({ x: 40, y: 28 });
+  });
+
+  it("draws a rect as one plain fill", () => {
+    const quads = quadsOf(
+      [{ kind: "rect", rect: { x: 1, y: 2, w: 10, h: 6 }, fill: [0, 1, 0, 1] }],
+      0,
+      0,
+      4,
+    );
+    expect(quads).toHaveLength(1);
+    expect(quads[0].fill).toBe(true);
+    expect(quads[0].outline).toEqual([0, 1, 0, 1]);
+    expect(quads[0].corners[0]).toEqual({ x: 4, y: 8 });
+    expect(quads[0].corners[2]).toEqual({ x: 44, y: 32 });
+  });
+
+  it("outlines text when asked", () => {
+    const text = (outline?: [number, number, number, number]) =>
+      quadsOf([
+        {
+          kind: "text",
+          x: 0,
+          y: 0,
+          text: "W",
+          font: "regular",
+          tint: [1, 1, 1, 1],
+          outline,
+        },
+      ])[0];
+    expect(text([0, 0, 0, 1]).outline).toEqual([0, 0, 0, 1]);
+    expect(text().outline).toEqual([0, 0, 0, 0]);
   });
 
   it("draws an icon one UI pixel per art pixel, outlined, offset by the panel", () => {
@@ -113,43 +146,80 @@ describe("pushElements", () => {
 });
 
 describe("layoutHud", () => {
-  it("puts the equipment panel in the bottom-right corner by default", () => {
+  const SCREEN = { w: 300, h: 200 };
+
+  function playerWith(hp?: number) {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
     addHoldings(world, player, { weapon: LANCE });
+    if (hp !== undefined) {
+      world.components.health.set(player, { hp, max: 500 });
+    }
+    return { world, player };
+  }
 
-    const [panel] = layoutHud(world, player, createHudState(), {
-      w: 300,
-      h: 200,
-    });
+  const byId = (panels: ReturnType<typeof layoutHud>) =>
+    Object.fromEntries(panels.map((p) => [p.id, p]));
 
-    expect(panel.id).toBe("equipment");
-    expect(panel.x + panel.layout.w).toBe(300 - 6);
-    expect(panel.y + panel.layout.h).toBe(200 - 6);
+  it("puts the inventory in the bottom-right corner, the loadout to its left", () => {
+    const { world, player } = playerWith();
+    const { equipment, inventory } = byId(
+      layoutHud(world, player, createHudState(), SCREEN, 0),
+    );
+
+    expect(inventory.x + inventory.layout.w).toBe(SCREEN.w - 6);
+    expect(inventory.y + inventory.layout.h).toBe(SCREEN.h - 6);
+    // Bottoms lined up, one slot gap apart.
+    expect(equipment.y + equipment.layout.h).toBe(
+      inventory.y + inventory.layout.h,
+    );
+    expect(inventory.x - (equipment.x + equipment.layout.w)).toBe(2);
   });
 
-  it("stacks the inventory just above the equipment, aligned", () => {
-    const world = createWorld(createTiles(1, 1));
-    const player = spawn(world);
-    addHoldings(world, player, { weapon: LANCE });
+  it("puts the health bar just above the loadout, as wide as it", () => {
+    const { world, player } = playerWith(450);
+    const { equipment, health } = byId(
+      layoutHud(world, player, createHudState(), SCREEN, 0),
+    );
 
-    const [equipment, inventory] = layoutHud(world, player, createHudState(), {
-      w: 300,
-      h: 200,
-    });
-
-    expect(inventory.id).toBe("inventory");
-    expect(inventory.x).toBe(equipment.x);
-    expect(inventory.y + inventory.layout.h).toBeLessThan(equipment.y);
-    expect(
-      equipment.y - (inventory.y + inventory.layout.h),
-    ).toBeLessThanOrEqual(4);
+    expect(health.x).toBe(equipment.x);
+    expect(health.layout.w).toBe(equipment.layout.w);
+    expect(equipment.y - (health.y + health.layout.h)).toBe(2);
+    const text = health.layout.elements.find((e) => e.kind === "text");
+    expect(text).toMatchObject({ text: "450/500" });
   });
 
-  it("shows no equipment panel for something without equipment", () => {
+  it("shows the damage chunk the health bar remembers", () => {
+    const { world, player } = playerWith(500);
+    const state = createHudState();
+    updateHpBars(state, world, player, 0);
+    world.components.health.get(player)!.hp = 250;
+    updateHpBars(state, world, player, 1);
+
+    const { health } = byId(layoutHud(world, player, state, SCREEN, 1));
+
+    const white = health.layout.elements.filter(
+      (e) => e.kind === "rect" && e.fill === HP_BAR_COLORS.chunk,
+    );
+    expect(white).toHaveLength(1);
+  });
+
+  it("leaves the inventory out while it's closed, the loadout where it was", () => {
+    const { world, player } = playerWith();
+    const state = createHudState();
+    const open = byId(layoutHud(world, player, state, SCREEN, 0));
+    state.inventoryOpen = false;
+
+    const closed = byId(layoutHud(world, player, state, SCREEN, 0));
+
+    expect(closed.inventory).toBeUndefined();
+    expect(closed.equipment.x).toBe(open.equipment.x);
+  });
+
+  it("shows nothing for something without equipment", () => {
     const world = createWorld(createTiles(1, 1));
     expect(
-      layoutHud(world, spawn(world), createHudState(), { w: 300, h: 200 }),
+      layoutHud(world, spawn(world), createHudState(), SCREEN, 0),
     ).toHaveLength(0);
   });
 });

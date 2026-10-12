@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createHudState, placePanel, restorePanels, uiPixel } from "./state";
+import {
+  attachPanel,
+  createHudState,
+  placePanel,
+  restorePanels,
+  uiPixel,
+} from "./state";
 
 const size = { w: 20, h: 10 };
 const screen = { w: 300, h: 200 };
@@ -45,6 +51,26 @@ describe("uiPixel", () => {
   });
 });
 
+describe("attachPanel", () => {
+  const to = { x: 100, y: 50, w: 54, h: 12 };
+
+  it("puts a panel above, left edges lined up", () => {
+    const at = attachPanel({ to: "equipment", side: "above", gap: 2 }, to, {
+      w: 54,
+      h: 9,
+    });
+    expect(at).toEqual({ x: 100, y: 50 - 2 - 9 });
+  });
+
+  it("puts a panel to the right, bottoms lined up", () => {
+    const at = attachPanel({ to: "equipment", side: "right", gap: 2 }, to, {
+      w: 54,
+      h: 26,
+    });
+    expect(at).toEqual({ x: 100 + 54 + 2, y: 50 + 12 - 26 });
+  });
+});
+
 describe("restorePanels", () => {
   const defaults = createHudState().panels;
 
@@ -75,6 +101,12 @@ describe("restorePanels", () => {
       restorePanels({ equipment: { corner: "topLeft", x: 40.75, y: 37.5 } })
         .equipment,
     ).toEqual({ corner: "topLeft", x: 41, y: 38 });
+  });
+
+  it("keeps attached panels attached, whatever a save says", () => {
+    expect(
+      restorePanels({ inventory: { corner: "topLeft", x: 1, y: 1 } }),
+    ).toEqual(defaults);
   });
 
   it("ignores panels it doesn't know", () => {

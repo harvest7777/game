@@ -10,6 +10,8 @@ import type { Rect } from "./state";
 export type HudElement =
   // A filled box with a 1-pixel border; `ref` if it's an item slot's box.
   | { kind: "box"; rect: Rect; fill: Color; border: Color; ref?: SlotRef }
+  // A plain filled rectangle, no border.
+  | { kind: "rect"; rect: Rect; fill: Color }
   // A sprite file, drawn 1 UI pixel per art pixel, outlined. `ref` says
   // which slot's item it is, so it can be dragged.
   | { kind: "icon"; rect: Rect; file: SpriteFile; ref?: SlotRef }
@@ -22,12 +24,20 @@ export type HudElement =
       font: FontName;
       tint: Color;
       align?: "left" | "center";
+      outline?: Color;
     }
   // Where an item slot is, for clicking. Not drawn.
   | { kind: "slot"; rect: Rect; ref: SlotRef };
 
-// A panel's contents: its size and what's in it.
-export type PanelLayout = { w: number; h: number; elements: HudElement[] };
+// A panel's contents: its size in UI pixels and what's in it. Elements are
+// in UI pixels too, unless `scale` says each UI pixel holds that many of the
+// panel's own, smaller pixels.
+export type PanelLayout = {
+  w: number;
+  h: number;
+  elements: HudElement[];
+  scale?: number;
+};
 
 // The HUD's palette.
 export const HUD_COLORS = {

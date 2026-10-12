@@ -1,5 +1,5 @@
 import type { SlotRef } from "../inventory/components";
-import type { ItemDef } from "../inventory/items";
+import type { ItemDef, ItemKind } from "../inventory/items";
 
 // One-off requests from the player: hotkeys and the HUD both send these, and
 // a system in the tick decides whether they happen. Unlike held actions they
@@ -9,6 +9,8 @@ export type Command =
   | { kind: "move"; from: SlotRef; to: SlotRef }
   // Equip the item in inventory slot `index` (number keys, double-click).
   | { kind: "equip"; index: number }
+  // Take off what's worn in `slot`, into the first empty inventory slot.
+  | { kind: "unequip"; slot: ItemKind }
   // Start or stop the player's equipped weapon autofiring.
   | { kind: "toggleAutoFire" }
   // Debug: add an item to the inventory.

@@ -15,34 +15,78 @@ import {
 } from "./elements";
 import { equipmentPanel, equipmentView } from "./equipment";
 import { inventoryPanel, inventoryView } from "./inventory";
-import { placePanel, type HudState, type PanelId } from "./state";
+import { chunkTop, hpBar, stepHpBar } from "./hpBar";
+import type { PlacedPanel } from "./input";
+import { attachPanel, placePanel, type HudState, type PanelId } from "./state";
 import { itemTooltip, placeTooltip, tooltipPanel } from "./tooltip";
 
 const NO_REGION = { x: 0, y: 0, w: 0, h: 0 };
 const ICON_OUTLINE = { color: [0, 0, 0, 1] as Color };
 
 // Lays out every panel that has something to show, placed on a screen
-// `screen` UI pixels across. Returns each with its top-left in UI pixels.
+// `screen` UI pixels across, at `time` seconds (for animations). Returns
+// each with its top-left in UI pixels. A panel attached to one that isn't
+// shown isn't shown either.
 export function layoutHud(
   world: World,
   player: Entity,
   state: HudState,
   screen: { w: number; h: number },
-): { id: PanelId; x: number; y: number; layout: PanelLayout }[] {
-  const panels: { id: PanelId; x: number; y: number; layout: PanelLayout }[] =
-    [];
-  const add = (id: PanelId, layout: PanelLayout) => {
-    panels.push({
-      id,
-      ...placePanel(state.panels[id], layout, screen),
-      layout,
-    });
-  };
+  time: number,
+): PlacedPanel[] {
+  const layouts: Partial<Record<PanelId, PanelLayout>> = {};
   const equipment = equipmentView(world, player);
-  if (equipment) add("equipment", equipmentPanel(equipment));
-  const inventory = inventoryView(world, player);
-  if (inventory) add("inventory", inventoryPanel(inventory));
-  return panels;
+  if (equipment) layouts.equipment = equipmentPanel(equipment);
+  const health = world.components.health.get(player);
+  const bar = state.hpBars[PLAYER_BAR];
+  if (health && layouts.equipment) {
+    const chunk = bar && chunkTop(bar, time);
+    layouts.health = hpBar(health, chunk, layouts.equipment.w);
+  }
+  const inventory = state.inventoryOpen && inventoryView(world, player);
+  if (inventory) layouts.inventory = inventoryPanel(inventory);
+
+  const placed: Partial<Record<PanelId, PlacedPanel>> = {};
+  for (const id of PANEL_ORDER) {
+    const layout = layouts[id];
+    const placement = state.panels[id];
+    if (!layout) continue;
+    if ("corner" in placement) {
+      placed[id] = { id, ...placePanel(placement, layout, screen), layout };
+      continue;
+    }
+    const to = placed[placement.to];
+    if (!to) continue;
+    const at = attachPanel(placement, { ...to, ...to.layout }, layout);
+    placed[id] = { id, ...at, layout };
+  }
+  return PANEL_ORDER.flatMap((id) => placed[id] ?? []);
+}
+
+// Screen-placed panels come before the ones attached to them.
+const PANEL_ORDER: PanelId[] = ["equipment", "health", "inventory"];
+
+// Whose bar the player's health bar is, in HudState.hpBars.
+export const PLAYER_BAR = "player";
+
+// Keeps the player's health bar's damage animation up to date. Call once a
+// frame, before drawing.
+export function updateHpBars(
+  state: HudState,
+  world: World,
+  player: Entity,
+  time: number,
+): void {
+  const health = world.components.health.get(player);
+  if (health) {
+    state.hpBars[PLAYER_BAR] = stepHpBar(
+      state.hpBars[PLAYER_BAR],
+      health.hp,
+      time,
+    );
+  } else {
+    delete state.hpBars[PLAYER_BAR];
+  }
 }
 
 // The UI-pixel size of a canvas `width` x `height` device pixels.
@@ -66,7 +110,7 @@ export function drawHud(
   time: number,
 ): void {
   const screen = uiScreen(width, height, pixel);
-  const panels = layoutHud(world, player, state, screen);
+  const panels = layoutHud(world, player, state, screen, time);
   const dragged = state.press?.dragging ? state.press.item : undefined;
   const flashes = state.flashes.map((f) => ({
     ref: f.ref,
@@ -74,13 +118,14 @@ export function drawHud(
   }));
   const look = { hover: state.hover, dragged, flashes };
   for (const panel of panels) {
+    const scale = panel.layout.scale ?? 1;
     pushElements(
       out,
       art,
       panel.layout.elements,
-      panel.x,
-      panel.y,
-      pixel,
+      panel.x * scale,
+      panel.y * scale,
+      pixel / scale,
       look,
     );
   }
@@ -201,6 +246,9 @@ export function pushElements(
         element.fill,
         pixel,
       );
+    } else if (element.kind === "rect") {
+      const { rect } = element;
+      fill(out, x + rect.x, y + rect.y, rect.w, rect.h, element.fill, pixel);
     } else if (element.kind === "icon") {
       const { rect } = element;
       const pad = OUTLINE_THICKNESS * pixel;
@@ -238,6 +286,7 @@ export function pushElements(
           pixel,
           tint: element.tint,
           align: element.align,
+          ...(element.outline && { outline: { color: element.outline } }),
         },
       );
     }

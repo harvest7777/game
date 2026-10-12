@@ -3,7 +3,7 @@ import { createCamera } from "../ecs/camera/resource";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
 import type { Art } from "./art";
-import { BAR_COLORS, barColor, pushHealthBars } from "./healthBars";
+import { BAR_COLORS, healthColor, pushHealthBars } from "./healthBars";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
 
@@ -178,12 +178,25 @@ describe("pushHealthBars", () => {
   });
 });
 
-describe("barColor", () => {
-  it("is green when healthy, yellow below half, red below a quarter", () => {
-    expect(barColor(1)).toBe(BAR_COLORS.healthy);
-    expect(barColor(0.5)).toBe(BAR_COLORS.healthy);
-    expect(barColor(0.49)).toBe(BAR_COLORS.hurt);
-    expect(barColor(0.25)).toBe(BAR_COLORS.hurt);
-    expect(barColor(0.24)).toBe(BAR_COLORS.critical);
+describe("healthColor", () => {
+  const close = (color: number[]) => color.map((c) => expect.closeTo(c));
+
+  it("is green when full, yellow at half and red when empty", () => {
+    expect(healthColor(1)).toEqual(close(BAR_COLORS.healthy));
+    expect(healthColor(0.5)).toEqual(close(BAR_COLORS.hurt));
+    expect(healthColor(0)).toEqual(close(BAR_COLORS.critical));
+  });
+
+  it("blends smoothly in between", () => {
+    const quarter = healthColor(0.25);
+    const { critical, hurt } = BAR_COLORS;
+    quarter.forEach((c, i) => {
+      expect(c).toBeCloseTo((critical[i] + hurt[i]) / 2);
+    });
+  });
+
+  it("clamps fractions outside 0 to 1", () => {
+    expect(healthColor(2)).toEqual(close(BAR_COLORS.healthy));
+    expect(healthColor(-1)).toEqual(close(BAR_COLORS.critical));
   });
 });

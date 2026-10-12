@@ -6,7 +6,7 @@ import { createRenderDebug, pushDebug, type RenderDebug } from "./debug";
 import { pushHealthBars } from "./healthBars";
 import type { QuadBuffer } from "./quads";
 import { pushFloatingText } from "./text";
-import { interpolatedPosition, pushSprites } from "./sprites";
+import { interpolatedPosition, pushSprites, SPRITE_LAYERS } from "./sprites";
 import { pushGround, pushWalls } from "./terrain";
 import { createView, type View } from "./view";
 
@@ -49,9 +49,10 @@ export type FrameSections = {
   debug: number;
 };
 
-// Every quad for one frame: ground and walls, then the sprite section
-// (health bars first so every sprite covers them, then enemies, projectiles
-// and the player, in that order), then the overlay (floating text, then
+// Every quad for one frame: ground and walls, then the sprite section, layer
+// by layer (things on the ground, enemies, projectiles, then the player),
+// each layer's health bars just before its sprites, so the player's bar
+// shows over enemies and theirs, then the overlay (floating text, then
 // whatever `drawOverlay` adds, like the HUD), then debug renders.
 //
 // Terrain writes depth and the sprite section only tests against it, so a
@@ -74,8 +75,10 @@ export function buildFrame(
   pushGround(out, world.tiles, view, art);
   pushWalls(out, world.tiles, view, art);
   const terrain = out.count;
-  pushHealthBars(out, world, view, alpha, art);
-  pushSprites(out, world, view, art, alpha, time);
+  for (const layer of SPRITE_LAYERS) {
+    pushHealthBars(out, world, view, alpha, art, layer);
+    pushSprites(out, world, view, art, alpha, time, layer);
+  }
   const sprites = out.count - terrain;
   pushFloatingText(out, world, view, art, alpha);
   drawOverlay?.(out);

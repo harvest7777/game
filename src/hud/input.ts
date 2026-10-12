@@ -6,6 +6,7 @@ import { sameSlot } from "../ecs/inventory/slots";
 import {
   placePanel,
   type Corner,
+  type CornerPanelId,
   type HudState,
   type PanelId,
   type Placement,
@@ -36,8 +37,10 @@ export function hitTest(panels: PlacedPanel[], point: Vec2): Hit | undefined {
     const y = point.y - panel.y;
     if (x < 0 || y < 0 || x >= panel.layout.w || y >= panel.layout.h) continue;
 
+    const scale = panel.layout.scale ?? 1;
     for (const element of panel.layout.elements) {
-      if (element.kind !== "slot" || !inside(element.rect, x, y)) continue;
+      if (element.kind !== "slot") continue;
+      if (!inside(element.rect, x * scale, y * scale)) continue;
       const hasItem = panel.layout.elements.some(
         (e) =>
           e.kind === "icon" &&
@@ -98,13 +101,15 @@ export function hudPointer(
     if (hit.slot && hit.hasItem && !state.editMode) {
       state.press = { at: point, dragging: false, item: hit.slot };
     } else if (state.editMode) {
-      // In edit mode, pressing anywhere on a panel grabs the whole panel.
-      const panel = panels.find((p) => p.id === hit.panel)!;
+      // In edit mode, pressing anywhere on a panel grabs its whole group, by
+      // the panel the group is placed with.
+      const root = rootOf(state, hit.panel);
+      const panel = panels.find((p) => p.id === root)!;
       state.press = {
         at: point,
         dragging: false,
         panel: {
-          id: panel.id,
+          id: root,
           grab: { x: point.x - panel.x, y: point.y - panel.y },
         },
       };
@@ -151,42 +156,34 @@ export function hudPointer(
     event.time - last.time <= DOUBLE_CLICK
   ) {
     state.lastClick = undefined;
-    const command = useItem(from, panels);
-    if (command) commands.push(command);
+    commands.push(useItem(from));
   } else {
     state.lastClick = { ref: from, time: event.time };
   }
   return { commands, used: true };
 }
 
-// Double-clicking an item: equip it from the inventory, or put a worn item
-// back in the first empty inventory slot.
-function useItem(ref: SlotRef, panels: PlacedPanel[]): Command | undefined {
-  if (ref.in === "inventory") return { kind: "equip", index: ref.index };
-  const empty = firstEmptyInventorySlot(panels);
-  return empty === undefined
-    ? undefined
-    : { kind: "move", from: ref, to: empty };
+// Double-clicking an item: equip it from the inventory, or take a worn item
+// off into the first empty inventory slot.
+function useItem(ref: SlotRef): Command {
+  return ref.in === "inventory"
+    ? { kind: "equip", index: ref.index }
+    : { kind: "unequip", slot: ref.slot };
 }
 
-function firstEmptyInventorySlot(panels: PlacedPanel[]): SlotRef | undefined {
-  const inventory = panels.find((p) => p.id === "inventory");
-  if (!inventory) return undefined;
-  const filled = inventory.layout.elements.flatMap((e) =>
-    e.kind === "icon" && e.ref ? [e.ref] : [],
-  );
-  for (const element of inventory.layout.elements) {
-    if (element.kind !== "slot") continue;
-    if (!filled.some((ref) => sameSlot(ref, element.ref))) return element.ref;
-  }
-  return undefined;
+// The screen-placed panel a panel hangs off, or the panel itself.
+function rootOf(state: HudState, id: PanelId): CornerPanelId {
+  const placement = state.panels[id];
+  return "corner" in placement
+    ? (id as CornerPanelId)
+    : rootOf(state, placement.to);
 }
 
 // Moves a panel so the grabbed point follows the pointer, kept on screen.
 function movePanel(
   state: HudState,
   panels: PlacedPanel[],
-  drag: { id: PanelId; grab: Vec2 },
+  drag: { id: CornerPanelId; grab: Vec2 },
   point: Vec2,
   screen: { w: number; h: number },
 ): void {
@@ -216,7 +213,7 @@ function movePanel(
 function snapToNearestCorner(
   state: HudState,
   panels: PlacedPanel[],
-  id: PanelId,
+  id: CornerPanelId,
   screen: { w: number; h: number },
 ): void {
   const panel = panels.find((p) => p.id === id);

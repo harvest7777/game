@@ -108,6 +108,21 @@ describe("inventorySystem", () => {
     ]);
   });
 
+  it("takes off what's worn into the first empty slot", () => {
+    const { world, player, c, run } = setup();
+    run({ kind: "unequip", slot: "weapon" });
+    expect(c.equipment.get(player)!.weapon).toBeNull();
+    expect(c.inventory.get(player)!.slots[2]).toEqual({ def: STAFF });
+    expect(c.shooter.has(player)).toBe(false);
+    expect(world.events.itemsMoved).toEqual([
+      {
+        entity: player,
+        from: { in: "equipment", slot: "weapon" },
+        to: { in: "inventory", index: 2 },
+      },
+    ]);
+  });
+
   it("gives items into the first empty slot", () => {
     const { world, player, c, run } = setup();
     run({ kind: "give", item: PHANTOM });

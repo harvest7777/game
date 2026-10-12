@@ -1,7 +1,13 @@
 import { armWithEquippedWeapon } from "../shared/arming";
 import type { Entity, World } from "../world";
 import type { SlotRef } from "./components";
-import { equipFromInventory, giveItem, moveItem, type Holdings } from "./slots";
+import {
+  equipFromInventory,
+  giveItem,
+  moveItem,
+  unequip,
+  type Holdings,
+} from "./slots";
 
 // Applies the player's item commands, in order, recording each move that
 // happened as an ItemMoved event. Commands that break the rules do nothing.
@@ -23,6 +29,10 @@ export function inventorySystem(world: World, _dt: number): void {
         const to = equipFromInventory(h, command.index);
         if (to)
           moved(world, entity, to, { in: "inventory", index: command.index });
+      } else if (command.kind === "unequip") {
+        const from: SlotRef = { in: "equipment", slot: command.slot };
+        const to = unequip(h, command.slot);
+        if (to) moved(world, entity, to, from);
       } else if (command.kind === "give") {
         const index = giveItem(h, { def: command.item });
         if (index !== undefined)

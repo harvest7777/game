@@ -7,6 +7,7 @@ import {
   fits,
   giveItem,
   moveItem,
+  unequip,
   type Holdings,
 } from "./slots";
 
@@ -125,6 +126,23 @@ describe("equipFromInventory", () => {
     const h = holdings(item(STAFF));
     expect(equipFromInventory(h, 0)).toBeUndefined();
     expect(h.equipment.weapon).toEqual(item(STAFF));
+  });
+});
+
+describe("unequip", () => {
+  it("moves what's worn into the first empty inventory slot", () => {
+    const h = holdings(item(STAFF), [item(LANCE)]);
+    expect(unequip(h, "weapon")).toEqual(inv(1));
+    expect(h.equipment.weapon).toBeNull();
+    expect(h.inventory.slots[1]).toEqual(item(STAFF));
+  });
+
+  it("does nothing when the inventory is full or the slot is empty", () => {
+    const full = Array.from({ length: INVENTORY_SIZE }, () => item(LANCE));
+    const h = holdings(item(STAFF), full);
+    expect(unequip(h, "weapon")).toBeUndefined();
+    expect(h.equipment.weapon).toEqual(item(STAFF));
+    expect(unequip(holdings(null), "weapon")).toBeUndefined();
   });
 });
 

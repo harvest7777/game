@@ -1,4 +1,5 @@
 import type { Equipment, Inventory, Item, SlotRef } from "./components";
+import type { ItemKind } from "./items";
 
 // Everything an entity holds, for the rules below.
 export type Holdings = { equipment: Equipment; inventory: Inventory };
@@ -46,6 +47,15 @@ export function equipFromInventory(
   if (!item) return undefined;
   const to: SlotRef = { in: "equipment", slot: item.def.kind };
   return moveItem(h, { in: "inventory", index }, to) ? to : undefined;
+}
+
+// Takes off what's worn in `slot`, putting it in the first empty inventory
+// slot. Returns where it went, if anywhere.
+export function unequip(h: Holdings, slot: ItemKind): SlotRef | undefined {
+  const index = h.inventory.slots.indexOf(null);
+  if (index === -1) return undefined;
+  const to: SlotRef = { in: "inventory", index };
+  return moveItem(h, { in: "equipment", slot }, to) ? to : undefined;
 }
 
 // Puts `item` in the first empty inventory slot. Returns which, if any.

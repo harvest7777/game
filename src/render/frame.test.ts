@@ -110,6 +110,36 @@ describe("buildFrame", () => {
     expect(debug[0].ring).toBeGreaterThan(0);
   });
 
+  it("draws the player's health bar over enemies and their bars", () => {
+    const { world, player } = worldWithPlayer();
+    world.components.health.set(player, { hp: 50, max: 100 });
+    const enemy = spawn(world);
+    addMovable(world, enemy, { at: { x: 12, y: 10 }, hitbox: { r: 0.4 } });
+    addSprite(world, enemy, {
+      art: { kind: "static", file: "orb" },
+      layer: "enemy",
+    });
+    world.components.health.set(enemy, { hp: 50, max: 100 });
+    const view = frameView(world, 1, 400, 400, 1);
+    const out = new QuadBuffer();
+
+    const sections = buildFrame(out, world, view, art, 1, 0);
+
+    const sprites = readQuads(out).slice(
+      sections.terrain,
+      sections.terrain + sections.sprites,
+    );
+    // Enemy bar (background and fill) and sprite, then the player's.
+    expect(sprites.map((q) => q.fill)).toEqual([
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+    ]);
+  });
+
   it("draws extra overlay quads after floating text and before debug renders", () => {
     const { world } = worldWithPlayer();
     const view = frameView(world, 1, 400, 400, 1);

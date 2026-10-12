@@ -1,10 +1,11 @@
-import type { Color } from "../ecs/sprite/components";
+import type { Color, SpriteLayer } from "../ecs/sprite/components";
 import type { World } from "../ecs/world";
 import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
 import {
   interpolatedPosition,
   marginOf,
+  SPRITE_LAYERS,
   SPRITE_PIXELS_PER_TILE,
   spritePixels,
 } from "./sprites";
@@ -26,28 +27,42 @@ export const BAR_COLORS = {
   critical: [0.9, 0.2, 0.2, 1] as Color,
 };
 
-// Color of the filled part: yellow below half health, red below a quarter.
-export function barColor(fraction: number): Color {
-  if (fraction < 0.25) return BAR_COLORS.critical;
-  if (fraction < 0.5) return BAR_COLORS.hurt;
-  return BAR_COLORS.healthy;
+// Color of a health bar's filled part, blending smoothly from red when
+// empty through yellow at half to green when full. Shared by the world's
+// bars and the HUD's, so they always match.
+export function healthColor(fraction: number): Color {
+  const f = Math.max(0, Math.min(1, fraction));
+  return f < 0.5
+    ? mix(BAR_COLORS.critical, BAR_COLORS.hurt, f / 0.5)
+    : mix(BAR_COLORS.hurt, BAR_COLORS.healthy, (f - 0.5) / 0.5);
+}
+
+function mix(a: Color, b: Color, t: number): Color {
+  return a.map((channel, i) => channel + (b[i] - channel) * t) as Color;
 }
 
 const NO_REGION = { x: 0, y: 0, w: 0, h: 0 };
 
 // A health bar under everything with health, centered under its sprite at
 // its interpolated position and always level on screen. Drawn as a dark
-// background with the remaining health filled in from the left. Each bar is
+// background with the remaining health filled in from the left, colored by
+// healthColor. Each bar is
 // at its owner's depth, so a wall in front of the owner hides the bar too.
+// With `only`, draws just the bars of entities on that sprite layer
+// (anything without a sprite counts as on the first layer).
 export function pushHealthBars(
   out: QuadBuffer,
   world: World,
   view: View,
   alpha: number,
   art?: Art,
+  only?: SpriteLayer,
 ): void {
   const pixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
   for (const [entity, health] of world.components.health) {
+    const layer =
+      world.components.sprite.get(entity)?.layer ?? SPRITE_LAYERS[0];
+    if (only !== undefined && layer !== only) continue;
     const position = interpolatedPosition(world, entity, alpha);
     if (!position || health.max <= 0) continue;
 
@@ -84,7 +99,7 @@ export function pushHealthBars(
     );
     if (fraction > 0) {
       const filled = left + (right - left) * fraction;
-      pushRect(out, left, top, filled, bottom, barColor(fraction), depth);
+      pushRect(out, left, top, filled, bottom, healthColor(fraction), depth);
     }
   }
 }

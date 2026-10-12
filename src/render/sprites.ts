@@ -16,13 +16,16 @@ export const OUTLINE_THICKNESS = 0.2;
 export const WALK_FPS = 8;
 const WALK_CYCLE = [1, 0, 2, 0];
 
-// Lower draws first, so the player ends up on top.
-const LAYER_ORDER: Record<SpriteLayer, number> = {
-  ground: 0,
-  enemy: 1,
-  projectile: 2,
-  player: 3,
-};
+// Sprite layers in the order they're drawn, so the player ends up on top.
+export const SPRITE_LAYERS: SpriteLayer[] = [
+  "ground",
+  "enemy",
+  "projectile",
+  "player",
+];
+const LAYER_ORDER = Object.fromEntries(
+  SPRITE_LAYERS.map((layer, i) => [layer, i]),
+) as Record<SpriteLayer, number>;
 
 // Where to draw an entity between ticks: `alpha` is how far the current frame
 // is from the previous tick (0) to the latest one (1).
@@ -86,7 +89,8 @@ type Placed = {
 // entity has a Rotation, in which case its art (which points right) is turned
 // to face that world direction as seen through the camera. Drawn by
 // layer, then from the top of the screen down so lower sprites overlap.
-// Sprites entirely off screen (outline and glow included) are skipped.
+// Sprites entirely off screen (outline and glow included) are skipped. With
+// `only`, draws just that layer's sprites.
 export function pushSprites(
   out: QuadBuffer,
   world: World,
@@ -94,11 +98,13 @@ export function pushSprites(
   art: Art,
   alpha: number,
   time: number,
+  only?: SpriteLayer,
 ): void {
   const basePixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
   const placed: (Placed & { halfW: number; halfH: number })[] = [];
 
   for (const [entity, sprite] of world.components.sprite) {
+    if (only !== undefined && sprite.layer !== only) continue;
     const position = interpolatedPosition(world, entity, alpha);
     if (!position) continue;
     const center = worldToScreen(view, position);

@@ -26,7 +26,7 @@ function setup() {
     carrying: [testItem({ name: "Lance" }), testItem({ name: "Comet" })],
   });
   const state = createHudState();
-  const panels = () => layoutHud(world, player, state, SCREEN);
+  const panels = () => layoutHud(world, player, state, SCREEN, 0);
   return { state, panels };
 }
 
@@ -97,7 +97,7 @@ describe("hitTest", () => {
   it("picks the panel on top where panels overlap", () => {
     const { state, panels } = setup();
     // Put the inventory (drawn last, so on top) right over the equipment.
-    state.panels.inventory = { ...state.panels.equipment };
+    state.panels.inventory = { to: "equipment", side: "right", gap: -54 };
     const p = panels();
     const equipment = p.find((x) => x.id === "equipment")!;
     expect(hitTest(p, { x: equipment.x + 1, y: equipment.y + 1 })?.panel).toBe(
@@ -225,9 +225,9 @@ describe("hudPointer", () => {
       ]);
     });
 
-    it("puts a worn item in the first empty inventory slot", () => {
+    it("takes a worn item off", () => {
       expect(doubleClick(worn).commands).toEqual([
-        { kind: "move", from: worn, to: inv(2) },
+        { kind: "unequip", slot: "weapon" },
       ]);
     });
 
@@ -276,6 +276,14 @@ describe("hudPointer", () => {
       send(state, p, { kind: "down", ...centerOf(p, worn), time: 0 });
       expect(state.press?.panel?.id).toBe("equipment");
       expect(state.press?.item).toBeUndefined();
+    });
+
+    it("grabs a panel's whole group by the panel it hangs off", () => {
+      const { state, panels } = setup();
+      state.editMode = true;
+      const p = panels();
+      send(state, p, { kind: "down", ...centerOf(p, inv(0)), time: 0 });
+      expect(state.press?.panel?.id).toBe("equipment");
     });
 
     it("drags a panel by its frame so the grabbed point follows", () => {
