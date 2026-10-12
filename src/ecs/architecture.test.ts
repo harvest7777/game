@@ -11,14 +11,18 @@ const sources = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"], {
 const isSystemModule = (source: string) =>
   /export function \w+System\(/.test(source);
 
-// Where each value (not type-only) import of `file` points, as a key into
-// `sources`.
+// Where each value (not type-only) import of `file` points within the ECS,
+// as a key into `sources`. Imports from outside it, like the dungeon
+// generator, can't be systems.
 function valueImports(file: string): string[] {
   const dir = file.slice(0, file.lastIndexOf("/"));
   const imports = sources[file].matchAll(
     /^import (?!type )[^;]*? from "(\.[^"]+)";/gms,
   );
-  return [...imports].map(([, path]) => resolve(dir, path) + ".ts");
+  return [...imports]
+    .map(([, path]) => resolve(dir, path))
+    .filter((path) => path.startsWith("."))
+    .map((path) => path + ".ts");
 }
 
 function resolve(dir: string, path: string): string {

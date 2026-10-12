@@ -706,6 +706,27 @@ SPRITES["tiles/grass"] = {
   },
 };
 
+// Dungeon ground: molten rock with cooler crust drifting on it. Tiles with
+// itself.
+SPRITES["tiles/lava"] = {
+  rows: [
+    "llllLlll",
+    "lLLlllll",
+    "llllllcc",
+    "lllyllll",
+    "cllllllL",
+    "llllLLll",
+    "llclllll",
+    "Llllllyl",
+  ],
+  colors: {
+    l: [214, 72, 26, 255], // lava
+    L: [244, 140, 44, 255], // bright flow
+    y: [255, 214, 92, 255], // hottest spot
+    c: [150, 40, 24, 255], // cooling crust
+  },
+};
+
 const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
   if (only.length > 0 && !only.includes(name)) continue;

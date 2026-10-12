@@ -1,6 +1,7 @@
 import { cameraSystem } from "./camera/system";
 import { containerAccessSystem } from "./container/system";
 import { gravestoneSystem } from "./character/system";
+import { hazardSystem } from "./hazard/system";
 import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
 import { hitSystem } from "./combat/hits";
@@ -30,7 +31,8 @@ import { statSystem } from "./stats/system";
 // velocity before movement applies it, and facing follows it.
 // Item commands apply before shooting, so a weapon swap fires on the same
 // tick. Bag lifetime and empty cleanup follow transfers. Proximity container
-// access updates after movement and only writes access state. Enemies pick
+// access updates after movement and only writes access state, and hazardous
+// ground burns whoever ends the move standing on it. Enemies pick
 // targets, move through their phases, then their brains steer
 // toward or around them, before shooting aims at them. Shooting aims before
 // facing, so this tick's aim decides which way a shooter
@@ -56,6 +58,7 @@ export const tickSystems: System[] = [
   projectileSystem,
   movementSystem,
   containerAccessSystem,
+  hazardSystem,
   hitSystem,
   projectileWallHitSystem,
   damageSystem,

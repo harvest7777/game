@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
-import { applyDamage, damageSystem, deathSystem } from "./damage";
+import { applyDamage } from "../shared/damage";
+import { damageSystem, deathSystem } from "./damage";
 
 function setup(hp = 50) {
   const world = createWorld(createTiles(1, 1));

@@ -5,6 +5,8 @@ import { commandHotkeys, type Command } from "./ecs/input/commands";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { runTick } from "./ecs/tick";
 import { loadLevel } from "./ecs/level/load";
+import type { LevelDef } from "./ecs/level/definitions";
+import { travel } from "./ecs/travel";
 import { levels } from "./content/levels";
 import { createManifest } from "./render/assets";
 import { contentArt } from "./content/art";
@@ -39,7 +41,9 @@ const canvas = document.getElementById("game") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 if (!gl) throw new Error("WebGL2 isn't available");
 
-const { world, spawn } = loadLevel(levels.nexus, Math.random, gameLoot);
+// The world being played and where characters arrive in it: replaced when
+// travelling to another level.
+let { world, spawn } = loadLevel(levels.nexus, Math.random, gameLoot);
 // Who's being played: replaced on respawn. Once they die, the entity has no
 // components left, so everything reading it finds nothing.
 let player = spawnCharacter(world, characters.wizard, spawn);
@@ -88,7 +92,27 @@ window.addEventListener("pointerdown", unlockAudio);
 // next tick.
 const pendingCommands: Command[] = [];
 
-const debug = installDebugPanel(world, pendingCommands, () => player);
+// Swaps to a fresh world for `level`, bringing the character along with all
+// its gear. A dead character has nothing to bring; respawning puts a new one
+// at the new spawn.
+function enterLevel(level: LevelDef) {
+  const next = loadLevel(level, Math.random, gameLoot);
+  if (world.components.character.has(player)) {
+    player = travel(world, next.world, player, next.spawn);
+  }
+  world = next.world;
+  spawn = next.spawn;
+  // Requests aimed at the old world, like moving a bag's item, mean nothing
+  // here.
+  pendingCommands.length = 0;
+}
+
+const debug = installDebugPanel(
+  () => world,
+  pendingCommands,
+  () => player,
+  enterLevel,
+);
 debug.characterSpawned(player);
 
 // Shown while there's no character: brings a fresh one back at the spawn.

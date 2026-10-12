@@ -9,6 +9,7 @@ import type {
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
 import type { Invulnerable, Vulnerable } from "./combat/components";
+import type { HazardExposure } from "./hazard/components";
 import type { Character } from "./character/components";
 import type { BossAction, Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
@@ -75,6 +76,7 @@ export type Components = {
   proximityContainer: Store<ProximityContainer>;
   containerAccess: Store<ContainerAccess>;
   lootBag: Store<LootBag>;
+  hazardExposure: Store<HazardExposure>;
 } & Record<StatKind, Store<StatValue>>;
 
 export type World = {
@@ -147,6 +149,7 @@ export function createWorld(
       proximityContainer: createStore(),
       containerAccess: createStore(),
       lootBag: createStore(),
+      hazardExposure: createStore(),
     },
   };
 }

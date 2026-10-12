@@ -1,12 +1,18 @@
 import type { Vec2 } from "./shared/physics/math";
 import type { SpriteFile } from "./sprite/art";
 
-// What a kind of ground is: how it looks, and how fast things walk on it.
+// What a kind of ground is: how it looks, how fast things walk on it, and
+// whether it hurts to stand on.
 export type GroundDef = {
   art: SpriteFile;
   // Multiplies walking speed on it. Defaults to 1.
   speedScale?: number;
+  hazard?: Hazard;
 };
+
+// Ground that burns characters standing on it: `damage` every `every`
+// seconds, ignoring defense, counting from when they step on.
+export type Hazard = { damage: number; every: number };
 
 // Grid of 1x1 tiles. Tile (x, y) covers [x, x + 1) x [y, y + 1), so its center
 // is (x + 0.5, y + 0.5). Anything outside the grid counts as a wall so nothing

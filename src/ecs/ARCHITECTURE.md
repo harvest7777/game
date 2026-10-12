@@ -11,13 +11,13 @@ An archetype is the set of components an entity currently has. Ex an enemy might
 A system is a series of pure helper functions that update the world state for some dt that has passed.
 
 - Game systems ONLY know how to update the WORLD based on some DELTA TIME.
-- Systems should never import each other, they MUST be completely self isolated. If they need to share some behavior, it goes in a helper under `src/ecs/shared/` (physics, firing, arming shooters, boss actions, teams). Only `tick.ts` imports systems, and `architecture.test.ts` fails if anything else does.
+- Systems should never import each other, they MUST be completely self isolated. If they need to share some behavior, it goes in a helper under `src/ecs/shared/` (physics, firing, arming shooters, boss actions, teams, damage). Only `tick.ts` imports systems, and `architecture.test.ts` fails if anything else does.
 
 # Content
 
-Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies`, `characters` and reusable loot definitions. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`, `LootTableDef`, `LootBagDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
+Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies`, `characters`, reusable loot definitions and `dungeons/`. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`, `LootTableDef`, `LootBagDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
 
-- **Definitions refer to each other directly**, by importing them: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so a typo or a missing definition doesn't compile, and nothing is looked up by id at runtime.
+- **Definitions refer to each other directly**, by importing them: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so a typo or a missing definition doesn't compile, and nothing is looked up by id at runtime. Dungeons are the first exception: they're JSON for a future asset maker, naming things by id, checked as they load (see Dungeons). New content formats head that way.
 - **Each folder's `index.ts` lists everything in it**, keyed by id, for debug pickers and for the content tests, which check every definition makes sense and that whatever it refers to is listed too.
 - **Art lives with what uses it** (see Art), so there are no sprite names to keep in sync.
 - **Engine tests don't use content.** They build what they need from the fixtures in `src/testing/defs.ts` (`testProjectile`, `testWeapon`, `testItem`, `testEnemy`, `testBoss`, `testCharacter`), passing only the fields the test is about, so retuning or removing content never breaks them.
@@ -28,13 +28,37 @@ To add something, add its file and list it in its folder's index.
 
 A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile, and its `legend` says what each character is: a wall, or a `GroundDef` to walk on, which can be the spawn (exactly one). Levels share the standard legend in `content/levels/legend.ts`: `#` wall, `,` grass, `=` wood, `~` water, `P` the wood characters spawn on. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
 
-A `GroundDef` (one file each under `src/content/grounds/`) is its tile art and an optional `speedScale`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed. Projectiles don't care.
+A `GroundDef` (one file each under `src/content/grounds/`) is its tile art, an optional `speedScale` and an optional `hazard`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed. Projectiles don't care.
+
+A `hazard` (`{ damage, every }`) burns characters standing on the ground, like `lava`. `hazardSystem` runs after movement and keeps a `HazardExposure` timer on each `player`-team entity standing on hazardous ground: every `every` seconds on it deals `damage` through `applyDamage`, ignoring defense. Stepping off drops the timer, so a quick hop across is free. Enemies never burn.
+
+`travel(from, to, entity, at)` moves an entity, with everything it has, into another world, leaving behind what only made sense in the old one (its target, container access and hazard timer). The camera follows if it was following it. `main.ts` uses it to swap the whole world when entering a level.
 
 The game starts in the **nexus**, a cozy place to rest between fights: a rounded square of grass crossed by a plus of boardwalks, with a ring of them around a fountain in the middle sheltered by low curved walls, a pond with a dock in each quarter, and nooks off each arm. Nothing hostile lives there.
 
+# Dungeons
+
+Dungeons are generated, not drawn. A `DungeonDef` is plain JSON (`src/content/dungeons/*.json`) naming enemies and grounds by registry id, so an asset maker can write one without code. The generator in `src/dungeon/` knows nothing about the game: it imports only itself (`dungeon/architecture.test.ts` checks), works in cell kinds (`void`, `wall`, `floor`, `corridor`, `liquid`, `accent`) and string ids, and is seeded, so the same definition and seed always build the same dungeon.
+
+`generateDungeon(spec, seed)` runs these stages in order, each a pure function with its own tests and an ASCII view for failures:
+
+1. **Graph** (`graph.ts`): a main path of rooms from `start` to `goal`, with branches ending in `deadEnd`s. A tree, no room joined to more than four others.
+2. **Shapes** (`shapes.ts`): each room's floor as a `Mask`, from the room spec its tag picked by weight: `rect`, `ellipse` or `cave` (cellular automata, retried when too small).
+3. **Placement** (`place.ts`): `grow` puts each room `gap` tiles off a random side of its parent, its middle within the parent's span, clear of every other room and corridor.
+4. **Routing** (`route.ts`): a corridor per edge, `width` wide, from the dungeon's list of routers tried in order: `straight` across a shared row or column, then `L` with one bend. Corridors never enter rooms they don't join.
+5. **Rasterize** (`grid.ts`): everything onto one `DungeonMap` of cell kinds, walls around anything walkable, with each room's cells and the entrances corridors come in by.
+6. **Features** (`features.ts`): `pool` (liquid or accent blobs), `pillars` and `border`. A try that would cut a room's safe floor in two or cover an entrance is undone and retried, then dropped.
+7. **Populate** (`populate.ts`): each room's spawn groups roll weighted picks (`count` of each per pick) and place them on safe floor: `scatter` (spaced, away from entrances), `center` or `ring`. Nothing spawns where characters arrive.
+
+A stage that can't satisfy its spec fails the attempt, and the next attempt starts over on a seed derived from the first (`deriveSeed`), up to 50 times, after which it throws naming the stages that failed. The result is also checked: every room must be reachable from the start without stepping in liquid.
+
+Every variable piece is a table keyed by `kind` (`SHAPES`, `PLACERS`, `ROUTERS`, `FEATURES`, `PLACEMENTS`), so a new kind is a new entry. `parseDungeonDef` checks a definition field by field against matching tables of checks, so a new kind without a check doesn't compile, and reports every problem with its path (`rooms.normal[1].shape.w: min is more than max`), unknown fields and unknown ids included. Content indexes check their files as they load (`dungeonDef`), and content tests build each dungeon from many seeds.
+
+`dungeonLevel(def, seed, registries)` (`ecs/level/dungeon.ts`) is the only place dungeons meet the game: it generates the dungeon and turns it into an ordinary `LevelDef`, drawing each cell kind as the theme's ground (liquid and accent fall back to floor) and resolving enemy ids through the registries. `loadLevel` takes it from there.
+
 # Debug panel
 
-`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver and an enemy spawner. Every new character is handed a kit of weapons to try.
+`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver, an enemy spawner, and a dungeon picker that enters any dungeon from a typed seed (or a random one, then shown as the seed box's hint) and a button back to the nexus. Every new character is handed a kit of weapons to try.
 
 # Characters
 
@@ -88,7 +112,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 The Health stat works on anything, player or enemy. Each tick, after movement:
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
-2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
+2. `damageSystem` applies each hit through `applyDamage` (`shared/damage.ts`), the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
 3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal, the player included. Only `invulnerable` keeps something alive.
 5. `cleanupSystem` removes everything queued.

@@ -1,7 +1,16 @@
+import {
+  dungeonIds,
+  dungeonRegistries,
+  dungeons,
+  type DungeonId,
+} from "../content/dungeons";
 import { enemies, enemyIds, type EnemyId } from "../content/enemies";
+import { levels } from "../content/levels";
 import { itemIds, items, type ItemId } from "../content/items";
 import { spawnCrowd, spawnEnemy } from "../ecs/enemy/spawn";
 import type { Command } from "../ecs/input/commands";
+import type { LevelDef } from "../ecs/level/definitions";
+import { dungeonLevel } from "../ecs/level/dungeon";
 import type { Entity, World } from "../ecs/world";
 import { createRenderDebug, type RenderDebug } from "../render/debug";
 
@@ -22,12 +31,15 @@ export type DebugPanel = {
 };
 
 // Wires up the overlay's debug controls: render toggles, invulnerability,
-// max stats, and pickers that give items and spawn enemies. `commands` is the
-// queue the next tick reads; `player` is whoever is being played right now.
+// max stats, pickers that give items and spawn enemies, and a way into any
+// dungeon by seed and back to the nexus. `world` and `player` are whatever is
+// current right now; `commands` is the queue the next tick reads; `enter`
+// swaps to a fresh world for a level.
 export function installDebugPanel(
-  world: World,
+  world: () => World,
   commands: Command[],
   player: () => Entity,
+  enter: (level: LevelDef) => void,
 ): DebugPanel {
   const renderDebug = createRenderDebug();
   checkbox("debugHitboxes", (on) => (renderDebug.hitboxes = on));
@@ -40,9 +52,10 @@ export function installDebugPanel(
   button("debugMaxStats", () => commands.push({ kind: "maxStats" }));
   function setInvulnerable(entity: Entity, on: boolean) {
     // A dead player has nothing left to protect.
-    if (!world.components.character.has(entity)) return;
-    if (on) world.components.invulnerable.set(entity, true);
-    else world.components.invulnerable.delete(entity);
+    const { character, invulnerable } = world().components;
+    if (!character.has(entity)) return;
+    if (on) invulnerable.set(entity, true);
+    else invulnerable.delete(entity);
   }
 
   // Puts the picked item in the first empty slot.
@@ -58,16 +71,36 @@ export function installDebugPanel(
   const enemyCount = element<HTMLInputElement>("debugCount");
   for (const id of enemyIds) enemyPicker.add(new Option(id, id));
   button("debugSpawn", () => {
-    const at = world.components.position.get(player());
+    const { position, shooter, facing } = world().components;
+    const at = position.get(player());
     if (!at) return;
-    const aim = world.components.shooter.get(player())?.aim ??
-      world.components.facing.get(player()) ?? { x: 1, y: 0 };
+    const aim = shooter.get(player())?.aim ??
+      facing.get(player()) ?? { x: 1, y: 0 };
     const center = { x: at.x + aim.x * 4, y: at.y + aim.y * 4 };
     const def = enemies[enemyPicker.value as EnemyId];
     const count = Math.max(1, Math.floor(Number(enemyCount.value) || 1));
-    if (count === 1) spawnEnemy(world, def, center);
-    else spawnCrowd(world, def, center, count);
+    if (count === 1) spawnEnemy(world(), def, center);
+    else spawnCrowd(world(), def, center, count);
   });
+
+  // Builds the picked dungeon from the typed seed, or a random one, which
+  // then shows as the seed box's hint so it can be built again.
+  const dungeonPicker = element<HTMLSelectElement>("debugDungeon");
+  const seedInput = element<HTMLInputElement>("debugSeed");
+  for (const id of dungeonIds) {
+    dungeonPicker.add(new Option(dungeons[id].name, id));
+  }
+  button("debugEnter", () => {
+    const typed = Math.floor(Number(seedInput.value));
+    const seed =
+      seedInput.value && Number.isFinite(typed)
+        ? typed
+        : Math.floor(Math.random() * 2 ** 31);
+    seedInput.placeholder = String(seed);
+    const def = dungeons[dungeonPicker.value as DungeonId];
+    enter(dungeonLevel(def, seed, dungeonRegistries));
+  });
+  button("debugNexus", () => enter(levels.nexus));
 
   return {
     renderDebug,
