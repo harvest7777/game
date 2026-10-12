@@ -26,9 +26,11 @@ To add something, add its file and list it in its folder's index.
 
 # Levels
 
-A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile: `#` wall, `.` floor, `P` the floor tile characters spawn on (exactly one). What each character means is the `TILE_LEGEND` table in `level/load.ts`, so a new kind of tile is a new entry. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
+A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile, and its `legend` says what each character is: a wall, or a `GroundDef` to walk on, which can be the spawn (exactly one). Levels share the standard legend in `content/levels/legend.ts`: `#` wall, `,` grass, `=` wood, `~` water, `P` the wood characters spawn on. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
 
-The game starts in the **nexus**: a safe plus of four 9-wide arms meeting where characters spawn, with nothing hostile in it.
+A `GroundDef` (one file each under `src/content/grounds/`) is its tile art and an optional `speedScale`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed. Projectiles don't care.
+
+The game starts in the **nexus**, a cozy place to rest between fights: a rounded square of grass crossed by a plus of boardwalks, with a ring of them around a fountain in the middle sheltered by low curved walls, a pond with a dock in each quarter, and nooks off each arm. Nothing hostile lives there.
 
 # Debug panel
 
@@ -59,7 +61,7 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 # Controls
 
-Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
+Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout; it starts off, and holding the left mouse button on the game shoots either way. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
 
 # Camera and movement input
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTiles,
   groundAt,
+  groundSpeedScale,
   isWall,
   setGround,
   setWall,
@@ -65,5 +66,17 @@ describe("groundAt", () => {
     const tiles = createTiles(3, 3);
     setGround(tiles, -1, 0, 7);
     expect(groundAt(tiles, -1, 0)).toBe(0);
+  });
+});
+
+describe("groundSpeedScale", () => {
+  it("is the ground's own scale, or 1 when it doesn't say", () => {
+    const tiles = createTiles(2, 1, [
+      { art: "grass" },
+      { art: "water", speedScale: 0.8 },
+    ]);
+    setGround(tiles, 1, 0, 1);
+    expect(groundSpeedScale(tiles, { x: 0.5, y: 0.5 })).toBe(1);
+    expect(groundSpeedScale(tiles, { x: 1.9, y: 0.2 })).toBe(0.8);
   });
 });

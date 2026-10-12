@@ -47,7 +47,6 @@ const small: Manifest = {
     { kind: "walker", front: ["a", "b"], back: ["a"], side: ["c"] },
     { kind: "static", file: "c" },
   ],
-  ground: { 0: "floor", 1: "floor" },
   fonts: { bold: { "1": "one" }, regular: {} },
   walls: { top: "top", side: "side" },
 };
@@ -55,7 +54,7 @@ const small: Manifest = {
 describe("manifestFiles", () => {
   it("lists each file the manifest uses once", () => {
     expect(manifestFiles(small).sort()).toEqual(
-      ["a", "b", "c", "floor", "one", "side", "top"].sort(),
+      ["a", "b", "c", "one", "side", "top"].sort(),
     );
   });
 });
@@ -64,7 +63,7 @@ describe("buildAtlas", () => {
   it("draws every file into one canvas at its region", async () => {
     const atlas = await buildAtlas(small, fakeLoad, fakeCanvas);
 
-    expect(atlas.canvas.draws).toHaveLength(7);
+    expect(atlas.canvas.draws).toHaveLength(6);
     for (const draw of atlas.canvas.draws) {
       const region = atlas.regions.get(draw.file)!;
       expect({ x: draw.x, y: draw.y }).toEqual({ x: region.x, y: region.y });

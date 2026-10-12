@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Action } from "../input/actions";
 import { testWeapon } from "../../testing/defs";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
@@ -78,5 +79,22 @@ describe("facingSystem", () => {
     facingSystem(world, 1);
 
     expect(facingOf()).toEqual({ x: -1, y: 0 });
+  });
+
+  it("faces the cursor while Shoot is held, even with autofire off", () => {
+    const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
+    const [[entity]] = [...world.components.facing];
+    world.components.playerControlled.set(entity, true);
+    world.components.autoFire.set(entity, false);
+    world.input.held = new Set([Action.Shoot]);
+    world.components.shooter.set(entity, {
+      weapon: testWeapon(),
+      cooldown: 0,
+      aim: { x: 0, y: -1 },
+    });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: 0, y: -1 });
   });
 });

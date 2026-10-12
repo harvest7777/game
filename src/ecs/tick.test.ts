@@ -14,13 +14,14 @@ const DT = 0.1;
 const START = { x: 10, y: 10 };
 const R = 0.4;
 
-// A player standing in the middle of an open 20x20 map.
+// A player standing in the middle of an open 20x20 map, with autofire on.
 function setup() {
   const world = createWorld(createTiles(20, 20));
   const player = spawn(world);
   addMovable(world, player, { at: START, hitbox: { r: R } });
   addControllable(world, player, { speed: SPEED });
   world.components.team.set(player, "player");
+  world.components.autoFire.set(player, true);
   addSprite(world, player, {
     art: { kind: "static", file: "player" },
     layer: "player",
@@ -146,6 +147,20 @@ describe("runTick", () => {
         }));
       return { ...setupResult, shots };
     }
+
+    it("holds fire with autofire off until Shoot is held", () => {
+      const { world, shots } = shooting();
+      const player = [...world.components.playerControlled][0][0];
+      world.components.autoFire.set(player, false);
+      world.input.aim = { x: START.x, y: START.y - 5 };
+
+      runTick(world, DT);
+      expect(shots()).toHaveLength(0);
+
+      world.input.held = new Set([Action.Shoot]);
+      runTick(world, DT);
+      expect(shots()).toHaveLength(1);
+    });
 
     it("autofires toward the cursor, already moving on the first tick", () => {
       const { world, shots } = shooting();

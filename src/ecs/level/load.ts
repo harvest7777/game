@@ -1,23 +1,21 @@
 import { spawnEnemy } from "../enemy/spawn";
 import type { Vec2 } from "../shared/physics/math";
-import { createTiles, setWall, type Tiles } from "../tiles";
+import { createTiles, setGround, setWall, type Tiles } from "../tiles";
 import { createWorld, type World } from "../world";
 import type { LevelDef } from "./definitions";
-
-// What each map character means. Adding a kind of tile is adding an entry.
-export const TILE_LEGEND = {
-  "#": { wall: true },
-  ".": { wall: false },
-  // Floor where characters spawn.
-  P: { wall: false, spawn: true },
-} satisfies Record<string, { wall: boolean; spawn?: boolean }>;
 
 // A level's tiles, and the center of its spawn tile. Throws on a map that
 // breaks the rules, so a bad level fails as soon as it's loaded.
 export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
-  const { map } = level;
+  const { map, legend } = level;
   const width = map[0]?.length ?? 0;
-  const tiles = createTiles(width, map.length);
+  // Each ground in the legend becomes a ground type, numbered in order.
+  const grounds = [
+    ...new Set(
+      Object.values(legend).flatMap((tile) => (tile.wall ? [] : [tile.ground])),
+    ),
+  ];
+  const tiles = createTiles(width, map.length, grounds);
   const spawns: Vec2[] = [];
 
   map.forEach((row, y) => {
@@ -25,10 +23,13 @@ export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
       throw new Error(`${level.name}: row ${y} isn't ${width} tiles wide`);
     }
     [...row].forEach((char, x) => {
-      const tile: { wall: boolean; spawn?: boolean } | undefined =
-        TILE_LEGEND[char as keyof typeof TILE_LEGEND];
+      const tile = legend[char];
       if (!tile) throw new Error(`${level.name}: unknown tile "${char}"`);
-      setWall(tiles, x, y, tile.wall);
+      if (tile.wall) {
+        setWall(tiles, x, y);
+        return;
+      }
+      setGround(tiles, x, y, grounds.indexOf(tile.ground));
       if (tile.spawn) spawns.push({ x: x + 0.5, y: y + 0.5 });
     });
   });

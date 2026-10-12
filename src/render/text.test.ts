@@ -15,7 +15,6 @@ const digits = [..."0123456789"];
 const art: Art = {
   manifest: {
     sprites: [],
-    ground: {},
     walls: { top: "top", side: "side" },
     fonts: {
       bold: Object.fromEntries(digits.map((d) => [d, `font/${d}`])),

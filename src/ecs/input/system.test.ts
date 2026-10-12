@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Vec2 } from "../shared/physics/math";
-import { createTiles } from "../tiles";
+import { createTiles, setGround } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
 import { Action } from "./actions";
 import { autoFireSystem, CROUCH_SPEED, playerInputSystem } from "./system";
@@ -116,6 +116,26 @@ describe("playerInputSystem", () => {
     playerInputSystem(world, 1);
 
     expectVelocity(world, enemy, 0, 1);
+  });
+});
+
+describe("playerInputSystem on slow ground", () => {
+  it("scales the speed by the ground under the player", () => {
+    const water = { art: "water", speedScale: 0.8 };
+    const world = createWorld(createTiles(2, 1, [{ art: "grass" }, water]));
+    setGround(world.tiles, 1, 0, 1);
+    world.input.held = new Set([Action.Right]);
+    const player = spawn(world);
+    world.components.playerControlled.set(player, true);
+    world.components.speed.set(player, SPEED);
+
+    world.components.position.set(player, { x: 0.5, y: 0.5 });
+    playerInputSystem(world, 1);
+    expect(velocityOf(world, player).x).toBeCloseTo(SPEED);
+
+    world.components.position.set(player, { x: 1.5, y: 0.5 });
+    playerInputSystem(world, 1);
+    expect(velocityOf(world, player).x).toBeCloseTo(SPEED * 0.8);
   });
 });
 

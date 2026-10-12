@@ -1,3 +1,4 @@
+import { groundSpeedScale } from "../tiles";
 import type { World } from "../world";
 import { freshMemory, steer } from "./behaviors";
 import { phaseOf } from "./definitions";
@@ -9,7 +10,8 @@ import { bossStage } from "../shared/bossActions";
 // otherwise, taken from their current phase when it sets them. Switching
 // starts the new behavior fresh. Enemies that move also ease apart from
 // each other so they don't pile up. It only sets velocity, the way player
-// input does, so movement handles walls for enemies too.
+// input does, so movement handles walls for enemies too. Slow ground, like
+// water, slows them as it does the player.
 export function brainSystem(world: World, dt: number): void {
   const { enemy, brain, position, target, speed, velocity } = world.components;
   const pushes = separation(world);
@@ -31,7 +33,8 @@ export function brainSystem(world: World, dt: number): void {
     }
 
     const behavior = phaseOf(def, e.phase?.name)?.[mode] ?? def[mode];
-    const moveSpeed = speed.get(entity) ?? def.speed;
+    const moveSpeed =
+      (speed.get(entity) ?? def.speed) * groundSpeedScale(world.tiles, at);
     const stageMove =
       actionStage &&
       stageVelocity(actionStage.movement, {

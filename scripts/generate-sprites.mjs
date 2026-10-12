@@ -636,6 +636,60 @@ SPRITES["characters/gravestone"] = [
   "MMMMMMMM",
 ];
 
+// Nexus ground: warm planks, still water and soft grass. Each tiles with
+// itself, so neighbours line up seamlessly.
+SPRITES["tiles/wood"] = {
+  rows: [
+    "hhhhhhhh",
+    "hhkkkhhh",
+    "hhhhhhHH",
+    "jjjjjjjj",
+    "Hhhhhhhh",
+    "hhhhkkkh",
+    "hhhhhhhh",
+    "jjjjjjjj",
+  ],
+  colors: {
+    h: [176, 122, 72, 255], // plank
+    H: [198, 144, 90, 255], // plank highlight
+    k: [154, 104, 60, 255], // grain
+    j: [118, 78, 44, 255], // gap between planks
+  },
+};
+SPRITES["tiles/water"] = {
+  rows: [
+    "aaaaaaaa",
+    "aaAAaaaa",
+    "aaaaAaaa",
+    "aaaaaaaa",
+    "aaaaaaaa",
+    "aaaaaaAA",
+    "Aaaaaaaa",
+    "aaaaaaaa",
+  ],
+  colors: {
+    a: [64, 132, 196, 255], // water
+    A: [150, 206, 236, 255], // ripple
+  },
+};
+SPRITES["tiles/grass"] = {
+  rows: [
+    "vvvvvVvv",
+    "vVvvvvvv",
+    "vvvvvvvf",
+    "vvvvvvvv",
+    "vvvVvvvv",
+    "vvvvvvVv",
+    "vVvvvvvv",
+    "vvvvvvvv",
+  ],
+  colors: {
+    v: [96, 152, 80, 255], // grass
+    V: [124, 180, 98, 255], // blade highlight
+    f: [176, 204, 112, 255], // clover
+  },
+};
+
 const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
   if (only.length > 0 && !only.includes(name)) continue;

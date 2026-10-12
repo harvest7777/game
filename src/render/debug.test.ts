@@ -12,7 +12,6 @@ import { createView, TILE_PIXELS, worldToScreen } from "./view";
 const NO_ART: Art = {
   manifest: {
     sprites: [],
-    ground: {},
     walls: { top: "top", side: "side" },
     fonts: { bold: {}, regular: {} },
   },

@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { testEnemy } from "../../testing/defs";
-import { isWall } from "../tiles";
+import { groundUnder, isWall } from "../tiles";
 import type { LevelDef } from "./definitions";
 import { levelTiles, loadLevel } from "./load";
 
+const FLOOR = { art: "floor" };
+const MUD = { art: "mud", speedScale: 0.5 };
+const LEGEND: LevelDef["legend"] = {
+  "#": { wall: true },
+  ".": { ground: FLOOR },
+  m: { ground: MUD },
+  P: { ground: FLOOR, spawn: true },
+};
+
 const ROOM: LevelDef = {
   name: "room",
+  legend: LEGEND,
   map: [
     "#####", //
-    "#...#",
+    "#.m.#",
     "#.P.#",
     "#####",
   ],
@@ -22,6 +32,12 @@ describe("levelTiles", () => {
     expect(isWall(tiles, 1, 1)).toBe(false);
   });
 
+  it("gives each tile its legend's ground", () => {
+    const { tiles } = levelTiles(ROOM);
+    expect(groundUnder(tiles, { x: 1.5, y: 1.5 })).toBe(FLOOR);
+    expect(groundUnder(tiles, { x: 2.5, y: 1.5 })).toBe(MUD);
+  });
+
   it("spawns at the center of the P tile, which is floor", () => {
     const { tiles, spawn } = levelTiles(ROOM);
     expect(spawn).toEqual({ x: 2.5, y: 2.5 });
@@ -30,17 +46,25 @@ describe("levelTiles", () => {
 
   it("refuses rows of different lengths", () => {
     const map = ["###", "#P", "###"];
-    expect(() => levelTiles({ name: "ragged", map })).toThrow(/row 1/);
+    expect(() => levelTiles({ name: "ragged", legend: LEGEND, map })).toThrow(
+      /row 1/,
+    );
   });
 
   it("refuses unknown tiles", () => {
     const map = ["#?#", "#P#"];
-    expect(() => levelTiles({ name: "odd", map })).toThrow(/"\?"/);
+    expect(() => levelTiles({ name: "odd", legend: LEGEND, map })).toThrow(
+      /"\?"/,
+    );
   });
 
   it("needs exactly one spawn", () => {
-    expect(() => levelTiles({ name: "none", map: ["#.#"] })).toThrow();
-    expect(() => levelTiles({ name: "two", map: ["PP"] })).toThrow();
+    expect(() =>
+      levelTiles({ name: "none", legend: LEGEND, map: ["#.#"] }),
+    ).toThrow();
+    expect(() =>
+      levelTiles({ name: "two", legend: LEGEND, map: ["PP"] }),
+    ).toThrow();
   });
 });
 

@@ -1,13 +1,10 @@
 import type { SpriteArt, SpriteFile } from "../ecs/sprite/art";
-import type { GroundType } from "../ecs/tiles";
 
 export type Manifest = {
   // Each font maps characters to their glyph files.
   fonts: Record<FontName, Record<string, SpriteFile>>;
   // Every piece of art the game can show, so the atlas loads it all.
   sprites: SpriteArt[];
-  // Keyed by ground type id.
-  ground: Record<GroundType, SpriteFile>;
   walls: { top: SpriteFile; side: SpriteFile };
 };
 
@@ -46,8 +43,8 @@ function fontFiles(font: FontName, chars: string): Record<string, SpriteFile> {
   );
 }
 
-// The manifest for `sprites`, the game's art, plus the fonts and tiles the
-// renderer always needs.
+// The manifest for `sprites`, the game's art (ground included), plus the
+// fonts and walls the renderer always needs.
 export function createManifest(sprites: SpriteArt[]): Manifest {
   return {
     fonts: {
@@ -59,7 +56,6 @@ export function createManifest(sprites: SpriteArt[]): Manifest {
       ),
     },
     sprites,
-    ground: { 0: "tiles/floor" },
     walls: { top: "tiles/wall-top", side: "tiles/wall-side" },
   };
 }
@@ -79,7 +75,6 @@ export function manifestFiles(m: Manifest): SpriteFile[] {
       }
     }
   }
-  Object.values(m.ground).forEach((f) => files.add(f));
   for (const font of Object.values(m.fonts)) {
     Object.values(font).forEach((f) => files.add(f));
   }

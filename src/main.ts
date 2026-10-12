@@ -1,6 +1,7 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
 import {
+  Action,
   actionsFromKeys,
   keybindPresets,
   type KeybindPreset,
@@ -162,24 +163,33 @@ window.addEventListener("keyup", (event) => {
 // so aiming uses exactly what's on screen.
 let cursor: Vec2 | undefined;
 let lastView: View | undefined;
+// Whether the left button is held down on the game rather than the HUD,
+// which shoots.
+let shooting = false;
 canvas.addEventListener("mousemove", (event) => {
   cursor = { x: event.clientX, y: event.clientY };
   toHud(event, "move");
 });
 canvas.addEventListener("mousedown", (event) => {
-  if (event.button === 0) toHud(event, "down");
+  if (event.button === 0) shooting = !toHud(event, "down");
 });
 // On the window so letting go outside the game still ends a drag.
 window.addEventListener("mouseup", (event) => {
-  if (event.button === 0) toHud(event, "up");
+  if (event.button !== 0) return;
+  shooting = false;
+  toHud(event, "up");
+});
+window.addEventListener("blur", () => {
+  shooting = false;
 });
 canvas.addEventListener("mouseleave", () => {
   hudPointer(hudState, { kind: "leave" }, [], { w: 0, h: 0 });
 });
 
 // Passes a mouse event to the HUD in UI pixels, queues whatever it asks for,
-// and saves the layout when a panel is dropped.
-function toHud(event: MouseEvent, kind: "move" | "down" | "up") {
+// and saves the layout when a panel is dropped. Returns whether the HUD used
+// the event.
+function toHud(event: MouseEvent, kind: "move" | "down" | "up"): boolean {
   const dpr = window.devicePixelRatio;
   const pixel = uiPixel(dpr);
   const screen = uiScreen(
@@ -204,6 +214,7 @@ function toHud(event: MouseEvent, kind: "move" | "down" | "up") {
       // Not saved, but the panel still moved.
     }
   }
+  return used;
 }
 
 function cursorInWorld(): Vec2 | undefined {
@@ -234,6 +245,7 @@ function callback() {
   accumulator += deltaTime;
   while (accumulator >= TIME_PER_TICK_MS) {
     world.input.held = actionsFromKeys(inputs, keybinds);
+    if (shooting) world.input.held.add(Action.Shoot);
     world.input.commands = pendingCommands.splice(0);
     world.input.aim = cursorInWorld();
     runTick(world, TICK_SECONDS);

@@ -28,11 +28,10 @@ export function pushGround(
 
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
-      const file = art.manifest.ground[groundAt(tiles, x, y)];
-      if (file === undefined) {
-        throw new Error(`no art for ground type ${groundAt(tiles, x, y)}`);
-      }
-      pushTile(out, basis, x, y, 0, regionOf(art, file));
+      const type = groundAt(tiles, x, y);
+      const ground = tiles.grounds[type];
+      if (!ground) throw new Error(`no definition for ground type ${type}`);
+      pushTile(out, basis, x, y, 0, regionOf(art, ground.art));
     }
   }
 }

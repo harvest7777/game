@@ -48,7 +48,6 @@ describe("pushText", () => {
   const art: Art = {
     manifest: {
       sprites: [],
-      ground: {},
       walls: { top: "top", side: "side" },
       fonts: { regular: font, bold: {} },
     },

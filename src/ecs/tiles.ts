@@ -1,26 +1,40 @@
 import type { Vec2 } from "./shared/physics/math";
+import type { SpriteFile } from "./sprite/art";
+
+// What a kind of ground is: how it looks, and how fast things walk on it.
+export type GroundDef = {
+  art: SpriteFile;
+  // Multiplies walking speed on it. Defaults to 1.
+  speedScale?: number;
+};
 
 // Grid of 1x1 tiles. Tile (x, y) covers [x, x + 1) x [y, y + 1), so its center
 // is (x + 0.5, y + 0.5). Anything outside the grid counts as a wall so nothing
 // can leave the map.
 //
-// `ground` holds each tile's ground type id, which only decides how the tile
-// looks; what the ids mean is up to the renderer. 0 is the default ground.
+// `ground` holds each tile's ground type, an index into `grounds`. 0 is the
+// default ground.
 export type Tiles = {
   width: number;
   height: number;
   walls: Uint8Array;
   ground: Uint16Array;
+  grounds: GroundDef[];
 };
 
 export type GroundType = number;
 
-export function createTiles(width: number, height: number): Tiles {
+export function createTiles(
+  width: number,
+  height: number,
+  grounds: GroundDef[] = [],
+): Tiles {
   return {
     width,
     height,
     walls: new Uint8Array(width * height),
     ground: new Uint16Array(width * height),
+    grounds,
   };
 }
 
@@ -52,6 +66,17 @@ export function setGround(
 export function groundAt(tiles: Tiles, x: number, y: number): GroundType {
   if (!inBounds(tiles, x, y)) return 0;
   return tiles.ground[y * tiles.width + x];
+}
+
+// The ground under a point, if its type is defined.
+export function groundUnder(tiles: Tiles, at: Vec2): GroundDef | undefined {
+  return tiles.grounds[groundAt(tiles, Math.floor(at.x), Math.floor(at.y))];
+}
+
+// How much the ground under a point scales walking speed: 1 unless the
+// ground says otherwise.
+export function groundSpeedScale(tiles: Tiles, at: Vec2): number {
+  return groundUnder(tiles, at)?.speedScale ?? 1;
 }
 
 // Tile coordinates of every wall whose square overlaps the given box.

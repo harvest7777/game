@@ -47,7 +47,6 @@ const ORB: SpriteArt = { kind: "static", file: "orb" };
 const manifest: Manifest = {
   sprites: [HERO, PLAIN_WALKER, BOSS, ORB],
   fonts: { bold: {}, regular: {} },
-  ground: {},
   walls: { top: "top", side: "side" },
 };
 const files = [

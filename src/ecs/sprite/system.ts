@@ -1,3 +1,4 @@
+import { wantsToFire } from "../shared/firing";
 import type { World } from "../world";
 
 // Points each entity's facing, RotMG style: a shooter faces where it's aiming
@@ -6,11 +7,9 @@ import type { World } from "../world";
 // walking into a wall still faces the wall. Entities that aren't moving or
 // aiming keep their last facing.
 export function facingSystem(world: World, _dt: number): void {
-  const { facing, velocity, shooter, playerControlled, autoFire } =
-    world.components;
+  const { facing, velocity, shooter } = world.components;
   for (const [entity, current] of facing) {
-    const shooting =
-      !playerControlled.has(entity) || autoFire.get(entity) !== false;
+    const shooting = wantsToFire(world, entity);
     const v =
       (shooting ? shooter.get(entity)?.aim : undefined) ?? velocity.get(entity);
     if (!v) continue;

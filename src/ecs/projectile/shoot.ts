@@ -1,6 +1,6 @@
 import type { Vec2 } from "../shared/physics/math";
 import type { Entity, World } from "../world";
-import { fireWeapon } from "../shared/firing";
+import { fireWeapon, wantsToFire } from "../shared/firing";
 
 // Autofire: every shooter fires its weapon at the weapon's rate, from where
 // it stands, every projectile of each shot at once.
@@ -23,7 +23,7 @@ export function shootSystem(world: World, dt: number): void {
     // Only the player fires without a target. Anything else holds fire,
     // ready to shoot the moment it has something to shoot at.
     const player = world.components.playerControlled.has(entity);
-    if (player && world.components.autoFire.get(entity) === false) {
+    if (player && !wantsToFire(world, entity)) {
       s.cooldown = Math.max(0, s.cooldown - dt);
       continue;
     }

@@ -10,7 +10,6 @@ import { QuadBuffer, readQuads, type Quad } from "./quads";
 const manifest: Manifest = {
   sprites: [],
   fonts: { bold: {}, regular: {} },
-  ground: { 0: "floor" },
   walls: { top: "top", side: "side" },
 };
 const files = ["floor", "top", "side", "orb"];
@@ -22,7 +21,7 @@ const art: Art = {
 const fileOf = (q: Quad) => files[q.region.x / 10];
 
 function worldWithPlayer() {
-  const world = createWorld(createTiles(20, 20));
+  const world = createWorld(createTiles(20, 20, [{ art: "floor" }]));
   const player = spawn(world);
   addMovable(world, player, { at: { x: 12, y: 10 }, hitbox: { r: 0.4 } });
   addSprite(world, player, {

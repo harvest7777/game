@@ -1,6 +1,7 @@
 import type { SpriteArt } from "../ecs/sprite/art";
 import { characters } from "./characters";
 import { enemies } from "./enemies";
+import { grounds } from "./grounds";
 import { projectiles } from "./projectiles";
 import { items } from "./items";
 
@@ -20,6 +21,10 @@ export function contentArt(): SpriteArt[] {
       ...Object.values(projectiles).map((def) => def.sprite.art),
       ...Object.values(enemies).map((def) => def.sprite.art),
       ...icons,
+      ...Object.values(grounds).map((ground): SpriteArt => ({
+        kind: "static",
+        file: ground.art,
+      })),
     ]),
   ];
 }

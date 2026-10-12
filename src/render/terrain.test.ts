@@ -9,10 +9,12 @@ import { pushGround, pushWalls, WALL_HEIGHT } from "./terrain";
 import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 
 const LAVA = 3;
+const FLOOR = { art: "floor" };
+// Type 0 is floor and LAVA is lava; the types between are floor too.
+const GROUNDS = [FLOOR, FLOOR, FLOOR, { art: "lava" }];
 const manifest: Manifest = {
   sprites: [],
   fonts: { bold: {}, regular: {} },
-  ground: { 0: "floor", [LAVA]: "lava" },
   walls: { top: "top", side: "side" },
 };
 // Each file gets its own x so a quad's region says which file it is.
@@ -58,33 +60,39 @@ function lifted(p: Vec2): Vec2 {
 describe("pushGround", () => {
   it("draws only tiles on screen", () => {
     // Visible x and y run 7.5..12.5, touching tiles 7..12.
-    const quads = ground(createTiles(20, 20), viewAt({ x: 10, y: 10 }));
+    const quads = ground(
+      createTiles(20, 20, GROUNDS),
+      viewAt({ x: 10, y: 10 }),
+    );
     expect(quads).toHaveLength(6 * 6);
   });
 
   it("draws nothing outside the map", () => {
     // Visible x and y run -2.5..2.5, but only tiles 0..2 exist.
-    const quads = ground(createTiles(20, 20), viewAt({ x: 0, y: 0 }));
+    const quads = ground(createTiles(20, 20, GROUNDS), viewAt({ x: 0, y: 0 }));
     expect(quads).toHaveLength(3 * 3);
   });
 
   it("draws more tiles when zoomed out", () => {
     // 10x10 tiles visible: 5..15.
-    const quads = ground(createTiles(20, 20), viewAt({ x: 10, y: 10 }, 0, 0.5));
+    const quads = ground(
+      createTiles(20, 20, GROUNDS),
+      viewAt({ x: 10, y: 10 }, 0, 0.5),
+    );
     expect(quads).toHaveLength(11 * 11);
   });
 
   it("rotates each tile with the camera", () => {
     const view = viewAt({ x: 0.5, y: 0.5 }, 0.6);
 
-    const [tile] = ground(createTiles(1, 1), view);
+    const [tile] = ground(createTiles(1, 1, GROUNDS), view);
 
     const at = (x: number, y: number) => worldToScreen(view, { x, y });
     expectCorners(tile, [at(0, 0), at(1, 0), at(1, 1), at(0, 1)]);
   });
 
   it("uses each tile's ground art", () => {
-    const tiles = createTiles(20, 20);
+    const tiles = createTiles(20, 20, GROUNDS);
     setGround(tiles, 10, 10, LAVA);
 
     const quads = ground(tiles, viewAt({ x: 10, y: 10 }));
@@ -93,8 +101,8 @@ describe("pushGround", () => {
     expect(quads.filter((q) => fileOf(q) === "floor")).toHaveLength(35);
   });
 
-  it("refuses a ground type with no art", () => {
-    const tiles = createTiles(20, 20);
+  it("refuses a ground type with no definition", () => {
+    const tiles = createTiles(20, 20, GROUNDS);
     setGround(tiles, 10, 10, 99);
     expect(() => ground(tiles, viewAt({ x: 10, y: 10 }))).toThrow();
   });
@@ -103,7 +111,7 @@ describe("pushGround", () => {
 describe("pushWalls", () => {
   // A lone wall at (10, 10) on an open map.
   function lone(angle: number) {
-    const tiles = createTiles(20, 20);
+    const tiles = createTiles(20, 20, GROUNDS);
     setWall(tiles, 10, 10);
     const view = viewAt({ x: 10.5, y: 10.5 }, angle);
     const at = (x: number, y: number) => worldToScreen(view, { x, y });
@@ -163,7 +171,7 @@ describe("pushWalls", () => {
   });
 
   it("hides faces that are against another wall", () => {
-    const tiles = createTiles(20, 20);
+    const tiles = createTiles(20, 20, GROUNDS);
     setWall(tiles, 10, 10);
     setWall(tiles, 10, 11);
 
@@ -174,7 +182,7 @@ describe("pushWalls", () => {
   });
 
   it("shows faces looking out past the edge of the map", () => {
-    const tiles = createTiles(20, 20);
+    const tiles = createTiles(20, 20, GROUNDS);
     // Bottom row: its south neighbour is outside the map.
     setWall(tiles, 10, 19);
 
@@ -184,7 +192,7 @@ describe("pushWalls", () => {
   });
 
   it("draws walls higher on screen first so nearer ones cover them", () => {
-    const tiles = createTiles(20, 20);
+    const tiles = createTiles(20, 20, GROUNDS);
     setWall(tiles, 9, 9);
     setWall(tiles, 12, 11);
     // Turned around, so the wall farther south is higher on screen, the
@@ -201,7 +209,7 @@ describe("pushWalls", () => {
   });
 
   it("includes walls just off the bottom of the screen whose top reaches in", () => {
-    const tiles = createTiles(30, 30);
+    const tiles = createTiles(30, 30, GROUNDS);
     // Visible y runs 7.5..12.5; this wall's face and top cover 12..14.
     setWall(tiles, 10, 13);
     setWall(tiles, 10, 25);

@@ -23,7 +23,6 @@ const LANCE = testItem({ name: "Lance", icon: "items/lance" });
 const art: Art = {
   manifest: {
     sprites: [],
-    ground: {},
     walls: { top: "top", side: "side" },
     fonts: { bold: {}, regular: { W: "rW" } },
   },

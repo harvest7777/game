@@ -3,6 +3,7 @@ import { testWeapon } from "../../testing/defs";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type World } from "../world";
+import { Action } from "../input/actions";
 import { shootSystem } from "./shoot";
 import type { WeaponDef } from "./weapons";
 
@@ -21,7 +22,10 @@ function setup(weapon: WeaponDef = STAFF, player = true) {
   c.facing.set(shooter, { x: 0, y: 1 });
   c.team.set(shooter, "player");
   c.shooter.set(shooter, { weapon, cooldown: 0 });
-  if (player) c.playerControlled.set(shooter, true);
+  if (player) {
+    c.playerControlled.set(shooter, true);
+    c.autoFire.set(shooter, true);
+  }
   return { world, shooter };
 }
 
@@ -78,6 +82,16 @@ describe("shootSystem", () => {
 
     expect(shots(world)).toEqual([]);
     expect(world.components.shooter.get(shooter)!.cooldown).toBe(0);
+  });
+
+  it("fires while Shoot is held, even with autofire off", () => {
+    const { world, shooter } = setup();
+    world.components.autoFire.set(shooter, false);
+    world.input.held = new Set([Action.Shoot]);
+
+    tick(world);
+
+    expect(shots(world)).toHaveLength(1);
   });
 
   describe("aim", () => {

@@ -1,3 +1,4 @@
+import { Action } from "../input/actions";
 import { fireProjectile } from "../projectile/spawn";
 import { volley, type WeaponDef } from "../projectile/weapons";
 import type { Vec2 } from "./physics/math";
@@ -35,4 +36,14 @@ export function fireWeapon(
       toward,
     });
   }
+}
+
+// Whether a shooter means to fire: the player while autofire is on or the
+// Shoot action is held (the left mouse button), and anything else always.
+export function wantsToFire(world: World, entity: Entity): boolean {
+  if (!world.components.playerControlled.has(entity)) return true;
+  return (
+    world.components.autoFire.get(entity) === true ||
+    world.input.held.has(Action.Shoot)
+  );
 }

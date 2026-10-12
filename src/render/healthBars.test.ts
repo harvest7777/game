@@ -15,7 +15,6 @@ const tallArt: Art = {
   manifest: {
     sprites: [],
     fonts: { bold: {}, regular: {} },
-    ground: {},
     walls: { top: "top", side: "side" },
   },
   regions: new Map([

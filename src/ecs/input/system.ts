@@ -1,4 +1,5 @@
 import type { Vec2 } from "../shared/physics/math";
+import { groundSpeedScale } from "../tiles";
 import type { World } from "../world";
 import { Action } from "./actions";
 
@@ -13,7 +14,7 @@ export function autoFireSystem(world: World, _dt: number): void {
   if (toggles % 2 === 0) return;
 
   for (const [entity] of world.components.playerControlled) {
-    const enabled = world.components.autoFire.get(entity) ?? true;
+    const enabled = world.components.autoFire.get(entity) ?? false;
     world.components.autoFire.set(entity, !enabled);
   }
 }
@@ -28,8 +29,9 @@ export function autoFireSystem(world: World, _dt: number): void {
 //
 // Diagonals are normalized so they aren't faster than straight movement, and
 // with no movement keys held the velocity is zeroed so the entity stops.
+// Slow ground, like water, scales the speed.
 export function playerInputSystem(world: World, _dt: number): void {
-  const { playerControlled, speed, velocity } = world.components;
+  const { playerControlled, speed, velocity, position } = world.components;
   const { held } = world.input;
 
   const screen = { x: 0, y: 0 };
@@ -42,7 +44,9 @@ export function playerInputSystem(world: World, _dt: number): void {
   const multiplier = held.has(Action.Crouch) ? CROUCH_SPEED : 1;
 
   for (const [entity] of playerControlled) {
-    const tilesPerSecond = (speed.get(entity) ?? 0) * multiplier;
+    const at = position.get(entity);
+    const ground = at ? groundSpeedScale(world.tiles, at) : 1;
+    const tilesPerSecond = (speed.get(entity) ?? 0) * multiplier * ground;
     velocity.set(entity, {
       x: direction.x * tilesPerSecond,
       y: direction.y * tilesPerSecond,

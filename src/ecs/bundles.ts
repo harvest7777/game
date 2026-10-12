@@ -28,14 +28,15 @@ export function addMovable(
 
 type ControllableOptions = { speed: number };
 
-// Steered by the keyboard at `speed` tiles per second. Pair with addMovable.
+// Steered by the keyboard at `speed` tiles per second, with autofire off
+// until it's toggled on. Pair with addMovable.
 export function addControllable(
   world: World,
   entity: Entity,
   { speed }: ControllableOptions,
 ): void {
   world.components.playerControlled.set(entity, true);
-  world.components.autoFire.set(entity, true);
+  world.components.autoFire.set(entity, false);
   world.components.speed.set(entity, speed);
 }
 
