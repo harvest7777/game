@@ -1,8 +1,8 @@
 import type { CreatureArt } from "../../ecs/sprite/art";
-import type { Outline } from "../../ecs/sprite/components";
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 
-// A plain black outline, so enemies stand out from the ground.
-export const OUTLINED: Outline = { color: [0, 0, 0, 1] };
+// Enemies wear the same plain black outline as everything else.
+export const OUTLINED = BLACK_OUTLINE;
 
 // A creature's frames, from its folder under public/sprites/enemies: two
 // idle frames, then a wind-up and a release.

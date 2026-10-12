@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, STAR_ART } from "./shared";
 
@@ -8,7 +9,7 @@ export const petal: ProjectileDef = {
   damage: [16, 24],
   lifetime: 0.6,
   hitbox: { r: 0.2 },
-  sprite: { art: STAR_ART, outline: { color: [0.94, 0.43, 0.67, 1] } },
+  sprite: { art: STAR_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   turnRate: 5,
   turnAcceleration: -4,

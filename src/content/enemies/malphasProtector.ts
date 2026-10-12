@@ -1,5 +1,5 @@
 import { defineEnemy } from "../../ecs/enemy/definitions";
-import { creatureArt } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 import { STAT, stat } from "../../ecs/stats/components";
 import { protectorLoot } from "../loot/pools";
 import { demonVolley } from "../weapons/demonVolley";
@@ -12,7 +12,7 @@ export const malphasProtector = defineEnemy({
   sprite: {
     art: creatureArt("malphas-protector"),
     scale: 2,
-    outline: { color: [0, 0, 0, 1], glow: { radius: 1, pulseHz: 0.6 } },
+    outline: OUTLINED,
   },
   hitbox: { r: 0.75 },
   stats: {

@@ -1,8 +1,9 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, PREJUDICE_ART } from "./shared";
 
 // Extreme Prejudice's shard: speeds up while curving, weaving and
-// spinning, glowing and pulsing, so a full ring of them swirls outward.
+// spinning, so a full ring of them swirls outward.
 export const prejudice: ProjectileDef = {
   speed: 6,
   damage: [25, 40],
@@ -10,10 +11,7 @@ export const prejudice: ProjectileDef = {
   hitbox: { r: 0.2 },
   sprite: {
     art: PREJUDICE_ART,
-    outline: {
-      color: [1, 0.3, 0.9, 1],
-      glow: { radius: 1.5, pulseHz: 6 },
-    },
+    outline: BLACK_OUTLINE,
   },
   sound: HIT_SOUND,
   acceleration: 8,

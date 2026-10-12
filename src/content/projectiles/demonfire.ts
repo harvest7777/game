@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { FIREBALL_ART, HIT_SOUND } from "./shared";
 
@@ -8,7 +9,7 @@ export const demonfire: ProjectileDef = {
   damage: [34, 46],
   lifetime: 0.85,
   hitbox: { r: 0.2 },
-  sprite: { art: FIREBALL_ART, scale: 0.8 },
+  sprite: { art: FIREBALL_ART, scale: 0.8, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   wave: { amplitude: 0.35, frequency: 2 },
   pierces: true,

@@ -20,6 +20,10 @@ export type Glow = {
 
 export type Outline = { color: Color; glow?: Glow };
 
+// The outline everything wears: plain black, so art reads against any
+// ground.
+export const BLACK_OUTLINE: Outline = { color: [0, 0, 0, 1] };
+
 // How an entity looks. `art` decides whether it's a single frame, a walk
 // cycle or a set of animation clips. Pure data: only the renderer reads it.
 export type Sprite = {

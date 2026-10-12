@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { BOLT_ART, HIT_SOUND } from "./shared";
 
@@ -7,7 +8,7 @@ export const fastBolt: ProjectileDef = {
   damage: [10, 15],
   lifetime: 0.35,
   hitbox: { r: 0.12 },
-  sprite: { art: BOLT_ART },
+  sprite: { art: BOLT_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   faceDirection: true,
 };

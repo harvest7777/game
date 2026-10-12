@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { BOLT_ART, HIT_SOUND, SMALL } from "./shared";
 
@@ -7,7 +8,7 @@ export const leafVein: ProjectileDef = {
   damage: [30, 40],
   lifetime: 0.9,
   hitbox: SMALL,
-  sprite: { art: BOLT_ART, outline: { color: [0.43, 0.75, 0.2, 1] } },
+  sprite: { art: BOLT_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   faceDirection: true,
 };

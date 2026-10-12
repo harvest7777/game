@@ -2,6 +2,7 @@ import type { CharacterDef } from "../../ecs/character/definitions";
 import type { SpriteFile, WalkerArt } from "../../ecs/sprite/art";
 import { apprenticeStaff } from "../items/apprenticeStaff";
 import { STAT, stat } from "../../ecs/stats/components";
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 
 function frames(facing: string): SpriteFile[] {
   return [0, 1, 2].map((frame) => `player/${facing}-${frame}`);
@@ -23,7 +24,7 @@ export const wizardArt: WalkerArt = {
 // Casts bolts from a staff.
 export const wizard: CharacterDef = {
   name: "Wizard",
-  sprite: { art: wizardArt, outline: { color: [0, 0, 0, 1] } },
+  sprite: { art: wizardArt, outline: BLACK_OUTLINE },
   hitbox: { r: 0.4 },
   stats: {
     [STAT.HEALTH]: stat(700),

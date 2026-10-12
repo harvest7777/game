@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { FIREBALL_ART, HIT_SOUND } from "./shared";
 
@@ -10,7 +11,7 @@ export const bruteShot: ProjectileDef = {
   sprite: {
     art: FIREBALL_ART,
     scale: 0.7,
-    outline: { color: [0.2, 0.1, 0.1, 1] },
+    outline: BLACK_OUTLINE,
   },
   sound: HIT_SOUND,
 };

@@ -1,7 +1,8 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, ORB_ART } from "./shared";
 
-// Flies through walls, glowing so it's easy to follow behind them.
+// Flies through walls.
 export const ghost: ProjectileDef = {
   speed: 9,
   damage: [10, 20],
@@ -9,10 +10,7 @@ export const ghost: ProjectileDef = {
   hitbox: { r: 0.2 },
   sprite: {
     art: ORB_ART,
-    outline: {
-      color: [0.6, 0.9, 1, 1],
-      glow: { radius: 1.5, pulseHz: 3 },
-    },
+    outline: BLACK_OUTLINE,
   },
   sound: HIT_SOUND,
   walls: "pass",

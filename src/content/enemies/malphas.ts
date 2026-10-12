@@ -1,3 +1,4 @@
+import { OUTLINED } from "./shared";
 import { defineEnemy } from "../../ecs/enemy/definitions";
 import type { AnimatedArt, SpriteFile } from "../../ecs/sprite/art";
 import { STAT, stat } from "../../ecs/stats/components";
@@ -50,7 +51,7 @@ export const malphas = defineEnemy({
   sprite: {
     art: MALPHAS_ART,
     scale: 1.8,
-    outline: { color: [1, 0.3, 0.1, 1], glow: { radius: 1, pulseHz: 1 } },
+    outline: OUTLINED,
   },
   hitbox: { r: 0.9 },
   stats: {

@@ -1,4 +1,5 @@
 import type { PortalDef } from "../../ecs/portal/definitions";
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 
 // The way home, opened where a dungeon's boss falls.
 export const nexusPortal: PortalDef = {
@@ -6,6 +7,6 @@ export const nexusPortal: PortalDef = {
   to: "nexus",
   sprite: {
     art: { kind: "static", file: "portals/nexus" },
-    outline: { color: [0.6, 0.85, 1, 1], glow: { radius: 2, pulseHz: 0.8 } },
+    outline: BLACK_OUTLINE,
   },
 };

@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { BOLT_ART, HIT_SOUND, SMALL } from "./shared";
 
@@ -7,7 +8,7 @@ export const needle: ProjectileDef = {
   damage: [22, 30],
   lifetime: 0.55,
   hitbox: SMALL,
-  sprite: { art: BOLT_ART, scale: 0.7 },
+  sprite: { art: BOLT_ART, scale: 0.7, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   faceDirection: true,
 };

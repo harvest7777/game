@@ -36,6 +36,27 @@ export function soundMix(at: Vec2, listener: SoundListener): SoundMix {
   return { gain, pan, distance };
 }
 
+// Sounds of one kind within this many tiles of each other, in one frame,
+// play as one: a crowd casting together is one cast, not thousands of
+// copies to mix and sort.
+export const MERGE_RADIUS = 2;
+
+// One message per kind of sound per MERGE_RADIUS square of the world, at the
+// first one's spot and the loudest one's volume.
+export function mergeSounds(messages: readonly SoundMessage[]): SoundMessage[] {
+  const merged = new Map<string, SoundMessage>();
+  for (const message of messages) {
+    const key = `${message.sound}:${Math.floor(message.at.x / MERGE_RADIUS)}:${Math.floor(message.at.y / MERGE_RADIUS)}`;
+    const kept = merged.get(key);
+    if (!kept) {
+      merged.set(key, message);
+    } else if ((message.volume ?? 1) > (kept.volume ?? 1)) {
+      merged.set(key, { ...kept, volume: message.volume });
+    }
+  }
+  return [...merged.values()];
+}
+
 export type SoundPlayer = {
   resume(): Promise<void>;
   play(messages: readonly SoundMessage[], listener: SoundListener): void;
@@ -67,7 +88,7 @@ export async function createSoundPlayer(
       // Drop sounds produced before the first user interaction instead of
       // scheduling a backlog that all starts when the context is unlocked.
       if (context.state !== "running") return;
-      const audible = messages
+      const audible = mergeSounds(messages)
         .map((message) => ({ message, mix: soundMix(message.at, listener) }))
         .filter(({ mix }) => mix.gain > 0)
         .sort((a, b) => a.mix.distance - b.mix.distance);

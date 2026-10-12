@@ -1,4 +1,5 @@
 import type { PortalDef } from "../../ecs/portal/definitions";
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 
 // Into a fresh Test Caves, from the nexus.
 export const testCavesPortal: PortalDef = {
@@ -6,6 +7,6 @@ export const testCavesPortal: PortalDef = {
   to: "testCaves",
   sprite: {
     art: { kind: "static", file: "portals/caves" },
-    outline: { color: [0.5, 1, 0.55, 1], glow: { radius: 2, pulseHz: 0.8 } },
+    outline: BLACK_OUTLINE,
   },
 };

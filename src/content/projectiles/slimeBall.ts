@@ -1,7 +1,8 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, ORB_ART } from "./shared";
 
-// Enemy shots, outlined red so they're easy to tell from the player's.
+// A slime's lobbed ball.
 export const slimeBall: ProjectileDef = {
   speed: 5,
   damage: [15, 20],
@@ -10,7 +11,7 @@ export const slimeBall: ProjectileDef = {
   sprite: {
     art: ORB_ART,
     scale: 1,
-    outline: { color: [0.9, 0.15, 0.15, 1] },
+    outline: BLACK_OUTLINE,
   },
   sound: HIT_SOUND,
 };

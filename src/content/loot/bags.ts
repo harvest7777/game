@@ -4,7 +4,7 @@ import {
   itemQuery,
   type LootBagDef,
 } from "../../ecs/loot/definitions";
-import type { Outline } from "../../ecs/sprite/components";
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import { SPECIAL, STAT_POTION } from "../items/loot";
 
 const CAPACITY = 8;
@@ -14,7 +14,7 @@ const EXPIRY_FLASH = {
   startFrequency: 1,
   endFrequency: 7,
 } as const;
-const OUTLINE: Outline = { color: [0, 0, 0, 1] };
+const OUTLINE = BLACK_OUTLINE;
 const CURRENT_LOW_TIER_MAX = itemTier(8);
 
 export const brownBag = defineLootBag({

@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, ORB_ART } from "./shared";
 
@@ -7,7 +8,7 @@ export const malphasShock: ProjectileDef = {
   damage: [45, 58],
   lifetime: 0.9,
   hitbox: { r: 0.3 },
-  sprite: { art: ORB_ART, scale: 1.2, outline: { color: [1, 1, 1, 1] } },
+  sprite: { art: ORB_ART, scale: 1.2, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   acceleration: -10,
   minSpeed: 3,

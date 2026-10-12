@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { BOLT_ART, HIT_SOUND, SMALL } from "./shared";
 
@@ -6,7 +7,7 @@ export const arrow: ProjectileDef = {
   damage: [25, 35],
   lifetime: 1,
   hitbox: SMALL,
-  sprite: { art: BOLT_ART, outline: { color: [0.9, 0.15, 0.15, 1] } },
+  sprite: { art: BOLT_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   faceDirection: true,
 };

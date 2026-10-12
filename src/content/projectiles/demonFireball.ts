@@ -1,5 +1,6 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
-import { ENEMY_SHOT, FIREBALL_ART, HIT_SOUND } from "./shared";
+import { FIREBALL_ART, HIT_SOUND } from "./shared";
 
 // A demon's heavy fireball.
 export const demonFireball: ProjectileDef = {
@@ -7,6 +8,6 @@ export const demonFireball: ProjectileDef = {
   damage: [35, 45],
   lifetime: 1.2,
   hitbox: { r: 0.25 },
-  sprite: { art: FIREBALL_ART, scale: 0.9, outline: ENEMY_SHOT },
+  sprite: { art: FIREBALL_ART, scale: 0.9, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
 };

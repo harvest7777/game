@@ -1,3 +1,4 @@
+import { OUTLINED } from "./shared";
 import { defineEnemy } from "../../ecs/enemy/definitions";
 import type { AnimatedArt, SpriteFile } from "../../ecs/sprite/art";
 import { kingFrenzy } from "../weapons/kingFrenzy";
@@ -39,7 +40,7 @@ export const slimeKing = defineEnemy({
   sprite: {
     art: SLIME_KING_ART,
     scale: 1.8,
-    outline: { color: [1, 0.85, 0.2, 1], glow: { radius: 1, pulseHz: 1 } },
+    outline: OUTLINED,
   },
   hitbox: { r: 0.7 },
   stats: {

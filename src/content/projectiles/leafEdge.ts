@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { BOLT_ART, HIT_SOUND, SMALL } from "./shared";
 
@@ -9,7 +10,7 @@ export const leafEdge: ProjectileDef = {
   damage: [15, 22],
   lifetime: 0.9,
   hitbox: SMALL,
-  sprite: { art: BOLT_ART, outline: { color: [0.82, 0.98, 0.59, 1] } },
+  sprite: { art: BOLT_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   turnRate: 2.4,
   turnAcceleration: -1.5,

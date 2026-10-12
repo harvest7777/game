@@ -314,7 +314,7 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), st
 
 Weapons author their firing sound, played once per volley (the player's own at half volume, since they never stop); one without a sound fires quietly, so crowds of ordinary enemies don't drown everything out. Projectile definitions author their player-hit and enemy-hit sounds, and enemy definitions their death sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
 
-Playback lives in `src/audio/`, outside the ECS. WAV files under `public/sounds/` are loaded into Web Audio buffers. The player position is the listener: sounds are full volume within 2 tiles, fade to silence at 18, and pan in the camera's rotated screen space. The browser plays the nearest requests first with at most 32 voices, so enemy crowds cannot create unbounded audio nodes. Audio resumes on the first keyboard or pointer interaction, as browsers require.
+Playback lives in `src/audio/`, outside the ECS. WAV files under `public/sounds/` are loaded into Web Audio buffers. The player position is the listener: sounds are full volume within 2 tiles, fade to silence at 18, and pan in the camera's rotated screen space. Within a frame, repeats of one sound within 2 tiles of each other merge into one at the loudest volume (`mergeSounds`), so a crowd casting together is one cast. The browser then plays the nearest requests first with at most 32 voices, so enemy crowds cannot create unbounded audio nodes. Audio resumes on the first keyboard or pointer interaction, as browsers require.
 
 ## Debug renders
 
@@ -327,7 +327,7 @@ Rings are drawn by the shader (a quad with `ring > 0`), so they need no art.
 
 ## Outline and glow
 
-Both happen in the fragment shader, not in the art, so any sprite can get any color at runtime. A sprite with an outline is drawn on a quad enlarged by `margin` sprite pixels. Transparent pixels within 0.2 sprite pixels of an opaque one get the outline color. With a glow, pixels further out up to `glow.radius` get a fading version of it, pulsing at `glow.pulseHz`.
+Both happen in the fragment shader, not in the art, so any sprite can get any color at runtime. For now all content wears the same plain black outline (`BLACK_OUTLINE`) and nothing glows (content tests check), since crowds of glowing sprites cost too much to draw; the shader still supports both. A sprite with an outline is drawn on a quad enlarged by `margin` sprite pixels. Transparent pixels within 0.2 sprite pixels of an opaque one get the outline color. With a glow, pixels further out up to `glow.radius` get a fading version of it, pulsing at `glow.pulseHz`.
 
 How far each pixel is from the art comes from a **distance map** baked when the atlas loads (`distance.ts`): one byte per atlas texel, the distance from its center to the nearest opaque texel of its own sprite, reaching 5 texels past each sprite (sprites are packed 10 apart so maps never overlap). The shader samples it once, smoothly, for glows, instead of searching the texels around every pixel, which was what made thousands of overlapping glowing shots slow. Smooth sampling rounds off pixel corners, so within a texel of the art, where the crisp outline is, it measures exactly from just the 3×3 texels around the pixel. Glows reach at most 4 sprite pixels.
 

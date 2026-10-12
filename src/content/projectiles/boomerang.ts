@@ -1,3 +1,4 @@
+import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 import type { ProjectileDef } from "../../ecs/projectile/definitions";
 import { HIT_SOUND, STAR_ART } from "./shared";
 
@@ -6,7 +7,7 @@ export const boomerang: ProjectileDef = {
   damage: [20, 30],
   lifetime: 1.2,
   hitbox: { r: 0.25 },
-  sprite: { art: STAR_ART },
+  sprite: { art: STAR_ART, outline: BLACK_OUTLINE },
   sound: HIT_SOUND,
   boomerang: true,
   spin: 4 * Math.PI,

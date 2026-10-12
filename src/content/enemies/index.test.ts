@@ -15,6 +15,10 @@ describe("enemy definitions", () => {
         expect(def.detectRange).toBeLessThan(SLEEP_DISTANCE);
       });
 
+      it("doesn't glow: crowds of glowing enemies cost too much to draw", () => {
+        expect(def.sprite.outline?.glow).toBeUndefined();
+      });
+
       it("starts with some health", () => {
         expect(def.stats[STAT.HEALTH].value).toBeGreaterThan(0);
       });
