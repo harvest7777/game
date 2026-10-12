@@ -8,7 +8,11 @@ import type {
   WallResponse,
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
-import type { Invulnerable, Vulnerable } from "./combat/components";
+import type {
+  Invulnerable,
+  RecentlyHurt,
+  Vulnerable,
+} from "./combat/components";
 import type { HazardExposure } from "./hazard/components";
 import type { Portal } from "./portal/components";
 import type { Character } from "./character/components";
@@ -87,6 +91,7 @@ export type Components = {
   portal: Store<Portal>;
   quest: Store<Quest>;
   asleep: Store<Asleep>;
+  recentlyHurt: Store<RecentlyHurt>;
 } & Record<StatKind, Store<StatValue>>;
 
 export type World = {
@@ -166,6 +171,7 @@ export function createWorld(
       portal: createStore(),
       quest: createStore(),
       asleep: createStore(),
+      recentlyHurt: createStore(),
     },
   };
 }

@@ -3,7 +3,13 @@ import { createCamera } from "../ecs/camera/resource";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
 import type { Art } from "./art";
-import { BAR_COLORS, healthColor, pushHealthBars } from "./healthBars";
+import {
+  BAR_COLORS,
+  barShown,
+  healthColor,
+  pushHealthBars,
+} from "./healthBars";
+import { HURT_FADE, HURT_SHOWN } from "../ecs/combat/hurt";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
 
@@ -31,10 +37,12 @@ function setup(angle = 0) {
   return { world, view };
 }
 
+// Something with health, just hit, so its bar shows.
 function addHurt(world: World, hp: number, at = CENTER) {
   const e = spawn(world);
   world.components.position.set(e, { ...at });
   world.components.health.set(e, { value: hp, max: 100 });
+  world.components.recentlyHurt.set(e, { age: 0, previousAge: 0 });
   return e;
 }
 
@@ -198,5 +206,48 @@ describe("healthColor", () => {
   it("clamps fractions outside 0 to 1", () => {
     expect(healthColor(2)).toEqual(close(BAR_COLORS.healthy));
     expect(healthColor(-1)).toEqual(close(BAR_COLORS.critical));
+  });
+});
+
+describe("which bars show", () => {
+  it("always shows the player's", () => {
+    const { world } = setup();
+    const player = spawn(world);
+    world.components.position.set(player, { ...CENTER });
+    world.components.health.set(player, { value: 100, max: 100 });
+    world.components.playerControlled.set(player, true);
+    expect(bars(world)).toHaveLength(2);
+  });
+
+  it("hides an enemy's until it's hurt", () => {
+    const { world } = setup();
+    const e = spawn(world);
+    world.components.position.set(e, { ...CENTER });
+    world.components.health.set(e, { value: 100, max: 100 });
+    expect(bars(world)).toHaveLength(0);
+  });
+
+  it("shows in full for HURT_SHOWN seconds, then fades out", () => {
+    const { world } = setup();
+    const e = addHurt(world, 50);
+    const hurt = world.components.recentlyHurt.get(e)!;
+    const alphaOf = (age: number) => {
+      hurt.age = hurt.previousAge = age;
+      return barShown(world, e, 1);
+    };
+    expect(alphaOf(HURT_SHOWN)).toBe(1);
+    expect(alphaOf(HURT_SHOWN + HURT_FADE / 2)).toBeCloseTo(0.5);
+    expect(alphaOf(HURT_SHOWN + HURT_FADE)).toBe(0);
+  });
+
+  it("draws a fading bar see-through", () => {
+    const { world } = setup();
+    const e = addHurt(world, 50);
+    world.components.recentlyHurt.set(e, {
+      age: HURT_SHOWN + HURT_FADE / 2,
+      previousAge: HURT_SHOWN + HURT_FADE / 2,
+    });
+    const [background] = bars(world);
+    expect(background.outline![3]).toBeCloseTo(BAR_COLORS.background[3] / 2);
   });
 });

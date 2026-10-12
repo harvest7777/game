@@ -84,6 +84,7 @@ describe("buildFrame", () => {
   it("puts terrain, health bars, sprites, then debug overlays, and counts each", () => {
     const { world, player } = worldWithPlayer();
     world.components.health.set(player, { value: 50, max: 100 });
+    world.components.playerControlled.set(player, true);
     setWall(world.tiles, 11, 9);
     const view = frameView(world, 1, 400, 400, 1);
     const out = new QuadBuffer();
@@ -114,6 +115,7 @@ describe("buildFrame", () => {
   it("draws the player's health bar over enemies and their bars", () => {
     const { world, player } = worldWithPlayer();
     world.components.health.set(player, { value: 50, max: 100 });
+    world.components.playerControlled.set(player, true);
     const enemy = spawn(world);
     addMovable(world, enemy, { at: { x: 12, y: 10 }, hitbox: { r: 0.4 } });
     addSprite(world, enemy, {
@@ -121,6 +123,7 @@ describe("buildFrame", () => {
       layer: "enemy",
     });
     world.components.health.set(enemy, { value: 50, max: 100 });
+    world.components.recentlyHurt.set(enemy, { age: 0, previousAge: 0 });
     const view = frameView(world, 1, 400, 400, 1);
     const out = new QuadBuffer();
 

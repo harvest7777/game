@@ -264,7 +264,7 @@ Walkers with `attack` art thrust their weapon for the first half of each shot in
 
 ## Health bars
 
-Everything with the Health stat gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: blending smoothly from green when full through yellow at half to red when empty (`healthColor`, shared with the HUD). Bars are solid quads (`fill`), so they need no art. They're drawn layer by layer with the sprites, each just before its own layer's sprites: an enemy's sprite covers its bar, and the player's bar shows over enemies and their bars. Each is at its owner's depth, so a wall that hides an entity hides its bar too.
+The player's bar always shows; anything else's shows only once it's hurt (`recentlyHurtSystem` keeps how long ago, in `RecentlyHurt`), in full for 3 seconds and then fading out over half a second, so a crowd nobody's fighting draws no bars. A showing bar is centered just under its owner's sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: blending smoothly from green when full through yellow at half to red when empty (`healthColor`, shared with the HUD). Bars are solid quads (`fill`), so they need no art. They're drawn layer by layer with the sprites, each just before its own layer's sprites: an enemy's sprite covers its bar, and the player's bar shows over enemies and their bars. Each is at its owner's depth, so a wall that hides an entity hides its bar too.
 
 ## Fonts and text
 

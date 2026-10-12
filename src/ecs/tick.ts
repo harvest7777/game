@@ -5,6 +5,7 @@ import { hazardSystem } from "./hazard/system";
 import { deathPortalSystem, portalSystem } from "./portal/system";
 import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
+import { recentlyHurtSystem } from "./combat/hurt";
 import { hitSystem } from "./combat/hits";
 import { aggroSystem } from "./enemy/aggro";
 import { sleepSystem } from "./enemy/sleep";
@@ -69,6 +70,7 @@ export const tickSystems: System[] = [
   hitSystem,
   projectileWallHitSystem,
   damageSystem,
+  recentlyHurtSystem,
   floatingTextSystem,
   damageTextSystem,
   lootSystem,

@@ -1,5 +1,6 @@
 import type { Color, SpriteLayer } from "../ecs/sprite/components";
-import type { World } from "../ecs/world";
+import { HURT_FADE, HURT_SHOWN } from "../ecs/combat/hurt";
+import type { Entity, World } from "../ecs/world";
 import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
 import {
@@ -45,7 +46,8 @@ function mix(a: Color, b: Color, t: number): Color {
 
 const NO_REGION = { x: 0, y: 0, w: 0, h: 0 };
 
-// A health bar under everything with health, centered under its sprite at
+// A health bar under everything with health that's showing (see barShown),
+// centered under its sprite at
 // its interpolated position and always level on screen. Drawn as a dark
 // background with the remaining health filled in from the left, colored by
 // healthColor. Each bar is
@@ -62,6 +64,9 @@ export function pushHealthBars(
 ): void {
   const pixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
   for (const [entity, health] of world.components.health) {
+    // Checked first, so the many bars not showing cost almost nothing.
+    const shown = barShown(world, entity, alpha);
+    if (shown <= 0) continue;
     const layer =
       world.components.sprite.get(entity)?.layer ?? SPRITE_LAYERS[0];
     if (only !== undefined && layer !== only) continue;
@@ -101,14 +106,31 @@ export function pushHealthBars(
       top - BORDER,
       right + BORDER,
       bottom + BORDER,
-      BAR_COLORS.background,
+      faded(BAR_COLORS.background, shown),
       depth,
     );
     if (fraction > 0) {
       const filled = left + (right - left) * fraction;
-      pushRect(out, left, top, filled, bottom, healthColor(fraction), depth);
+      const color = faded(healthColor(fraction), shown);
+      pushRect(out, left, top, filled, bottom, color, depth);
     }
   }
+}
+
+// How much of an entity's bar shows, 0 to 1: the player's always does;
+// anything else's only after it's been hurt, in full for HURT_SHOWN seconds
+// and then fading out over HURT_FADE.
+export function barShown(world: World, entity: Entity, alpha: number): number {
+  if (world.components.playerControlled.has(entity)) return 1;
+  const hurt = world.components.recentlyHurt.get(entity);
+  if (!hurt) return 0;
+  const age = hurt.previousAge + (hurt.age - hurt.previousAge) * alpha;
+  if (age <= HURT_SHOWN) return 1;
+  return Math.max(0, 1 - (age - HURT_SHOWN) / HURT_FADE);
+}
+
+function faded(color: Color, shown: number): Color {
+  return shown >= 1 ? color : [color[0], color[1], color[2], color[3] * shown];
 }
 
 function pushRect(
