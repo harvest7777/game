@@ -34,7 +34,11 @@ A `hazard` (`{ damage, every }`) burns characters standing on the ground, like `
 
 `travel(from, to, entity, at)` moves an entity, with everything it has, into another world, leaving behind what only made sense in the old one (its target, container access and hazard timer). The camera follows if it was following it. `main.ts` uses it to swap the whole world when entering a level.
 
-The game starts in the **nexus**, a cozy place to rest between fights: a rounded square of grass crossed by a plus of boardwalks, with a ring of them around a fountain in the middle sheltered by low curved walls, a pond with a dock in each quarter, and nooks off each arm. Nothing hostile lives there.
+The game starts in the **nexus**, a cozy place to rest between fights: a rounded square of grass crossed by a plus of boardwalks, with a ring of them around a fountain in the middle sheltered by low curved walls, a pond with a dock in each quarter, and nooks off each arm. Nothing hostile lives there. Beside the spawn stand portals into the Abyss of Demons and the Test Caves.
+
+# Portals
+
+A `PortalDef` (`src/content/portals/`) is a label, sprite and `to`: a destination id the game resolves outside the simulation, so the ECS never builds levels. Levels place portals (`LevelDef.portals`), and an enemy with a `deathPortal` opens one where it dies (`deathPortalSystem`, before cleanup), like a dungeon boss's way home. Pressing Enter sends an `enterPortal` command; `portalSystem` finds the nearest portal within reach of the player (1 tile unless it says otherwise) and puts a `travel` message in the outbox. `main.ts` resolves its `to` with `destination` (`content/destinations.ts`): a level id, or a dungeon id built from a fresh random seed, then `travel`s the character there.
 
 # Dungeons
 
@@ -42,17 +46,17 @@ Dungeons are generated, not drawn. A `DungeonDef` is plain JSON (`src/content/du
 
 `generateDungeon(spec, seed)` runs these stages in order, each a pure function with its own tests and an ASCII view for failures:
 
-1. **Graph** (`graph.ts`): a main path of rooms from `start` to `goal`, with branches ending in `deadEnd`s. A tree, no room joined to more than four others.
+1. **Graph** (`graph.ts`): a main path of rooms from `start` to `goal`, with branches ending in `deadEnd`s: a tree, so everything is reachable. Then `loops` (`LOOPS`): a `shortcut` corridor between main path rooms `span` apart, or a `detour` of extra rooms leaving the main path and rejoining it further on. Loops never reach the goal, and no room joins more than four others.
 2. **Shapes** (`shapes.ts`): each room's floor as a `Mask`, from the room spec its tag picked by weight: `rect`, `ellipse` or `cave` (cellular automata, retried when too small).
 3. **Placement** (`place.ts`): `grow` puts each room `gap` tiles off a random side of its parent, its middle within the parent's span, clear of every other room and corridor.
-4. **Routing** (`route.ts`): a corridor per edge, `width` wide, from the dungeon's list of routers tried in order: `straight` across a shared row or column, then `L` with one bend. Corridors never enter rooms they don't join.
+4. **Routing** (`route.ts`): a corridor per edge, `width` wide, from the dungeon's list of routers tried in order: `straight` across a shared row or column, `L` with one bend, or `astar`, which finds any way around rooms in the way, wandering by `wiggle` and kept straight by `turnCost`. Corridors never enter rooms they don't join. Every tree edge must be routed; loop edges are routed if any router can, and left out otherwise.
 5. **Rasterize** (`grid.ts`): everything onto one `DungeonMap` of cell kinds, walls around anything walkable, with each room's cells and the entrances corridors come in by.
 6. **Features** (`features.ts`): `pool` (liquid or accent blobs), `pillars` and `border`. A try that would cut a room's safe floor in two or cover an entrance is undone and retried, then dropped.
-7. **Populate** (`populate.ts`): each room's spawn groups roll weighted picks (`count` of each per pick) and place them on safe floor: `scatter` (spaced, away from entrances), `center` or `ring`. Nothing spawns where characters arrive.
+7. **Populate** (`populate.ts`): each room's spawn groups roll weighted picks (`count` of each per pick) and place them on safe floor: `scatter` (spaced, away from entrances), `center`, `ring`, or `cluster` (packed around one spot, for packs). Nothing spawns where characters arrive.
 
 A stage that can't satisfy its spec fails the attempt, and the next attempt starts over on a seed derived from the first (`deriveSeed`), up to 50 times, after which it throws naming the stages that failed. The result is also checked: every room must be reachable from the start without stepping in liquid.
 
-Every variable piece is a table keyed by `kind` (`SHAPES`, `PLACERS`, `ROUTERS`, `FEATURES`, `PLACEMENTS`), so a new kind is a new entry. `parseDungeonDef` checks a definition field by field against matching tables of checks, so a new kind without a check doesn't compile, and reports every problem with its path (`rooms.normal[1].shape.w: min is more than max`), unknown fields and unknown ids included. Content indexes check their files as they load (`dungeonDef`), and content tests build each dungeon from many seeds.
+Every variable piece is a table keyed by `kind` (`LOOPS`, `SHAPES`, `PLACERS`, `ROUTERS`, `FEATURES`, `PLACEMENTS`), so a new kind is a new entry. `parseDungeonDef` checks a definition field by field against matching tables of checks, so a new kind without a check doesn't compile, and reports every problem with its path (`rooms.normal[1].shape.w: min is more than max`), unknown fields and unknown ids included. Content indexes check their files as they load (`dungeonDef`), and content tests build each dungeon from many seeds.
 
 `dungeonLevel(def, seed, registries)` (`ecs/level/dungeon.ts`) is the only place dungeons meet the game: it generates the dungeon and turns it into an ordinary `LevelDef`, drawing each cell kind as the theme's ground (liquid and accent fall back to floor) and resolving enemy ids through the registries. `loadLevel` takes it from there.
 
@@ -150,11 +154,13 @@ So a group doesn't move as one:
 
 A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). Each condition is one entry in the `CONDITIONS` table in `phases.ts`, so adding one touches nothing else. `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory.
 
-A boss phase can instead declare a deterministic `rotation` of named sequences. A sequence is an authored timeline of stages: each stage names its animation clip, duration, movement (`phase`, `stationary`, or a locked-aim `dash`), optional weak-point multiplier, and timed cues. Cues cross their timestamp exactly once; `fire` uses the same weapon/pattern path as ordinary shooters, while `sound` becomes a spatial sound request. Movement kinds and cue kinds are each a table of handlers (`stageMovement.ts`, `cues.ts`), so a new kind is a new entry, not a new branch in the brain or the action system.
+A boss phase can instead declare a deterministic `rotation` of named sequences. A sequence is an authored timeline of stages: each stage names its animation clip, duration, movement (`phase`, `stationary`, or a locked-aim `dash`), optional weak-point multiplier, whether it's `invulnerable`, and timed cues. Cues cross their timestamp exactly once; `fire` uses the same weapon/pattern path as ordinary shooters, `sound` becomes a spatial sound request, and `summon` calls `count` minions in around the boss, `radius` tiles out, never letting more than `max` it summoned be alive (each records its `summoner`). Movement kinds and cue kinds are each a table of handlers (`stageMovement.ts`, `cues.ts`), so a new kind is a new entry, not a new branch in the brain or the action system.
 
 **Names are checked at compile time.** `defineEnemy` ties a boss's phase names, sequence names and animation clips together, so a transition to a phase it doesn't have, a rotation naming a missing sequence, or a stage playing a clip its art doesn't have won't compile. `bossActionSystem` owns the timeline and runs before the brain; the renderer only samples its clip progress, never deciding gameplay. A phase transition restarts its rotation, and losing a target pauses it and clears any vulnerability.
 
 `slimeKing` demonstrates the encounter pattern. At 100–66% it teaches an outward ring and aim-locked spray; at 66–30% it alternates a clearly telegraphed dash with ring casts, exposing itself after the dash; below 30% it repeats frenzy, dash and a bright `collapse` core that takes double damage. Like every other enemy, its projectiles originate at its center, so standing on the King during a release is dangerous.
+
+`malphas`, the Abyss of Demons' boss, builds on it. Above 70% it circles at range casting flame rings and three aim-locked lance volleys, and summons imps while invulnerable; to 35% it dash-slams into a shockwave and stands exposed, spins out pinwheels of curling flame and summons flamers; below that it chases with frenzies of mirrored curling flames until it collapses, taking double damage. It opens a portal home when it falls and may drop the Demonfire Staff. The Abyss is tuned for medium difficulty at roughly half-maxed stats.
 
 # Items and inventory
 

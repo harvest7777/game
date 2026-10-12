@@ -1,4 +1,5 @@
 import type { FeatureKind } from "./features";
+import type { LoopKind } from "./graph";
 import type { DungeonSpec } from "./generate";
 import { CELL_KINDS, isWalkable, type CellKind } from "./grid";
 import type { PlacementKind } from "./place";
@@ -251,6 +252,24 @@ const FEATURE_CHECKS: Record<FeatureKind, KindCheck> = {
   },
 };
 
+const LOOP_CHECKS: Record<LoopKind, KindCheck> = {
+  shortcut: {
+    required: ["count", "span"],
+    check: (c, path, f) => {
+      c.range(`${path}.count`, f.count, { min: 0, whole: true });
+      c.range(`${path}.span`, f.span, { min: 2, whole: true });
+    },
+  },
+  detour: {
+    required: ["count", "span", "length"],
+    check: (c, path, f) => {
+      c.range(`${path}.count`, f.count, { min: 0, whole: true });
+      c.range(`${path}.span`, f.span, { min: 2, whole: true });
+      c.range(`${path}.length`, f.length, size);
+    },
+  },
+};
+
 const PLACEMENT_CHECKS: Record<PlacementKind, KindCheck> = {
   grow: {
     required: ["gap"],
@@ -318,15 +337,21 @@ function checkDungeon(c: Checker, value: unknown): void {
     }
   }
 
-  const graph = c.object("graph", f.graph, [
-    "mainPath",
-    "branches",
-    "branchLength",
-  ]);
+  const graph = c.object(
+    "graph",
+    f.graph,
+    ["mainPath", "branches", "branchLength"],
+    ["loops"],
+  );
   if (graph) {
     c.range("graph.mainPath", graph.mainPath, { min: 2, whole: true });
     c.range("graph.branches", graph.branches, { min: 0, whole: true });
     c.range("graph.branchLength", graph.branchLength, size);
+    if ("loops" in graph) {
+      c.array("graph.loops", graph.loops, { nonEmpty: false }).forEach(
+        (loop, i) => c.kind(`graph.loops[${i}]`, loop, LOOP_CHECKS),
+      );
+    }
   }
 
   c.kind("placement", f.placement, PLACEMENT_CHECKS);

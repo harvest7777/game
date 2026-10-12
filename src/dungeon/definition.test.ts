@@ -58,6 +58,33 @@ describe("parseDungeonDef", () => {
     expect(errorsOf(value)).toEqual([]);
   });
 
+  it("accepts loops", () => {
+    const value = minimal();
+    value.graph = {
+      mainPath: [6, 6],
+      branches: [0, 0],
+      branchLength: [1, 1],
+      loops: [
+        { kind: "shortcut", count: [1, 1], span: [2, 3] },
+        { kind: "detour", count: [0, 1], span: [2, 2], length: [1, 2] },
+      ],
+    };
+    expect(errorsOf(value)).toEqual([]);
+  });
+
+  it("won't take a loop that skips nothing", () => {
+    const value = minimal();
+    value.graph = {
+      mainPath: [6, 6],
+      branches: [0, 0],
+      branchLength: [1, 1],
+      loops: [{ kind: "shortcut", count: [1, 1], span: [1, 2] }],
+    };
+    expect(errorsOf(value)).toEqual([
+      "graph.loops[0].span[0]: should be at least 2",
+    ]);
+  });
+
   it("when it isn't an object, says so", () => {
     expect(errorsOf("dungeon")).toEqual(["dungeon: should be an object"]);
   });

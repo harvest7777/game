@@ -8,6 +8,7 @@ import { seeded } from "./rng";
 const SOLO: Graph = {
   nodes: [{ id: 0, tag: "start", depth: 0, parent: null }],
   edges: [],
+  loops: [],
 };
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i);

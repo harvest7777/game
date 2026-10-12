@@ -121,7 +121,8 @@ export const ROUTERS: {
 // How far past the two rooms' boxes A* looks for a way around.
 const ASTAR_REACH = 12;
 
-// A corridor for every edge in the graph, or null if one couldn't be drawn.
+// A corridor for every edge in the graph, or null if one couldn't be drawn,
+// then one for each loop that can be drawn.
 export function routeCorridors(
   rng: Rng,
   graph: Graph,
@@ -129,8 +130,7 @@ export function routeCorridors(
   spec: CorridorSpec,
 ): Corridor[] | null {
   const boxes = placement.map((room) => grow(boxOf(room), 1));
-  const corridors: Corridor[] = [];
-  for (const [a, b] of graph.edges) {
+  const between = (a: number, b: number): Corridor | null => {
     const blocked = (x: number, y: number) =>
       boxes.some((box, i) => i !== a && i !== b && inBox(box, x, y));
     const context: RouteContext = {
@@ -142,12 +142,23 @@ export function routeCorridors(
     };
     const line = firstRoute(context, spec.routers);
     if (!line) return null;
-    corridors.push({
+    return {
       rooms: [a, b],
       cells: widen(line, spec.width).filter(
         (c) => !onFloor(placement[a], c) && !onFloor(placement[b], c),
       ),
-    });
+    };
+  };
+
+  const corridors: Corridor[] = [];
+  for (const [a, b] of graph.edges) {
+    const corridor = between(a, b);
+    if (!corridor) return null;
+    corridors.push(corridor);
+  }
+  for (const [a, b] of graph.loops) {
+    const corridor = between(a, b);
+    if (corridor) corridors.push(corridor);
   }
   return corridors;
 }

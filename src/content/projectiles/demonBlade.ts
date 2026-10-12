@@ -5,7 +5,7 @@ import { DEMON_BLADE_ART, ENEMY_SHOT, HIT_SOUND } from "./shared";
 // arm.
 export const demonBlade: ProjectileDef = {
   speed: 8,
-  damage: [45, 60],
+  damage: [40, 50],
   lifetime: 0.35,
   hitbox: { r: 0.3 },
   sprite: { art: DEMON_BLADE_ART, outline: ENEMY_SHOT },

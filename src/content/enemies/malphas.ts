@@ -54,8 +54,8 @@ export const malphas = defineEnemy({
   },
   hitbox: { r: 0.9 },
   stats: {
-    [STAT.HEALTH]: stat(8000),
-    [STAT.DEFENSE]: stat(14),
+    [STAT.HEALTH]: stat(5000),
+    [STAT.DEFENSE]: stat(12),
   },
   speed: 3,
   detectRange: 13,
@@ -145,7 +145,7 @@ export const malphas = defineEnemy({
           cues: [
             {
               at: 0.2,
-              cue: { kind: "summon", enemy: imp, count: 4, radius: 3, max: 6 },
+              cue: { kind: "summon", enemy: imp, count: 3, radius: 3, max: 4 },
             },
           ],
         },
@@ -225,7 +225,7 @@ export const malphas = defineEnemy({
                 enemy: malphasFlamer,
                 count: 2,
                 radius: 4,
-                max: 4,
+                max: 3,
               },
             },
           ],

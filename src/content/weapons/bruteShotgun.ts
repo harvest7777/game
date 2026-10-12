@@ -1,8 +1,8 @@
 import { spread, type WeaponDef } from "../../ecs/projectile/weapons";
 import { bruteShot } from "../projectiles/bruteShot";
 
-// A brute's point-blank spray of five blasts.
+// A brute's point-blank spray of four blasts.
 export const bruteShotgun: WeaponDef = {
-  rate: 0.7,
-  fires: spread(bruteShot, 5, 0.18),
+  rate: 0.6,
+  fires: spread(bruteShot, 4, 0.2),
 };

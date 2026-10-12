@@ -4,9 +4,20 @@ import { dungeonAscii, isSafe, kindAt, reachable } from "./grid";
 import { key } from "./mask";
 
 const SPEC: DungeonSpec = {
-  graph: { mainPath: [5, 8], branches: [1, 3], branchLength: [1, 2] },
+  graph: {
+    mainPath: [5, 8],
+    branches: [1, 3],
+    branchLength: [1, 2],
+    loops: [
+      { kind: "shortcut", count: [0, 1], span: [2, 3] },
+      { kind: "detour", count: [0, 1], span: [2, 2], length: [1, 2] },
+    ],
+  },
   placement: { kind: "grow", gap: [3, 6] },
-  corridors: { routers: [{ kind: "straight" }, { kind: "L" }], width: 2 },
+  corridors: {
+    routers: [{ kind: "straight" }, { kind: "L" }, { kind: "astar" }],
+    width: 2,
+  },
   rooms: {
     start: [{ weight: 1, shape: { kind: "rect", w: [6, 8], h: [6, 8] } }],
     normal: [

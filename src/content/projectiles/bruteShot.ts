@@ -4,7 +4,7 @@ import { FIREBALL_ART, HIT_SOUND } from "./shared";
 // A brute's close-range blast.
 export const bruteShot: ProjectileDef = {
   speed: 9,
-  damage: [40, 50],
+  damage: [35, 45],
   lifetime: 0.45,
   hitbox: { r: 0.2 },
   sprite: {

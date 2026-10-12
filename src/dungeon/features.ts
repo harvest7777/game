@@ -22,7 +22,8 @@ export type FeatureSpec =
   // Single-tile walls in a grid `spacing` tiles apart, only where they're
   // surrounded by floor.
   | { kind: "pillars"; spacing: number }
-  // The room's edge, `width` tiles deep, turned to `cell` (accent if unset).
+  // The room's edge, `width` tiles deep, turned to `cell` (accent if unset),
+  // leaving a way in at each entrance.
   | { kind: "border"; width: number; cell?: CellKind };
 
 export type FeatureKind = FeatureSpec["kind"];
@@ -37,7 +38,7 @@ type FeatureFn<S> = (
 // Tries at a feature before leaving it out.
 const FEATURE_TRIES = 5;
 
-// How far, in tiles, pools and pillars keep from an entrance.
+// How far, in tiles, features keep from an entrance.
 const ENTRANCE_CLEARANCE = 2;
 
 export const FEATURES: {
@@ -77,7 +78,9 @@ export const FEATURES: {
 
   border: (_rng, map, room, { width, cell = "accent" }) => {
     const edge = room.cells.filter((c) => {
-      if (kindAt(map, c.x, c.y) !== "floor") return false;
+      if (kindAt(map, c.x, c.y) !== "floor" || nearEntrance(room, c)) {
+        return false;
+      }
       for (let dy = -width; dy <= width; dy++) {
         for (let dx = -width; dx <= width; dx++) {
           if (!inRoom(map, room, { x: c.x + dx, y: c.y + dy })) return true;

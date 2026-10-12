@@ -3,7 +3,13 @@ import { generateGraph, type Graph } from "./graph";
 import { flood, isOn, key, maskFromAscii, onCells, type Cell } from "./mask";
 import { boxOf, placeRooms, type Placement } from "./place";
 import { seeded } from "./rng";
-import { findPath, routeCorridors, widen, type Corridor } from "./route";
+import {
+  findPath,
+  routeCorridors,
+  widen,
+  type Corridor,
+  type RouterSpec,
+} from "./route";
 import { makeShape } from "./shapes";
 
 // Two rooms joined by one edge.
@@ -13,6 +19,7 @@ const PAIR: Graph = {
     { id: 1, tag: "goal", depth: 1, parent: 0 },
   ],
   edges: [[0, 1]],
+  loops: [],
 };
 
 const square = maskFromAscii(["...", "...", "..."]);
@@ -101,6 +108,7 @@ describe("astar", () => {
   const THREE: Graph = {
     nodes: [...PAIR.nodes, { id: 2, tag: "deadEnd", depth: 1, parent: 0 }],
     edges: [[0, 1]],
+    loops: [],
   };
 
   it("when straight and L corridors are blocked, finds a way around", () => {
@@ -134,6 +142,40 @@ describe("astar", () => {
         width: 1,
       });
     expect(route(5)).toEqual(route(5));
+  });
+});
+
+describe("loops", () => {
+  it("routes a loop when it can, and leaves it out when it can't", () => {
+    // Three rooms in a row; the loop from 0 to 2 has room 1 squarely in
+    // its way, and straight corridors can't go around.
+    const three: Placement = [
+      { node: 0, x: 0, y: 0, mask: square },
+      { node: 1, x: 6, y: 0, mask: square },
+      { node: 2, x: 12, y: 0, mask: square },
+    ];
+    const graph: Graph = {
+      nodes: [
+        { id: 0, tag: "start", depth: 0, parent: null },
+        { id: 1, tag: "normal", depth: 1, parent: 0 },
+        { id: 2, tag: "goal", depth: 2, parent: 1 },
+      ],
+      edges: [
+        [0, 1],
+        [1, 2],
+      ],
+      loops: [[0, 2]],
+    };
+    const route = (routers: RouterSpec[]) =>
+      routeCorridors(seeded(1), graph, three, { routers, width: 1 })!;
+
+    expect(route([{ kind: "straight" }]).map((c) => c.rooms)).toEqual([
+      [0, 1],
+      [1, 2],
+    ]);
+    expect(
+      route([{ kind: "straight" }, { kind: "astar" }]).at(-1)!.rooms,
+    ).toEqual([0, 2]);
   });
 });
 

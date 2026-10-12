@@ -11,6 +11,7 @@ const PAIR: Graph = {
     { id: 1, tag: "goal", depth: 1, parent: 0 },
   ],
   edges: [[0, 1]],
+  loops: [],
 };
 
 const square = maskFromAscii(["..", ".."]);

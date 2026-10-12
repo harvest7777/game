@@ -5,7 +5,7 @@ import { ENEMY_SHOT, FIREBALL_ART, HIT_SOUND } from "./shared";
 // out, so mirrored pairs sweep across each other.
 export const malphasCurl: ProjectileDef = {
   speed: 7,
-  damage: [45, 55],
+  damage: [35, 45],
   lifetime: 2.2,
   hitbox: { r: 0.25 },
   sprite: { art: FIREBALL_ART, outline: ENEMY_SHOT },

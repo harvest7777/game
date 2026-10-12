@@ -95,4 +95,81 @@ describe("generateGraph", () => {
     const { nodes } = generateGraph(seeded(1), tiny);
     expect(nodes.map((n) => n.tag)).toEqual(["start", "goal"]);
   });
+
+  it("keeps loops out of the tree", () => {
+    const graph = generateGraph(seeded(1), {
+      ...SPEC,
+      loops: [{ kind: "shortcut", count: [2, 2], span: [2, 2] }],
+    });
+    expect(graph.edges).toHaveLength(graph.nodes.length - 1);
+  });
+});
+
+describe("loops", () => {
+  const LONG: GraphSpec = {
+    mainPath: [9, 9],
+    branches: [0, 0],
+    branchLength: [1, 1],
+  };
+  const mainIds = (graph: Graph) => mainPath(graph);
+  const degrees = (graph: Graph) => {
+    const degree = graph.nodes.map(() => 0);
+    for (const [a, b] of [...graph.edges, ...graph.loops]) {
+      degree[a]++;
+      degree[b]++;
+    }
+    return degree;
+  };
+
+  it("a shortcut joins main path rooms `span` apart, never the goal", () => {
+    for (const seed of SEEDS) {
+      const graph = generateGraph(seeded(seed), {
+        ...LONG,
+        loops: [{ kind: "shortcut", count: [1, 2], span: [2, 3] }],
+      });
+      const main = mainIds(graph);
+      expect(graph.loops.length).toBeGreaterThan(0);
+      for (const [a, b] of graph.loops) {
+        const apart = main.indexOf(b) - main.indexOf(a);
+        expect(apart).toBeGreaterThanOrEqual(2);
+        expect(apart).toBeLessThanOrEqual(3);
+        expect(graph.nodes[b].tag).not.toBe("goal");
+      }
+    }
+  });
+
+  it("a detour leaves the main path and rejoins it `span` rooms on", () => {
+    for (const seed of SEEDS) {
+      const graph = generateGraph(seeded(seed), {
+        ...LONG,
+        loops: [
+          { kind: "detour", count: [1, 1], span: [3, 3], length: [2, 2] },
+        ],
+      });
+      const main = mainIds(graph);
+      const [[a, b]] = graph.loops;
+      // One end is on the main path, the other the detour's last room.
+      const [onMain, last] = main.includes(a) ? [a, b] : [b, a];
+      const first = graph.nodes[last].parent!;
+      const leftFrom = graph.nodes[first].parent!;
+      expect(main.indexOf(onMain) - main.indexOf(leftFrom)).toBe(3);
+      expect(graph.nodes.length).toBe(9 + 2);
+    }
+  });
+
+  it("never joins a room to more than MAX_DEGREE others, loops included", () => {
+    for (const seed of SEEDS) {
+      const graph = generateGraph(seeded(seed), {
+        ...LONG,
+        branches: [6, 6],
+        loops: [
+          { kind: "shortcut", count: [4, 4], span: [2, 2] },
+          { kind: "detour", count: [4, 4], span: [2, 3], length: [1, 1] },
+        ],
+      });
+      for (const degree of degrees(graph)) {
+        expect(degree).toBeLessThanOrEqual(MAX_DEGREE);
+      }
+    }
+  });
 });

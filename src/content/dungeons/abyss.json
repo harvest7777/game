@@ -1,0 +1,122 @@
+{
+  "name": "Abyss of Demons",
+  "theme": {
+    "floor": "abyssBrick",
+    "corridor": "charredStone",
+    "liquid": "lava",
+    "accent": "cooledLava"
+  },
+  "graph": {
+    "mainPath": [8, 11],
+    "branches": [2, 4],
+    "branchLength": [1, 2],
+    "loops": [{ "kind": "shortcut", "count": [1, 1], "span": [2, 3] }]
+  },
+  "placement": { "kind": "grow", "gap": [5, 9] },
+  "corridors": {
+    "routers": [{ "kind": "straight" }, { "kind": "astar", "wiggle": 1.5 }],
+    "width": 3
+  },
+  "rooms": {
+    "start": [
+      {
+        "weight": 1,
+        "shape": { "kind": "rect", "w": [9, 9], "h": [9, 9] },
+        "features": [{ "kind": "border", "width": 1 }]
+      }
+    ],
+    "normal": [
+      {
+        "weight": 3,
+        "shape": { "kind": "cave", "w": [16, 22], "h": [16, 22] },
+        "features": [{ "kind": "pool", "coverage": [0.15, 0.3] }],
+        "spawns": [
+          {
+            "rolls": [2, 3],
+            "pick": [{ "enemy": "imp", "weight": 1, "count": [3, 4] }],
+            "placement": { "kind": "cluster", "radius": 2 }
+          },
+          {
+            "rolls": [0, 1],
+            "pick": [
+              { "enemy": "demon", "weight": 2 },
+              { "enemy": "demonWarrior", "weight": 1 }
+            ],
+            "placement": { "kind": "scatter", "spacing": 3 }
+          }
+        ]
+      },
+      {
+        "weight": 2,
+        "shape": { "kind": "ellipse", "w": [13, 17], "h": [13, 17] },
+        "features": [
+          { "kind": "pillars", "spacing": 4 },
+          { "kind": "pool", "coverage": [0.05, 0.1], "cell": "accent" }
+        ],
+        "spawns": [
+          {
+            "rolls": [1, 2],
+            "pick": [
+              { "enemy": "brute", "weight": 2 },
+              { "enemy": "bruteWarrior", "weight": 1 }
+            ],
+            "placement": { "kind": "scatter", "spacing": 4 }
+          },
+          {
+            "rolls": [1, 2],
+            "pick": [{ "enemy": "demonWarrior", "weight": 1 }],
+            "placement": { "kind": "scatter", "spacing": 3 }
+          }
+        ]
+      },
+      {
+        "weight": 1,
+        "shape": { "kind": "rect", "w": [12, 16], "h": [12, 16] },
+        "features": [{ "kind": "border", "width": 1, "cell": "liquid" }],
+        "spawns": [
+          {
+            "rolls": [3, 3],
+            "pick": [{ "enemy": "demonMage", "weight": 1 }],
+            "placement": { "kind": "ring", "radius": 4 }
+          },
+          {
+            "rolls": [1, 2],
+            "pick": [{ "enemy": "demon", "weight": 1 }],
+            "placement": { "kind": "center" }
+          }
+        ]
+      }
+    ],
+    "deadEnd": [
+      {
+        "weight": 1,
+        "shape": { "kind": "ellipse", "w": [9, 11], "h": [9, 11] },
+        "features": [{ "kind": "border", "width": 1 }],
+        "spawns": [
+          {
+            "rolls": [1, 1],
+            "pick": [{ "enemy": "malphasProtector", "weight": 1 }],
+            "placement": { "kind": "center" }
+          }
+        ]
+      }
+    ],
+    "goal": [
+      {
+        "weight": 1,
+        "shape": { "kind": "ellipse", "w": [25, 25], "h": [25, 25] },
+        "features": [
+          { "kind": "border", "width": 2, "cell": "liquid" },
+          { "kind": "pillars", "spacing": 6 }
+        ],
+        "spawns": [
+          {
+            "rolls": [1, 1],
+            "pick": [{ "enemy": "malphas", "weight": 1 }],
+            "placement": { "kind": "center" }
+          }
+        ]
+      }
+    ]
+  }
+}

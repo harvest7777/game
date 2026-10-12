@@ -11,6 +11,7 @@ const PAIR: Graph = {
     { id: 1, tag: "goal", depth: 1, parent: 0 },
   ],
   edges: [[0, 1]],
+  loops: [],
 };
 
 const SEEDS = Array.from({ length: 100 }, (_, i) => i);
@@ -110,11 +111,26 @@ describe("border", () => {
 
     decorateRoom(seeded(1), map, map.rooms[1], [{ kind: "border", width: 1 }]);
 
-    // Rows of the room (x 5 to 9 after padding), with the corridor in.
+    // Rows of the room (x 5 to 9 after padding). The corridor comes into
+    // the middle of the left edge, which stays clear for 2 tiles around.
     const rows = dungeonAscii(map)
       .slice(2, 7)
       .map((row) => row.slice(5, 10));
-    expect(rows).toEqual(["*****", "*...*", "*...*", "*...*", "*****"]);
+    expect(rows).toEqual(["...**", "....*", "....*", "....*", "...**"]);
+  });
+
+  it("can be liquid without ever blocking a way in", () => {
+    for (const seed of SEEDS) {
+      const map = roomWithDoor(9, 9);
+      const room = map.rooms[1];
+
+      decorateRoom(seeded(seed), map, room, [
+        { kind: "border", width: 2, cell: "liquid" },
+      ]);
+
+      expect(count(map, "liquid")).toBeGreaterThan(0);
+      expect(isWhole(map, room)).toBe(true);
+    }
   });
 });
 
