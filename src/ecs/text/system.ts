@@ -32,7 +32,9 @@ export function damageTextSystem(world: World, _dt: number): void {
 
   for (const { target, text: label, color } of numbers) {
     const at = position.get(target);
-    if (!at) continue;
+    // Something invulnerable still takes its hits (and their sounds), but
+    // floats no numbers: in a stress test that's thousands of them.
+    if (!at || world.components.invulnerable.has(target)) continue;
     const stacked = counts.get(target) ?? 0;
     counts.set(target, stacked + 1);
 

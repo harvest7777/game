@@ -20,6 +20,7 @@ import { characters } from "./content/characters";
 import { spawnCharacter } from "./ecs/character/spawn";
 import {
   drawHud,
+  measureText,
   FLASH_SECONDS,
   layoutHud,
   uiScreen,
@@ -241,7 +242,15 @@ function toHud(event: MouseEvent, kind: "move" | "down" | "up"): boolean {
     pixel,
   );
   const time = event.timeStamp / 1000;
-  const panels = layoutHud(world, player, hudState, screen, time);
+  const frameArt = { manifest, regions: art.regions, glyphs: art.glyphs };
+  const panels = layoutHud(
+    world,
+    player,
+    hudState,
+    screen,
+    time,
+    measureText(frameArt),
+  );
   const x = (event.clientX * dpr) / pixel;
   const y = (event.clientY * dpr) / pixel;
   const pointer: PointerEvent = { kind, x, y, time };

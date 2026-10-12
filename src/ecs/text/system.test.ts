@@ -164,3 +164,17 @@ describe("damageTextSystem stacking cap", () => {
     expect(highest).toBeCloseTo((MAX_STACK - 1) * STACK_GAP);
   });
 });
+
+describe("damageTextSystem and invulnerability", () => {
+  it("floats no numbers over something invulnerable", () => {
+    const world = createWorld(createTiles(5, 5));
+    const target = spawn(world);
+    world.components.position.set(target, { x: 2, y: 2 });
+    world.components.invulnerable.set(target, true);
+    world.events.damaged.push({ target, amount: 30 });
+
+    damageTextSystem(world, 0.05);
+
+    expect(world.components.floatingText.size).toBe(0);
+  });
+});

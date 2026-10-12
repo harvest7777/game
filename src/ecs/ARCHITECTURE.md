@@ -116,7 +116,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 The Health stat works on anything, player or enemy. Each tick, after movement:
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
-2. `damageSystem` applies each hit through `applyDamage` (`shared/damage.ts`), the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
+2. `damageSystem` applies each hit through `applyDamage` (`shared/damage.ts`), the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so its sounds still play) but keeps its health, and floats no damage numbers.
 3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked, at most four rows high: every hit keeps its own number, but past the fourth they share the top row, so a crowd's worth of hits in one tick can't build a tower. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal, the player included. Only `invulnerable` keeps something alive.
 5. `cleanupSystem` removes everything queued.
@@ -268,10 +268,10 @@ The player's bar always shows; anything else's shows only once it's hurt (`recen
 
 ## Fonts and text
 
-There are two fonts, both white glyphs in 8×8 cells in the atlas like any other art, tinted when drawn:
+There are two fonts, both from a shaded 8×8 font sheet: white glyph faces over grey shading, in 8×8 cells in the atlas like any other art, tinted when drawn (the shading takes the tint too, just darker):
 
-- `regular`: 1-pixel strokes, with letters, digits and common punctuation, for labels and tooltips. Capitals and digits are 7 rows tall, and the bottom row is for descenders.
-- `bold`: chunky 2-pixel digits for damage numbers.
+- `regular`: every printable ASCII character, for labels and tooltips.
+- `bold`: its digits, for damage numbers.
 
 Glyph files are named so case can't collide on any file system (`upper-a`, `lower-a`, `7`, `question`; see `glyphFile`). **Spacing comes from the art**: when the atlas loads, each glyph's inked columns are measured, so narrow letters take less room, and editing a PNG is all it takes to change a character's spacing. `layoutText` places glyphs by those widths with 1 font pixel between letters and 3 for a space. `pushText` draws laid-out text in screen space, left-aligned or centered, with an optional outline. The font debug render shows every glyph.
 

@@ -26,11 +26,28 @@ const PUNCTUATION: Record<string, string> = {
   "(": "open-paren",
   ")": "close-paren",
   "%": "percent",
+  "#": "hash",
+  $: "dollar",
+  "&": "ampersand",
+  "*": "asterisk",
+  "<": "less",
+  "=": "equals",
+  ">": "greater",
+  "@": "at",
+  "[": "open-bracket",
+  "\\": "backslash",
+  "]": "close-bracket",
+  "^": "caret",
+  _: "underscore",
+  "`": "backtick",
+  "{": "open-brace",
+  "|": "pipe",
+  "}": "close-brace",
+  "~": "tilde",
 };
 
 // File name for a character's glyph. Letters say their case, since some
-// file systems treat "a" and "A" as the same name. Matches glyphFile in
-// scripts/generate-sprites.mjs.
+// file systems treat "a" and "A" as the same name.
 export function glyphFile(char: string): string {
   if (/[A-Z]/.test(char)) return `upper-${char.toLowerCase()}`;
   if (/[a-z]/.test(char)) return `lower-${char}`;
@@ -56,7 +73,7 @@ export function createManifest(sprites: SpriteArt[]): Manifest {
       regular: fontFiles(
         "regular",
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" +
-          ".,:;!?'\"-+/()%",
+          ".,:;!?'\"-+/()%#$&*<=>@[\\]^_`{|}~",
       ),
     },
     sprites: [...sprites, ...HUD_ART],

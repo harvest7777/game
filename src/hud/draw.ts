@@ -18,7 +18,7 @@ import { containerPanel, containerView } from "./container";
 import { inventoryPanel, inventoryView } from "./inventory";
 import { chunkTop, stepHpBar } from "./hpBar";
 import { vitalsPanel } from "./vitals";
-import { statsPanel, statsView } from "./stats";
+import { statsPanel, statsView, type MeasureText } from "./stats";
 import type { PlacedPanel } from "./input";
 import {
   attachPanel,
@@ -41,6 +41,7 @@ export function layoutHud(
   state: HudState,
   screen: { w: number; h: number },
   time: number,
+  measure?: MeasureText,
 ): PlacedPanel[] {
   const layouts: Partial<Record<DockedPanelId, PanelLayout>> = {};
   const equipment = equipmentView(world, player);
@@ -59,7 +60,7 @@ export function layoutHud(
   const inventory = state.inventoryOpen && inventoryView(world, player);
   if (inventory) layouts.inventory = inventoryPanel(inventory);
   const stats = statsView(world, player);
-  if (stats) layouts.stats = statsPanel(stats);
+  if (stats) layouts.stats = statsPanel(stats, measure);
 
   const placed: Partial<Record<DockedPanelId, PlacedPanel>> = {};
   for (const id of PANEL_ORDER) {
@@ -145,7 +146,14 @@ export function drawHud(
   time: number,
 ): void {
   const screen = uiScreen(width, height, pixel);
-  const panels = layoutHud(world, player, state, screen, time);
+  const panels = layoutHud(
+    world,
+    player,
+    state,
+    screen,
+    time,
+    measureText(art),
+  );
   const dragged = state.press?.dragging ? state.press.item : undefined;
   const flashes = state.flashes.map((f) => ({
     ref: f.ref,
@@ -204,6 +212,12 @@ export function drawHud(
     const at = placeTooltip(layout, pointer, uiScreen(width, height, tipPixel));
     pushElements(out, art, layout.elements, at.x, at.y, tipPixel);
   }
+}
+
+// How wide text is in the regular font, from the art's measured glyphs.
+export function measureText(art: Art): MeasureText {
+  const regular = art.manifest.fonts.regular;
+  return (text) => layoutText(text, regular, art.glyphs).width;
 }
 
 // Device pixels per tooltip pixel: half the HUD's, in whole device pixels.
