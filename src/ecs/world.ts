@@ -7,6 +7,9 @@ import type {
   Velocity,
   WallResponse,
 } from "./movement/components";
+import { createCamera, type Camera } from "./camera/resource";
+import type { Input } from "./input/actions";
+import type { PlayerControlled, Speed } from "./input/components";
 import type { Tiles } from "./tiles";
 
 export type Entity = number;
@@ -30,12 +33,16 @@ export type Components = {
   solid: Store<Solid>;
   wallResponse: Store<WallResponse>;
   blocked: Store<Blocked>;
+  playerControlled: Store<PlayerControlled>;
+  speed: Store<Speed>;
 };
 
 export type World = {
   nextEntity: Entity;
   components: Components;
   tiles: Tiles;
+  input: Input;
+  camera: Camera;
 };
 
 export type System = (world: World, dt: number) => void;
@@ -44,6 +51,8 @@ export function createWorld(tiles: Tiles): World {
   return {
     nextEntity: 0,
     tiles,
+    input: { held: new Set() },
+    camera: createCamera(),
     components: {
       position: createStore(),
       velocity: createStore(),
@@ -52,6 +61,8 @@ export function createWorld(tiles: Tiles): World {
       solid: createStore(),
       wallResponse: createStore(),
       blocked: createStore(),
+      playerControlled: createStore(),
+      speed: createStore(),
     },
   };
 }

@@ -12,8 +12,7 @@ export const Action = {
 
 export type Action = (typeof Action)[keyof typeof Action];
 
-export type CameraAction = Extract<Action, "ROTATE_LEFT" | "ROTATE_RIGHT">;
-
+// Maps KeyboardEvent.code to the action it triggers.
 export type Keybinds = Record<string, Action>;
 
 export const playerKeybinds: Keybinds = {
@@ -23,4 +22,20 @@ export const playerKeybinds: Keybinds = {
   KeyT: Action.Right,
   KeyW: Action.RotateLeft,
   KeyP: Action.RotateRight,
+  ShiftLeft: Action.Crouch,
+  ShiftRight: Action.Crouch,
 };
+
+// What the player is asking for this tick, as actions rather than keys.
+export type Input = { held: Set<Action> };
+
+export function actionsFromKeys(
+  keys: Iterable<string>,
+  keybinds: Keybinds,
+): Set<Action> {
+  const actions = new Set<Action>();
+  for (const key of keys) {
+    if (key in keybinds) actions.add(keybinds[key]);
+  }
+  return actions;
+}
