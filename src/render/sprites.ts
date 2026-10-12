@@ -5,6 +5,7 @@ import type { Vec2 } from "../ecs/shared/physics/math";
 import { lerpAngle } from "./angle";
 import { regionOf, type Art } from "./art";
 import {
+  firstFrame,
   IDLE_CLIP,
   type CreatureArt,
   type SpriteFile,
@@ -91,15 +92,11 @@ export function spritePixels(
   if (!sprite || !art) return fallback;
   const spriteArt = sprite.art;
   const file =
-    spriteArt.kind === "static"
-      ? spriteArt.file
-      : spriteArt.kind === "creature"
-        ? spriteArt.idle[0]
-        : spriteArt.kind === "animated"
-          ? spriteArt.clips[
-              world.components.animation.get(entity)?.clip ?? IDLE_CLIP
-            ]?.[0]
-          : spriteArt.front[0];
+    spriteArt.kind === "animated"
+      ? spriteArt.clips[
+          world.components.animation.get(entity)?.clip ?? IDLE_CLIP
+        ]?.[0]
+      : firstFrame(spriteArt);
   if (!file) return fallback;
   const region = regionOf(art, file);
   return { width: region.w * scale, height: region.h * scale };

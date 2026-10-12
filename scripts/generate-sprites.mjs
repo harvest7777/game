@@ -1308,6 +1308,25 @@ for (const clip of MALPHAS_CLIPS) {
   }
 }
 
+// The HUD's quest pointer: a gold arrowhead pointing right, turned to face
+// the quest.
+SPRITES["hud/quest-arrow"] = {
+  rows: [
+    "...y....",
+    "...yy...",
+    "yyyyYy..",
+    "yYYYYYy.",
+    "yYYYYYy.",
+    "yyyyYy..",
+    "...yy...",
+    "...y....",
+  ],
+  colors: {
+    y: [240, 170, 40, 255], // gold
+    Y: [255, 236, 150, 255], // bright gold
+  },
+};
+
 const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
   if (only.length > 0 && !only.includes(name)) continue;

@@ -42,6 +42,7 @@ export function spawnEnemy(world: World, def: EnemyDef, at: Vec2): Entity {
     ...(def.phases && { phase: { name: def.phases.start, time: 0 } }),
   });
   components.brain.set(entity, { mode: "idle", memory: freshMemory() });
+  if (def.quest) components.quest.set(entity, true);
   resetBossAction(world, entity);
   armForPhase(world, entity);
   return entity;

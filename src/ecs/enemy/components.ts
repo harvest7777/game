@@ -17,6 +17,9 @@ export type Enemy = {
   quirks?: Quirks;
 };
 
+// Marks what the player is here to beat, for the HUD to point at.
+export type Quest = true;
+
 // Which of its behaviors an enemy is running and what that behavior
 // remembers. Switching behavior starts it with a fresh memory.
 export type Brain = { mode: "idle" | "aggro"; memory: BehaviorMemory };

@@ -119,3 +119,13 @@ describe("spawnCrowd", () => {
     expect(farthest(400)).toBeGreaterThan(farthest(25) * 2);
   });
 });
+
+describe("spawnEnemy quests", () => {
+  it("marks an enemy that's a quest", () => {
+    const world = createWorld(createTiles(10, 10));
+    const boss = spawnEnemy(world, testEnemy({ quest: true }), { x: 2, y: 2 });
+    const slime = spawnEnemy(world, testEnemy(), { x: 3, y: 3 });
+    expect(world.components.quest.has(boss)).toBe(true);
+    expect(world.components.quest.has(slime)).toBe(false);
+  });
+});

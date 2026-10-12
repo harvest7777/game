@@ -20,6 +20,7 @@ import {
   updateHpBars,
 } from "./hud/draw";
 import { hudPointer, type PointerEvent } from "./hud/input";
+import { pushQuestPointer } from "./hud/quest";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
 import { installDebugPanel } from "./debug/panel";
 import { hudHotkey } from "./hud/hotkeys";
@@ -325,7 +326,9 @@ function render(time: number) {
     alpha,
     time,
     debug.renderDebug,
-    (out) =>
+    (out) => {
+      // Under the panels, so a panel in the same corner covers the pointer.
+      pushQuestPointer(out, frameArt, world, player, view, alpha, uiPixel(dpr));
       drawHud(
         out,
         frameArt,
@@ -336,7 +339,8 @@ function render(time: number) {
         height,
         uiPixel(dpr),
         time,
-      ),
+      );
+    },
   );
   renderer.draw(quads, sections, width, height, time);
 }

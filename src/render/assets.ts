@@ -43,8 +43,12 @@ function fontFiles(font: FontName, chars: string): Record<string, SpriteFile> {
   );
 }
 
+// Art the HUD draws on its own, besides item icons.
+export const QUEST_ARROW: SpriteFile = "hud/quest-arrow";
+const HUD_ART: SpriteArt[] = [{ kind: "static", file: QUEST_ARROW }];
+
 // The manifest for `sprites`, the game's art (ground included), plus the
-// fonts and walls the renderer always needs.
+// fonts, walls and HUD art the renderer always needs.
 export function createManifest(sprites: SpriteArt[]): Manifest {
   return {
     fonts: {
@@ -55,7 +59,7 @@ export function createManifest(sprites: SpriteArt[]): Manifest {
           ".,:;!?'\"-+/()%",
       ),
     },
-    sprites,
+    sprites: [...sprites, ...HUD_ART],
     walls: { top: "tiles/wall-top", side: "tiles/wall-side" },
   };
 }

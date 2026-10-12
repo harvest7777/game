@@ -46,6 +46,9 @@ export type EnemyDef<
   deathSound: SoundId;
   // Opened where it dies, like a dungeon boss's way home.
   deathPortal?: PortalDef;
+  // What the player is here to beat, like a dungeon's boss: the HUD points
+  // the way to it.
+  quest?: boolean;
 };
 
 // Checks an enemy's names against each other (see EnemyDef) and returns it

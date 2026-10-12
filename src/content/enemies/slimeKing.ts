@@ -203,4 +203,5 @@ export const slimeKing = defineEnemy({
   loot: slimeKingLoot,
   deathSound: "bossDeath",
   deathPortal: nexusPortal,
+  quest: true,
 });

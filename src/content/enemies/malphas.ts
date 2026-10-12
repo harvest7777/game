@@ -276,4 +276,5 @@ export const malphas = defineEnemy({
   loot: malphasLoot,
   deathSound: "bossDeath",
   deathPortal: nexusPortal,
+  quest: true,
 });

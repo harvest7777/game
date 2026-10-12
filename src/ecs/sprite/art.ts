@@ -43,3 +43,18 @@ export type SpriteArt<Clip extends string = string> =
 
 // The clip an animated sprite shows when nothing is playing.
 export const IDLE_CLIP = "idle";
+
+// The frame that stands for the art as a whole, like a portrait: what it
+// shows at rest, facing the viewer.
+export function firstFrame(art: SpriteArt): SpriteFile | undefined {
+  switch (art.kind) {
+    case "static":
+      return art.file;
+    case "creature":
+      return art.idle[0];
+    case "animated":
+      return art.clips[IDLE_CLIP]?.[0];
+    case "walker":
+      return art.front[0];
+  }
+}
