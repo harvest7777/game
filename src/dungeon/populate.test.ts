@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Graph } from "./graph";
 import { kindAt, rasterize, setKind, type DungeonMap } from "./grid";
 import { key, maskFromAscii } from "./mask";
-import { populateRoom, type SpawnGroup } from "./populate";
+import { populateRoom as populate, type SpawnGroup } from "./populate";
 import { seeded } from "./rng";
 
 const SOLO: Graph = {
@@ -10,6 +10,10 @@ const SOLO: Graph = {
   edges: [],
   loops: [],
 };
+
+// Just the spawns placed.
+const populateRoom = (...args: Parameters<typeof populate>) =>
+  populate(...args).spawns;
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i);
 
@@ -88,6 +92,14 @@ describe("populateRoom", () => {
     ]);
     expect(spawns).toHaveLength(4);
   });
+
+  it("reports the enemies it couldn't place", () => {
+    const map = room(2);
+    const { unplaced } = populate(seeded(1), map, map.rooms[0], [
+      imps({ kind: "center" }, 10),
+    ]);
+    expect(unplaced).toEqual(Array(6).fill("imp"));
+  });
 });
 
 describe("scatter", () => {
@@ -135,12 +147,44 @@ describe("ring", () => {
   });
 });
 
+describe("cluster packs", () => {
+  it("packs each roll around its own spot, apart from the others", () => {
+    for (const seed of SEEDS) {
+      const map = room(16);
+      const group: SpawnGroup = {
+        rolls: [3, 3],
+        pick: [{ enemy: "imp", weight: 1, count: [4, 4] }],
+        placement: { kind: "cluster", radius: 2 },
+      };
+      const { spawns, unplaced } = populate(seeded(seed), map, map.rooms[0], [
+        group,
+      ]);
+      expect(unplaced).toEqual([]);
+      // Three packs of four, each within 4 tiles across.
+      for (let p = 0; p < 3; p++) {
+        const pack = spawns.slice(p * 4, p * 4 + 4);
+        for (const a of pack) {
+          for (const b of pack) {
+            const apart = Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y);
+            expect(apart).toBeLessThanOrEqual(4);
+          }
+        }
+      }
+    }
+  });
+});
+
 describe("cluster", () => {
   it("packs spawns within `radius` of one another's middle", () => {
     for (const seed of SEEDS) {
       const map = room(14);
+      // One roll of five: one pack.
       const spawns = populateRoom(seeded(seed), map, map.rooms[0], [
-        imps({ kind: "cluster", radius: 2 }, 5),
+        {
+          rolls: [1, 1],
+          pick: [{ enemy: "imp", weight: 1, count: [5, 5] }],
+          placement: { kind: "cluster", radius: 2 },
+        },
       ]);
       expect(spawns).toHaveLength(5);
       for (const a of spawns) {

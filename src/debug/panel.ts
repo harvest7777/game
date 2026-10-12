@@ -88,7 +88,7 @@ export function installDebugPanel(
   const dungeonPicker = element<HTMLSelectElement>("debugDungeon");
   const seedInput = element<HTMLInputElement>("debugSeed");
   for (const id of dungeonIds) {
-    dungeonPicker.add(new Option(dungeons[id].name, id));
+    dungeonPicker.add(new Option(dungeons[id]!.name, id));
   }
   button("debugEnter", () => {
     const typed = Math.floor(Number(seedInput.value));
@@ -98,6 +98,7 @@ export function installDebugPanel(
         : Math.floor(Math.random() * 2 ** 31);
     seedInput.placeholder = String(seed);
     const def = dungeons[dungeonPicker.value as DungeonId];
+    if (!def) return;
     enter(dungeonLevel(def, seed, dungeonRegistries));
   });
   button("debugNexus", () => enter(levels.nexus));

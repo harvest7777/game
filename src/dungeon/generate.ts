@@ -1,4 +1,4 @@
-import { decorateRoom, type FeatureSpec } from "./features";
+import { decorateRoom, type FeatureKind, type FeatureSpec } from "./features";
 import { generateGraph, type GraphSpec, type RoomTag } from "./graph";
 import {
   isSafe,
@@ -48,6 +48,12 @@ export type Dungeon = {
   spawns: Spawn[];
   // Where characters arrive: the safe cell nearest the start room's middle.
   start: Cell;
+  // What the spec asked for that didn't fit: features left out of a room,
+  // and rolled enemies with nowhere to stand. Empty when everything fit.
+  report: {
+    droppedFeatures: { room: number; kind: FeatureKind }[];
+    unplacedSpawns: { room: number; enemy: string }[];
+  };
 };
 
 export const DEFAULT_ATTEMPTS = 50;
@@ -98,16 +104,35 @@ function tryGenerate(
   if (!corridors) return "corridors";
 
   const map = rasterize(graph, placement, corridors);
-  map.rooms.forEach((room, i) =>
-    decorateRoom(rng, map, room, roomSpecs[i].features ?? []),
+  const droppedFeatures = map.rooms.flatMap((room, i) =>
+    decorateRoom(rng, map, room, roomSpecs[i].features ?? []).map((kind) => ({
+      room: i,
+      kind,
+    })),
   );
   const start = middleOf(map, map.rooms[0]);
   if (!start || !allReachable(map, start)) return "unreachable";
 
-  const spawns = map.rooms.flatMap((room, i) =>
-    populateRoom(rng, map, room, roomSpecs[i].spawns ?? [], [start]),
-  );
-  return { seed, attempt, map, roomSpecs, spawns, start };
+  const spawns = [];
+  const unplacedSpawns = [];
+  for (const [i, room] of map.rooms.entries()) {
+    const placed = populateRoom(rng, map, room, roomSpecs[i].spawns ?? [], [
+      start,
+    ]);
+    spawns.push(...placed.spawns);
+    unplacedSpawns.push(
+      ...placed.unplaced.map((enemy) => ({ room: i, enemy })),
+    );
+  }
+  return {
+    seed,
+    attempt,
+    map,
+    roomSpecs,
+    spawns,
+    start,
+    report: { droppedFeatures, unplacedSpawns },
+  };
 }
 
 function roomsFor(spec: DungeonSpec, tag: RoomTag): RoomSpec[] {

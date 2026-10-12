@@ -15,8 +15,9 @@ export type SpawnPlacement =
   | { kind: "center" }
   // Evenly around the middle of the room, `radius` tiles out.
   | { kind: "ring"; radius: number }
-  // Packed together around one random spot away from entrances, all within
-  // `radius` tiles of it.
+  // Each roll's pick packed together around its own random spot away from
+  // entrances, within `radius` tiles of it where there's room (nearest
+  // first otherwise), the packs apart if they fit.
   | { kind: "cluster"; radius: number };
 
 export type SpawnPlacementKind = SpawnPlacement["kind"];
@@ -37,15 +38,18 @@ export type SpawnGroup = {
 
 export type Spawn = { enemy: string; at: Cell; room: number };
 
-// Where to put `count` spawns: up to `count` distinct cells from `open`,
-// fewer if they don't fit.
+// Where to put a group's spawns: up to as many distinct cells from `open`
+// as `packs` adds up to, fewer if they don't fit, in the same order. Each
+// pack is what one roll brought, so placements that keep packs together can.
 type PlaceFn<S> = (
   rng: Rng,
   room: DungeonRoom,
   open: Cell[],
-  count: number,
+  packs: number[],
   spec: S,
 ) => Cell[];
+
+const total = (packs: number[]) => packs.reduce((sum, n) => sum + n, 0);
 
 // How far scattered spawns keep from entrances, so nothing camps a door.
 const ENTRANCE_CLEARANCE = 3;
@@ -53,7 +57,8 @@ const ENTRANCE_CLEARANCE = 3;
 export const PLACEMENTS: {
   [K in SpawnPlacementKind]: PlaceFn<Extract<SpawnPlacement, { kind: K }>>;
 } = {
-  scatter: (rng, room, open, count, { spacing = 2 }) => {
+  scatter: (rng, room, open, packs, { spacing = 2 }) => {
+    const count = total(packs);
     const chosen: Cell[] = [];
     for (const cell of shuffled(rng, open)) {
       if (chosen.length === count) break;
@@ -64,14 +69,15 @@ export const PLACEMENTS: {
     return chosen;
   },
 
-  center: (_rng, room, open, count) => {
+  center: (_rng, room, open, packs) => {
     const middle = centroid(room.cells);
     return [...open]
       .sort((a, b) => distance(a, middle) - distance(b, middle))
-      .slice(0, count);
+      .slice(0, total(packs));
   },
 
-  ring: (_rng, room, open, count, { radius }) => {
+  ring: (_rng, room, open, packs, { radius }) => {
+    const count = total(packs);
     const middle = centroid(room.cells);
     const left = [...open];
     const chosen: Cell[] = [];
@@ -90,50 +96,70 @@ export const PLACEMENTS: {
     return chosen;
   },
 
-  cluster: (rng, room, open, count, { radius }) => {
-    const anchors = open.filter(
-      (c) => distanceTo(room.entrances, c) >= ENTRANCE_CLEARANCE,
-    );
-    if (!anchors.length) return [];
-    const anchor = anchors[Math.floor(rng() * anchors.length)];
-    return open
-      .filter((c) => distance(c, anchor) <= radius)
-      .sort((a, b) => distance(a, anchor) - distance(b, anchor))
-      .slice(0, count);
+  cluster: (rng, room, open, packs, { radius }) => {
+    const left = [...open];
+    const anchors: Cell[] = [];
+    const chosen: Cell[] = [];
+    for (const size of packs) {
+      const candidates = left.filter(
+        (c) => distanceTo(room.entrances, c) >= ENTRANCE_CLEARANCE,
+      );
+      // Apart from the other packs if there's room, so they don't merge.
+      const apart = candidates.filter(
+        (c) => distanceTo(anchors, c) > radius * 2 + 1,
+      );
+      const pool = apart.length ? apart : candidates;
+      if (!pool.length) break;
+      const anchor = pool[Math.floor(rng() * pool.length)];
+      anchors.push(anchor);
+      // Nearest first, so a pack crowded by walls or lava spills just past
+      // `radius` rather than leaving anyone out.
+      const pack = [...left]
+        .sort((a, b) => distance(a, anchor) - distance(b, anchor))
+        .slice(0, size);
+      for (const cell of pack) left.splice(left.indexOf(cell), 1);
+      chosen.push(...pack);
+    }
+    return chosen;
   },
 };
 
-// Every spawn in a room, from each of its groups in order. Two spawns never
-// share a cell, and none goes on a `reserved` one.
+// Every spawn in a room, from each of its groups in order, and the enemies
+// rolled that found nowhere to stand. Two spawns never share a cell, and
+// none goes on a `reserved` one.
 export function populateRoom(
   rng: Rng,
   map: DungeonMap,
   room: DungeonRoom,
   groups: readonly SpawnGroup[],
   reserved: readonly Cell[] = [],
-): Spawn[] {
+): { spawns: Spawn[]; unplaced: string[] } {
   const spawns: Spawn[] = [];
+  const unplaced: string[] = [];
   const taken = new Set(reserved.map(key));
   for (const group of groups) {
     const enemies: string[] = [];
+    const packs: number[] = [];
     const rolls = int(rng, group.rolls);
     for (let i = 0; i < rolls; i++) {
       const pick = weighted(rng, group.pick);
       const count = int(rng, pick.count ?? [1, 1]);
       for (let j = 0; j < count; j++) enemies.push(pick.enemy);
+      packs.push(count);
     }
     if (!enemies.length) continue;
     const open = room.cells.filter(
       (c) => isSafe(kindAt(map, c.x, c.y)) && !taken.has(key(c)),
     );
     const place = PLACEMENTS[group.placement.kind] as PlaceFn<SpawnPlacement>;
-    const spots = place(rng, room, open, enemies.length, group.placement);
+    const spots = place(rng, room, open, packs, group.placement);
     spots.forEach((at, i) => {
       taken.add(key(at));
       spawns.push({ enemy: enemies[i], at, room: room.node.id });
     });
+    unplaced.push(...enemies.slice(spots.length));
   }
-  return spawns;
+  return { spawns, unplaced };
 }
 
 function centroid(cells: readonly Cell[]): { x: number; y: number } {

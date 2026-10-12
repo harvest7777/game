@@ -93,22 +93,29 @@ export const FEATURES: {
 };
 
 // Applies each feature to the room in order, undoing and retrying any that
-// would cut the room up or block an entrance.
+// would cut the room up or block an entrance. Returns the kinds of any it
+// had to leave out.
 export function decorateRoom(
   rng: Rng,
   map: DungeonMap,
   room: DungeonRoom,
   features: readonly FeatureSpec[],
-): void {
+): FeatureKind[] {
+  const dropped: FeatureKind[] = [];
   for (const spec of features) {
     const feature = FEATURES[spec.kind] as FeatureFn<FeatureSpec>;
-    for (let i = 0; i < FEATURE_TRIES; i++) {
+    let fitted = false;
+    for (let i = 0; i < FEATURE_TRIES && !fitted; i++) {
       const before = room.cells.map((c) => kindAt(map, c.x, c.y));
       feature(rng, map, room, spec);
-      if (isWhole(map, room)) break;
-      room.cells.forEach((c, j) => setKind(map, c.x, c.y, before[j]));
+      fitted = isWhole(map, room);
+      if (!fitted) {
+        room.cells.forEach((c, j) => setKind(map, c.x, c.y, before[j]));
+      }
     }
+    if (!fitted) dropped.push(spec.kind);
   }
+  return dropped;
 }
 
 // Whether all the room's safe floor is one connected piece, entrances

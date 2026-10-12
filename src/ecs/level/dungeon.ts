@@ -1,5 +1,5 @@
 import type { DungeonDef, ThemedCell } from "../../dungeon/definition";
-import { generateDungeon } from "../../dungeon/generate";
+import { generateDungeon, type Dungeon } from "../../dungeon/generate";
 import { kindAt, type CellKind } from "../../dungeon/grid";
 import type { EnemyDef } from "../enemy/definitions";
 import type { GroundDef, WallDef } from "../tiles";
@@ -35,8 +35,17 @@ export function dungeonLevel(
   seed: number,
   registries: DungeonRegistries,
 ): LevelDef {
-  const dungeon = generateDungeon(def, seed);
-  const { map, start } = dungeon;
+  return levelFromDungeon(def, generateDungeon(def, seed), registries);
+}
+
+// The level for a dungeon already generated from `def`, wherever that
+// happened (a worker, say).
+export function levelFromDungeon(
+  def: DungeonDef,
+  dungeon: Dungeon,
+  registries: DungeonRegistries,
+): LevelDef {
+  const { map, start, seed } = dungeon;
   const ground = (cell: ThemedCell): GroundDef =>
     lookup(registries.grounds, def.theme[cell] ?? def.theme.floor, "ground");
 

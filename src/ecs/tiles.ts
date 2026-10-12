@@ -140,3 +140,66 @@ export function* wallsInBox(
     }
   }
 }
+
+// Whether nothing blocks the straight line from `a` to `b`: no wall or void
+// on any tile it passes through, walking tile to tile along it. A line
+// through the exact corner between two diagonal walls slips past.
+export function clearLine(tiles: Tiles, a: Vec2, b: Vec2): boolean {
+  let x = Math.floor(a.x);
+  let y = Math.floor(a.y);
+  const endX = Math.floor(b.x);
+  const endY = Math.floor(b.y);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const stepX = Math.sign(dx);
+  const stepY = Math.sign(dy);
+  // How far along the line (0 to 1) each tile step takes, and where the
+  // next one in each direction is.
+  const deltaX = dx === 0 ? Infinity : Math.abs(1 / dx);
+  const deltaY = dy === 0 ? Infinity : Math.abs(1 / dy);
+  let nextX =
+    dx === 0 ? Infinity : (stepX > 0 ? x + 1 - a.x : a.x - x) * deltaX;
+  let nextY =
+    dy === 0 ? Infinity : (stepY > 0 ? y + 1 - a.y : a.y - y) * deltaY;
+  const steps = Math.abs(endX - x) + Math.abs(endY - y);
+  for (let i = 0; i < steps; i++) {
+    if (nextX < nextY) {
+      x += stepX;
+      nextX += deltaX;
+    } else {
+      y += stepY;
+      nextY += deltaY;
+    }
+    if (isWall(tiles, x, y)) return false;
+  }
+  return true;
+}
+
+// Whether something can stand on the tile under `at` without getting hurt.
+export function isSafeGround(tiles: Tiles, at: Vec2): boolean {
+  const x = Math.floor(at.x);
+  const y = Math.floor(at.y);
+  return !isWall(tiles, x, y) && !groundUnder(tiles, at)?.hazard;
+}
+
+// `at` if it's safe ground, otherwise the middle of the nearest safe tile
+// within `reach` tiles that a straight line from `at` reaches, or `at` if
+// there's none.
+export function nearestSafeSpot(tiles: Tiles, at: Vec2, reach = 6): Vec2 {
+  if (isSafeGround(tiles, at)) return { x: at.x, y: at.y };
+  let best: Vec2 | undefined;
+  let bestDistance = Infinity;
+  const cx = Math.floor(at.x);
+  const cy = Math.floor(at.y);
+  for (let y = cy - reach; y <= cy + reach; y++) {
+    for (let x = cx - reach; x <= cx + reach; x++) {
+      const spot = { x: x + 0.5, y: y + 0.5 };
+      const distance = Math.hypot(spot.x - at.x, spot.y - at.y);
+      if (distance > reach || distance >= bestDistance) continue;
+      if (!isSafeGround(tiles, spot) || !clearLine(tiles, at, spot)) continue;
+      best = spot;
+      bestDistance = distance;
+    }
+  }
+  return best ?? { x: at.x, y: at.y };
+}

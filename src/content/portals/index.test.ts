@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { generateHere } from "../../dungeon/generator";
 import { destination } from "../destinations";
 import { enemies } from "../enemies";
 import { levels } from "../levels";
@@ -6,8 +7,8 @@ import { portals } from ".";
 
 describe("portal definitions", () => {
   for (const [id, portal] of Object.entries(portals)) {
-    it(`${id} leads somewhere`, () => {
-      expect(destination(portal.to, () => 0.5)).toBeDefined();
+    it(`${id} leads somewhere`, async () => {
+      expect(await destination(portal.to)).toBeDefined();
     });
   }
 
@@ -25,12 +26,17 @@ describe("portal definitions", () => {
 });
 
 describe("destination", () => {
-  it("is undefined for somewhere that doesn't exist", () => {
-    expect(destination("nowhere")).toBeUndefined();
+  it("is undefined for somewhere that doesn't exist", async () => {
+    expect(await destination("nowhere")).toBeUndefined();
   });
 
-  it("builds a fresh dungeon from the random seed", () => {
-    const level = destination("testCaves", () => 0.5)!;
+  it("builds a fresh dungeon from the random seed", async () => {
+    const level = (await destination("testCaves", generateHere, () => 0.5))!;
     expect(level.name).toBe(`Test Caves (seed ${2 ** 30})`);
+  });
+
+  it("rejects when the dungeon can't be built", async () => {
+    const failing = () => Promise.reject(new Error("no room"));
+    await expect(destination("testCaves", failing)).rejects.toThrow("no room");
   });
 });

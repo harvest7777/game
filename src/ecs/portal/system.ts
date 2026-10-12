@@ -1,3 +1,4 @@
+import { nearestSafeSpot } from "../tiles";
 import type { World } from "../world";
 import { portalAt, spawnPortal } from "./spawn";
 
@@ -17,11 +18,12 @@ export function portalSystem(world: World, _dt: number): void {
 }
 
 // Opens a portal where each enemy with a `deathPortal` died, like the way
-// home when a dungeon's boss falls. Runs before cleanup removes the dead.
+// home when a dungeon's boss falls, moved to the nearest safe ground if it
+// died over lava. Runs before cleanup removes the dead.
 export function deathPortalSystem(world: World, _dt: number): void {
   for (const { entity } of world.events.deaths) {
     const def = world.components.enemy.get(entity)?.def.deathPortal;
     const at = world.components.position.get(entity);
-    if (def && at) spawnPortal(world, def, at);
+    if (def && at) spawnPortal(world, def, nearestSafeSpot(world.tiles, at));
   }
 }

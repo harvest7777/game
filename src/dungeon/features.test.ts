@@ -150,3 +150,24 @@ describe("decorateRoom", () => {
     }
   });
 });
+
+describe("decorateRoom reports", () => {
+  it("lists features it had to leave out, and nothing when all fit", () => {
+    const map = roomWithDoor(5, 5);
+    // Pillars need floor all round them, so a 5x5 room fits one.
+    expect(
+      decorateRoom(seeded(1), map, map.rooms[1], [
+        { kind: "pillars", spacing: 3 },
+      ]),
+    ).toEqual([]);
+
+    // Half a long thin room in liquid cuts it in two every try, from this
+    // seed.
+    const thin = roomWithDoor(16, 3);
+    expect(
+      decorateRoom(seeded(3), thin, thin.rooms[1], [
+        { kind: "pool", coverage: [0.5, 0.5] },
+      ]),
+    ).toEqual(["pool"]);
+  });
+});

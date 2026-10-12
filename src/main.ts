@@ -34,6 +34,7 @@ import { createSoundPlayer } from "./audio/player";
 import type { SoundMessage } from "./ecs/outbox";
 import { gameLoot } from "./content/loot";
 import { destination } from "./content/destinations";
+import { workerGenerator } from "./dungeon/generator";
 
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
@@ -277,19 +278,41 @@ function callback() {
   requestAnimationFrame(callback);
 }
 
+// Dungeons are built off the main thread, so entering one never stalls a
+// frame.
+const generateDungeons = workerGenerator();
+// Whether a trip is being prepared: the player stays put until it's ready,
+// and further requests wait until it's done.
+let travelling = false;
+
+// Takes the player to wherever a portal's `to` leads, once it's built. If
+// it can't be built, says why and leaves the player where they are.
+function travelTo(to: string) {
+  if (travelling) return;
+  travelling = true;
+  destination(to, generateDungeons)
+    .then((level) => {
+      if (level) enterLevel(level);
+      else console.error(`no destination "${to}"`);
+    })
+    .catch((error) => console.error(`couldn't travel to "${to}":`, error))
+    .finally(() => {
+      travelling = false;
+    });
+}
+
 // Reacts to what the simulation reported this frame: an item landing in one
 // of the player's slots makes that slot flash, sounds play, and the player
 // goes through any portal they entered.
 function takeOutbox(time: number) {
   const sounds: SoundMessage[] = [];
-  let travelTo: LevelDef | undefined;
   for (const message of world.outbox.splice(0)) {
     if (message.kind === "itemMoved" && message.entity === player) {
       hudState.flashes.push({ ref: message.to, at: time });
     } else if (message.kind === "sound") {
       sounds.push(message);
     } else if (message.kind === "travel" && message.entity === player) {
-      travelTo = destination(message.to);
+      travelTo(message.to);
     }
   }
   hudState.flashes = hudState.flashes.filter(
@@ -300,7 +323,6 @@ function takeOutbox(time: number) {
   const at =
     target === undefined ? undefined : world.components.position.get(target);
   if (at) soundPlayer.play(sounds, { at, angle: world.camera.angle });
-  if (travelTo) enterLevel(travelTo);
 }
 
 // Draws between the last two ticks: alpha is how far into the next tick the

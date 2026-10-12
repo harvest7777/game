@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { testCharacter, testEnemy } from "../../testing/defs";
 import { spawnCharacter } from "../character/spawn";
 import { spawnEnemy } from "../enemy/spawn";
-import { createTiles } from "../tiles";
+import { createTiles, setGround } from "../tiles";
 import { createWorld } from "../world";
 import type { PortalDef } from "./definitions";
 import { spawnPortal } from "./spawn";
@@ -78,5 +78,25 @@ describe("deathPortalSystem", () => {
     deathPortalSystem(world, 0.05);
 
     expect(world.components.portal.size).toBe(0);
+  });
+});
+
+describe("deathPortalSystem and lava", () => {
+  it("opens the portal on the nearest safe ground, not in lava", () => {
+    const floor = { art: "floor" };
+    const lava = { art: "lava", hazard: { damage: 10, every: 1 } };
+    const tiles = createTiles(10, 10, [floor, lava]);
+    setGround(tiles, 3, 4, 1);
+    const world = createWorld(tiles);
+    const boss = spawnEnemy(world, testEnemy({ deathPortal: HOME }), {
+      x: 3.9,
+      y: 4.5,
+    });
+    world.events.deaths.push({ entity: boss });
+
+    deathPortalSystem(world, 0.05);
+
+    const [[portal]] = [...world.components.portal];
+    expect(world.components.position.get(portal)).toEqual({ x: 4.5, y: 4.5 });
   });
 });

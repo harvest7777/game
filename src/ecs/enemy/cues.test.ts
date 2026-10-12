@@ -69,10 +69,26 @@ describe("summon", () => {
     expect(summoned()).toHaveLength(4);
   });
 
-  it("when a spot is in a wall, puts the summon on the boss", () => {
+  it("pulls a summon in rather than putting it through a wall", () => {
     const { world, minion, source, summoned } = setup();
-    // Due east, where random 0 puts the only summon.
-    setWall(world.tiles, 13, 10);
+    // A wall two tiles east, with open floor past it where random 0 would
+    // put the only summon.
+    for (let y = 0; y < 20; y++) setWall(world.tiles, 12, y);
+
+    playCue(
+      world,
+      { kind: "summon", enemy: minion, count: 1, radius: 3 },
+      source,
+    );
+
+    // A third of the way out is the furthest it can see.
+    const [[id]] = summoned();
+    expect(world.components.position.get(id)).toEqual({ x: 11, y: 10 });
+  });
+
+  it("when nowhere along the line is clear, puts the summon on the boss", () => {
+    const { world, minion, source, summoned } = setup();
+    setWall(world.tiles, 11, 10);
 
     playCue(
       world,
