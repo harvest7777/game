@@ -91,7 +91,7 @@ Rendering lives in `src/render/`, outside the ECS. It only reads the world; noth
 1. `alpha = accumulator / TICK_MS`: how far the leftover time reaches into the next tick.
 2. `frameView` works out where the camera looks (the followed entity's interpolated position) and builds a `View`.
 3. `buildFrame` fills a `QuadBuffer` with every quad to draw. It's pure: world + view + art in, flat quad data out. This is where all the rendering logic and its tests live.
-4. `renderer.draw` uploads that buffer once and draws it in up to **three instanced draw calls** (terrain, sprites, debug renders) from **one atlas texture**.
+4. `renderer.draw` uploads that buffer once and draws it in up to **three instanced draw calls** (terrain, sprites, then UI and debug renders together) from **one atlas texture**.
 
 Entities are drawn at `lerp(previousPosition, position, alpha)`, so the screen runs **up to one tick behind** the game (50 ms at 20 ticks/s). In exchange, movement is smooth at any monitor refresh rate.
 
@@ -112,6 +112,10 @@ Every quad carries a depth from how far down the screen it stands (a wall's tile
 Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. `Sprite.scale` draws the art bigger or smaller, outline included.
 
 Walkers with `attack` art thrust their weapon for the first half of each shot interval, so the attack pulses with the fire rate. Only the body changes: the legs keep the walk cycle, so attacking while walking works in every direction. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+
+## Health bars
+
+Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: green, yellow below half, red below a quarter. Bars are solid quads (`fill`), so they need no art, and are drawn in the UI section, over everything.
 
 ## Debug renders
 

@@ -14,12 +14,14 @@ in vec4 a_outline;
 in vec2 a_glow;
 in float a_depth;
 in float a_ring;
+in float a_fill;
 
 uniform vec2 u_screen;
 
 out vec2 v_texel;
 out vec2 v_uv;
 flat out float v_ring;
+flat out float v_fill;
 flat out vec4 v_region;
 flat out vec2 v_flipMargin;
 flat out vec4 v_outline;
@@ -44,6 +46,7 @@ void main() {
   v_glow = a_glow;
   v_uv = uv;
   v_ring = a_ring;
+  v_fill = a_fill;
 
   vec2 clip = position / u_screen * 2.0 - 1.0;
   gl_Position = vec4(clip.x, -clip.y, a_depth * 2.0 - 1.0, 1.0);
@@ -63,6 +66,7 @@ uniform float u_time;
 in vec2 v_texel;
 in vec2 v_uv;
 flat in float v_ring;
+flat in float v_fill;
 flat in vec4 v_region;
 flat in vec2 v_flipMargin;
 flat in vec4 v_outline;
@@ -96,6 +100,11 @@ void drawRing() {
 }
 
 void main() {
+  // Solid quads (health bars) are just their color.
+  if (v_fill > 0.5) {
+    color = v_outline;
+    return;
+  }
   if (v_ring > 0.0) {
     drawRing();
     return;
@@ -149,8 +158,8 @@ void main() {
 `;
 
 export type Renderer = {
-  // Draws a frame from one upload in up to three instanced calls, one per
-  // section (see buildFrame): terrain writes depth, sprites test against it,
+  // Draws a frame from one upload in up to three instanced calls (see
+  // buildFrame): terrain writes depth, sprites test against it, and UI and
   // debug overlays ignore it. Width/height are the canvas's pixel size; time
   // is seconds, for glow pulsing.
   draw(
@@ -195,6 +204,7 @@ export function createRenderer(
     ["a_glow", 2, QUAD_LAYOUT.glow],
     ["a_depth", 1, QUAD_LAYOUT.depth],
     ["a_ring", 1, QUAD_LAYOUT.ring],
+    ["a_fill", 1, QUAD_LAYOUT.fill],
   ];
   const locations = attributes.map(([name]) => {
     const location = gl.getAttribLocation(program, name);
@@ -246,7 +256,7 @@ export function createRenderer(
         gl.DYNAMIC_DRAW,
       );
 
-      const { terrain, sprites, debug } = sections;
+      const { terrain, sprites, ui, debug } = sections;
 
       // Ground and walls, back to front, recording how near each pixel is.
       gl.enable(gl.DEPTH_TEST);
@@ -261,11 +271,12 @@ export function createRenderer(
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
       }
 
-      // Debug overlays over everything.
-      if (debug > 0) {
+      // UI and debug overlays over everything, in one call since they
+      // follow each other in the buffer.
+      if (ui + debug > 0) {
         gl.disable(gl.DEPTH_TEST);
         startAt(terrain + sprites);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, debug);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, ui + debug);
       }
       gl.bindVertexArray(null);
     },

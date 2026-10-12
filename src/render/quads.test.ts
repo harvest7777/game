@@ -22,6 +22,7 @@ describe("QuadBuffer", () => {
       { color: [1, 0.5, 0.25, 1], glow: { radius: 2, pulseHz: 3 } },
       0.25,
       0.75,
+      true,
     );
 
     expect(readQuads(buffer)).toEqual([
@@ -40,6 +41,7 @@ describe("QuadBuffer", () => {
         glowPulseHz: 3,
         depth: 0.25,
         ring: 0.75,
+        fill: true,
       },
     ]);
   });
@@ -55,6 +57,7 @@ describe("QuadBuffer", () => {
     expect(quad.margin).toBe(0);
     expect(quad.depth).toBe(1);
     expect(quad.ring).toBe(0);
+    expect(quad.fill).toBe(false);
   });
 
   it("grows past its initial capacity and keeps earlier quads", () => {

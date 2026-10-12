@@ -3,6 +3,7 @@ import type { World } from "../ecs/world";
 import { lerpAngle } from "./angle";
 import type { Art } from "./art";
 import { createRenderDebug, pushDebug, type RenderDebug } from "./debug";
+import { pushHealthBars } from "./healthBars";
 import type { QuadBuffer } from "./quads";
 import { interpolatedPosition, pushSprites } from "./sprites";
 import { pushGround, pushWalls } from "./terrain";
@@ -40,15 +41,21 @@ export function frameView(
 
 // How many quads of a frame are in each section, in buffer order. Each
 // section is drawn with different depth rules.
-export type FrameSections = { terrain: number; sprites: number; debug: number };
+export type FrameSections = {
+  terrain: number;
+  sprites: number;
+  ui: number;
+  debug: number;
+};
 
 // Every quad for one frame: ground and walls, then sprites (enemies,
-// projectiles, player, in that order), then debug overlays.
+// projectiles, player, in that order), then UI like health bars, then debug
+// overlays.
 //
 // Terrain writes depth and sprites only test against it, so a wall hides the
 // part of a sprite standing behind it but never one standing in front, while
-// sprites still stack by layer among themselves. Debug overlays ignore depth
-// and go over everything. Only reads the world. `alpha` is how far between
+// sprites still stack by layer among themselves. UI and debug overlays
+// ignore depth and go over everything. Only reads the world. `alpha` is how far between
 // the previous tick and the latest one to draw things; `time` is in seconds
 // and drives animation.
 export function buildFrame(
@@ -66,6 +73,8 @@ export function buildFrame(
   const terrain = out.count;
   pushSprites(out, world, view, art, alpha, time);
   const sprites = out.count - terrain;
+  pushHealthBars(out, world, view, alpha);
+  const ui = out.count - terrain - sprites;
   pushDebug(out, world, view, alpha, debug);
-  return { terrain, sprites, debug: out.count - terrain - sprites };
+  return { terrain, sprites, ui, debug: out.count - terrain - sprites - ui };
 }
