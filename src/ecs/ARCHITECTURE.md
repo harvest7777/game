@@ -35,3 +35,38 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 `camera.angle` is the world direction the top of the screen faces, in radians clockwise from world up (-y). At 0 the screen and world line up. At π/2 the top of the screen faces world +x.
 
 Movement keys are always **screen-relative**: Up moves toward the top of the screen no matter how the camera is rotated. The player input system builds the direction in screen space and rotates it by `camera.angle` to get the world direction. Nothing else should need to know the screen and world differ.
+
+# Rendering
+
+Rendering lives in `src/render/`, outside the ECS. It only reads the world; nothing in `src/ecs/` knows about WebGL. The ECS holds plain data the renderer reads: `Sprite` (which art, which layer, outline/glow), `Facing`, and the camera resource.
+
+## Every frame
+
+1. `alpha = accumulator / TICK_MS`: how far the leftover time reaches into the next tick.
+2. `frameView` works out where the camera looks (the followed entity's interpolated position) and builds a `View`.
+3. `buildFrame` fills a `QuadBuffer` with every quad to draw. It's pure: world + view + art in, flat quad data out. This is where all the rendering logic and its tests live.
+4. `renderer.draw` uploads that buffer and draws everything in **one instanced draw call** from **one atlas texture**.
+
+Entities are drawn at `lerp(previousPosition, position, alpha)`, so the screen runs **up to one tick behind** the game (50 ms at 20 ticks/s). In exchange, movement is smooth at any monitor refresh rate.
+
+## Screen vs world
+
+Screen pixels are device pixels with the origin at the canvas's top-left and y down. At zoom 1, one tile is 40 CSS pixels and one sprite pixel is 5 (sprites are 8x8 = one tile). `camera.zoom` scales that with no limit, and `camera.focusOffset` moves where the followed entity sits on screen. Only tiles and entities inside the visible area are emitted, so zooming out just draws more.
+
+## Draw order (bottom to top)
+
+1. Ground tiles: rotate with the camera. Tiles outside the map aren't drawn.
+2. Walls: cubes one tile tall. Each wall draws the side faces that face the viewer after rotation and don't touch another wall, then its raised top. Walls are sorted back to front by screen y.
+3. Enemies, then projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
+
+Sprites always stay upright. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+
+## Outline and glow
+
+Both happen in the fragment shader, not in the art, so any sprite can get any color at runtime. A sprite with an outline is drawn on a quad enlarged by `margin` sprite pixels. Transparent pixels within 0.2 sprite pixels of an opaque one get the outline color. With a glow, pixels further out up to `glow.radius` get a fading version of it, pulsing at `glow.pulseHz`.
+
+## Art
+
+Sprites are separate 8x8 PNGs under `public/sprites/` so they're easy to edit. `src/render/assets.ts` lists which files each sprite name and tile type uses. At load, every file is packed into one atlas canvas with 1 px of padding and uploaded to the GPU once. To add art, drop in a PNG and reference it in the manifest. A test fails if the manifest names a file that doesn't exist.
+
+`scripts/generate-sprites.mjs` only seeded the starter art. Re-running it overwrites the PNGs.

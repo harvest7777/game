@@ -1,10 +1,15 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
-import { addControllable, addMovable } from "./ecs/bundles";
+import { addControllable, addMovable, addSprite } from "./ecs/bundles";
 import { actionsFromKeys, playerKeybinds } from "./ecs/input/actions";
 import { runTick } from "./ecs/tick";
-import { createTiles } from "./ecs/tiles";
+import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
+import { manifest } from "./render/assets";
+import { buildFrame, frameView } from "./render/frame";
+import { createRenderer } from "./render/gl";
+import { buildAtlas } from "./render/loader";
+import { QuadBuffer } from "./render/quads";
 
 const TEST_BUTTON = document.getElementById("test");
 
@@ -12,10 +17,63 @@ const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
 const TICK_SECONDS = 1 / TICKS_PER_SECOND;
 
-const world = createWorld(createTiles(20, 20));
+const canvas = document.getElementById("game") as HTMLCanvasElement;
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+if (!gl) throw new Error("WebGL2 isn't available");
+
+// A small walled test map with a few obstacles to walk around.
+const tiles = createTiles(32, 32);
+for (let i = 0; i < 32; i++) {
+  setWall(tiles, i, 0);
+  setWall(tiles, i, 31);
+  setWall(tiles, 0, i);
+  setWall(tiles, 31, i);
+}
+for (const [x, y] of [
+  [12, 12],
+  [13, 12],
+  [14, 12],
+  [12, 13],
+  [12, 14],
+  [20, 18],
+  [21, 18],
+  [20, 19],
+  [8, 22],
+]) {
+  setWall(tiles, x, y);
+}
+
+const world = createWorld(tiles);
 const player = spawn(world);
-addMovable(world, player, { at: { x: 10, y: 10 }, r: 0.4 });
+addMovable(world, player, { at: { x: 16, y: 16 }, r: 0.4 });
 addControllable(world, player, { speed: 5 });
+addSprite(world, player, {
+  name: "player",
+  layer: "player",
+  outline: { color: [0, 0, 0, 1] },
+});
+world.camera.target = player;
+
+const art = await buildAtlas(
+  manifest,
+  async (file) => {
+    const response = await fetch(
+      `${import.meta.env.BASE_URL}sprites/${file}.png`,
+    );
+    return createImageBitmap(await response.blob());
+  },
+  (width, height) => {
+    const atlasCanvas = new OffscreenCanvas(width, height);
+    const context = atlasCanvas.getContext("2d")!;
+    return {
+      canvas: atlasCanvas,
+      drawImage: (image: ImageBitmap, x: number, y: number) =>
+        context.drawImage(image, x, y),
+    };
+  },
+);
+const renderer = createRenderer(gl, art.canvas.canvas);
+const quads = new QuadBuffer();
 
 let accumulator: number = 0;
 let lastFrameTime: number = performance.now();
@@ -55,23 +113,37 @@ function callback() {
   while (accumulator >= TIME_PER_TICK_MS) {
     world.input.held = actionsFromKeys(inputs, playerKeybinds);
     runTick(world, TICK_SECONDS);
-    logPlayer();
     accumulator -= TIME_PER_TICK_MS;
   }
+
+  render(currentTime / 1000);
 
   lastFrameTime = currentTime;
   requestAnimationFrame(callback);
 }
 
-// Smoke test until there's rendering: log the player whenever it moves or
-// the camera turns.
-let lastLogged = "";
-function logPlayer() {
-  const position = world.components.position.get(player)!;
-  const degrees = (world.camera.angle * 180) / Math.PI;
-  const line = `player (${position.x.toFixed(2)}, ${position.y.toFixed(2)}) camera ${degrees.toFixed(0)}°`;
-  if (line !== lastLogged) console.log(line);
-  lastLogged = line;
+// Draws between the last two ticks: alpha is how far into the next tick the
+// leftover time reaches, so the screen runs up to one tick behind the game.
+function render(time: number) {
+  const dpr = window.devicePixelRatio;
+  const width = Math.round(canvas.clientWidth * dpr);
+  const height = Math.round(canvas.clientHeight * dpr);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  const alpha = accumulator / TIME_PER_TICK_MS;
+  const view = frameView(world, alpha, width, height, dpr);
+  buildFrame(
+    quads,
+    world,
+    view,
+    { manifest, regions: art.regions },
+    alpha,
+    time,
+  );
+  renderer.draw(quads, width, height, time);
 }
 
 function TEST_FUNCTION() {

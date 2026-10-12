@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addControllable, addMovable } from "./bundles";
+import { addControllable, addMovable, addSprite } from "./bundles";
 import { createTiles } from "./tiles";
 import { createWorld, spawn } from "./world";
 
@@ -38,5 +38,18 @@ describe("addControllable", () => {
 
     expect(world.components.playerControlled.has(e)).toBe(true);
     expect(world.components.speed.get(e)).toBe(5);
+  });
+});
+
+describe("addSprite", () => {
+  it("adds the sprite facing toward the viewer", () => {
+    const world = createWorld(createTiles(1, 1));
+    const e = spawn(world);
+    const sprite = { name: "player", layer: "player" } as const;
+
+    addSprite(world, e, sprite);
+
+    expect(world.components.sprite.get(e)).toEqual(sprite);
+    expect(world.components.facing.get(e)).toEqual({ x: 0, y: 1 });
   });
 });

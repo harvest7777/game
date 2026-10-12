@@ -1,0 +1,41 @@
+import { describe, expect, it } from "vitest";
+import type { Vec2 } from "../shared/physics/math";
+import { createTiles } from "../tiles";
+import { createWorld, spawn } from "../world";
+import { facingSystem } from "./system";
+
+function setup(velocity: Vec2 | undefined, facing: Vec2) {
+  const world = createWorld(createTiles(1, 1));
+  const entity = spawn(world);
+  if (velocity) world.components.velocity.set(entity, velocity);
+  world.components.facing.set(entity, { ...facing });
+  const facingOf = () => world.components.facing.get(entity)!;
+  return { world, facingOf };
+}
+
+describe("facingSystem", () => {
+  it("faces the direction of movement as a unit vector", () => {
+    const { world, facingOf } = setup({ x: 3, y: 4 }, { x: 0, y: 1 });
+
+    facingSystem(world, 1);
+
+    expect(facingOf().x).toBeCloseTo(0.6);
+    expect(facingOf().y).toBeCloseTo(0.8);
+  });
+
+  it("keeps the last facing when stopped", () => {
+    const { world, facingOf } = setup({ x: 0, y: 0 }, { x: -1, y: 0 });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: -1, y: 0 });
+  });
+
+  it("leaves entities without a velocity alone", () => {
+    const { world, facingOf } = setup(undefined, { x: 0, y: -1 });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: 0, y: -1 });
+  });
+});

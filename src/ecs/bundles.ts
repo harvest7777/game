@@ -1,4 +1,5 @@
 import type { WallResponse } from "./movement/components";
+import type { Sprite } from "./sprite/components";
 import type { Vec2 } from "./shared/physics/math";
 import type { Entity, World } from "./world";
 
@@ -28,4 +29,10 @@ export function addControllable(
 ): void {
   world.components.playerControlled.set(entity, true);
   world.components.speed.set(entity, speed);
+}
+
+// Drawn with `sprite`, starting out facing toward the viewer (world +y).
+export function addSprite(world: World, entity: Entity, sprite: Sprite): void {
+  world.components.sprite.set(entity, sprite);
+  world.components.facing.set(entity, { x: 0, y: 1 });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addControllable, addMovable } from "./bundles";
+import { addControllable, addMovable, addSprite } from "./bundles";
 import { Action } from "./input/actions";
 import { CROUCH_SPEED } from "./input/system";
 import { runTick } from "./tick";
@@ -17,8 +17,10 @@ function setup() {
   const player = spawn(world);
   addMovable(world, player, { at: START, r: R });
   addControllable(world, player, { speed: SPEED });
+  addSprite(world, player, { name: "player", layer: "player" });
   const position = () => world.components.position.get(player)!;
-  return { world, position };
+  const facing = () => world.components.facing.get(player)!;
+  return { world, position, facing };
 }
 
 function hold(world: World, ...actions: Action[]) {
@@ -69,6 +71,16 @@ describe("runTick", () => {
 
       expect(position()).toEqual(afterWalking);
     });
+  });
+
+  it("faces the way it walks and keeps facing that way after stopping", () => {
+    const { world, facing } = setup();
+    hold(world, Action.Left);
+    runTick(world, DT);
+    hold(world);
+    runTick(world, DT);
+
+    expect(facing()).toEqual({ x: -1, y: 0 });
   });
 
   it("shift walks slower", () => {

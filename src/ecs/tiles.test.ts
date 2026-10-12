@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createTiles, isWall, setWall, wallsInBox } from "./tiles";
+import {
+  createTiles,
+  groundAt,
+  isWall,
+  setGround,
+  setWall,
+  wallsInBox,
+} from "./tiles";
 
 describe("isWall", () => {
   it("is false for an open tile", () => {
@@ -37,5 +44,26 @@ describe("wallsInBox", () => {
     const walls = [...wallsInBox(tiles, -0.5, 0.5, 0.5, 0.5)];
 
     expect(walls).toEqual([{ x: -1, y: 0 }]);
+  });
+});
+
+describe("groundAt", () => {
+  it("is the default ground for a fresh map", () => {
+    const tiles = createTiles(3, 3);
+    expect(groundAt(tiles, 1, 1)).toBe(0);
+  });
+
+  it("returns the type that was set", () => {
+    const tiles = createTiles(3, 3);
+    const lava = 7;
+    setGround(tiles, 2, 1, lava);
+    expect(groundAt(tiles, 2, 1)).toBe(lava);
+    expect(groundAt(tiles, 1, 2)).toBe(0);
+  });
+
+  it("is the default ground outside the map", () => {
+    const tiles = createTiles(3, 3);
+    setGround(tiles, -1, 0, 7);
+    expect(groundAt(tiles, -1, 0)).toBe(0);
   });
 });
