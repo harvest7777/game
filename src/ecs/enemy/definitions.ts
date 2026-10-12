@@ -1,4 +1,4 @@
-import type { Speed } from "../input/components";
+import type { MoveSpeed } from "../input/components";
 import type { Hitbox } from "../movement/components";
 import type { WeaponDef } from "../projectile/weapons";
 import type { Behavior } from "./behaviors";
@@ -7,6 +7,8 @@ import type { BossSequence } from "./sequences";
 import type { SpriteArt } from "../sprite/art";
 import type { Sprite } from "../sprite/components";
 import type { SoundId } from "../../audio/assets";
+import type { LootTableDef } from "../loot/definitions";
+import type { LivingStatBlock } from "../stats/components";
 
 // What a kind of enemy is. Each kind is its own file under
 // src/content/enemies, made with defineEnemy. Fields reuse the component
@@ -22,10 +24,10 @@ export type EnemyDef<
 > = {
   sprite: Pick<Sprite, "outline" | "scale"> & { art: SpriteArt<Clip> };
   hitbox: Hitbox;
-  // Starting and maximum health.
-  health: number;
+  // Health is required; other stats are opt-in per enemy kind.
+  stats: LivingStatBlock;
   // Tiles per second when its behavior moves it.
-  speed: Speed;
+  speed: MoveSpeed;
   // Fired at its target while it has one.
   weapon?: WeaponDef;
   // Tiles: it targets the nearest thing on the other team within this
@@ -38,6 +40,8 @@ export type EnemyDef<
   phases?: Phases<Sequence, PhaseName>;
   // Authored timelines used by phases with a sequence rotation.
   sequences?: Record<Sequence, BossSequence<Clip>>;
+  // Rolled once when this enemy dies.
+  loot?: LootTableDef;
   deathSound: SoundId;
 };
 

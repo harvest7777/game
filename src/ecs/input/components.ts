@@ -5,6 +5,7 @@ export type PlayerControlled = true;
 // without the Shoot action held.
 export type AutoFire = boolean;
 
-// How fast the entity moves when it steers itself, in tiles per second.
-// Systems that set velocity (input, AI) read it; movement never does.
+// Authored movement speed in tiles per second for entities without a Speed
+// stat, currently enemies. Player movement is derived from its Speed stat.
 export type Speed = number;
+export type MoveSpeed = Speed;

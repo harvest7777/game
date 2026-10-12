@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { singleAccelerating } from "../weapons/singleAccelerating";
+import { tiered } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const cometStaff: ItemDef = {
+export const cometStaff = defineWeaponItem({
   name: "Comet Staff",
-  kind: "weapon",
   icon: "items/cometStaff",
+  loot: tiered(5),
   weapon: singleAccelerating,
-};
+});

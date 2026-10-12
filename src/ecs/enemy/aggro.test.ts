@@ -20,7 +20,7 @@ function setup() {
 function addLiving(world: World, at: Vec2, team: Team = "player", hp = 100) {
   const e = spawn(world);
   world.components.position.set(e, { ...at });
-  world.components.health.set(e, { hp, max: 100 });
+  world.components.health.set(e, { value: hp, max: 100 });
   world.components.team.set(e, team);
   return e;
 }

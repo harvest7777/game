@@ -6,7 +6,7 @@ import { OUTLINE_THICKNESS } from "../render/sprites";
 import { layoutText, pushText } from "../render/textLayout";
 import type { SlotRef } from "../ecs/inventory/components";
 import type { ItemDef } from "../ecs/inventory/items";
-import { itemAt, sameSlot } from "../ecs/inventory/slots";
+import { itemAtSlot, sameSlot } from "../ecs/inventory/slots";
 import {
   DRAGGED_FROM_ALPHA,
   HUD_COLORS,
@@ -14,10 +14,18 @@ import {
   type PanelLayout,
 } from "./elements";
 import { equipmentPanel, equipmentView } from "./equipment";
+import { containerPanel, containerView } from "./container";
 import { inventoryPanel, inventoryView } from "./inventory";
-import { chunkTop, hpBar, stepHpBar } from "./hpBar";
+import { chunkTop, stepHpBar } from "./hpBar";
+import { vitalsPanel } from "./vitals";
+import { statsPanel, statsView } from "./stats";
 import type { PlacedPanel } from "./input";
-import { attachPanel, placePanel, type HudState, type PanelId } from "./state";
+import {
+  attachPanel,
+  placePanel,
+  type DockedPanelId,
+  type HudState,
+} from "./state";
 import { itemTooltip, placeTooltip, tooltipPanel } from "./tooltip";
 
 const NO_REGION = { x: 0, y: 0, w: 0, h: 0 };
@@ -34,19 +42,26 @@ export function layoutHud(
   screen: { w: number; h: number },
   time: number,
 ): PlacedPanel[] {
-  const layouts: Partial<Record<PanelId, PanelLayout>> = {};
+  const layouts: Partial<Record<DockedPanelId, PanelLayout>> = {};
   const equipment = equipmentView(world, player);
   if (equipment) layouts.equipment = equipmentPanel(equipment);
   const health = world.components.health.get(player);
   const bar = state.hpBars[PLAYER_BAR];
   if (health && layouts.equipment) {
     const chunk = bar && chunkTop(bar, time);
-    layouts.health = hpBar(health, chunk, layouts.equipment.w);
+    layouts.health = vitalsPanel(
+      health,
+      world.components.mana.get(player),
+      chunk,
+      layouts.equipment.w,
+    );
   }
   const inventory = state.inventoryOpen && inventoryView(world, player);
   if (inventory) layouts.inventory = inventoryPanel(inventory);
+  const stats = statsView(world, player);
+  if (stats) layouts.stats = statsPanel(stats);
 
-  const placed: Partial<Record<PanelId, PlacedPanel>> = {};
+  const placed: Partial<Record<DockedPanelId, PlacedPanel>> = {};
   for (const id of PANEL_ORDER) {
     const layout = layouts[id];
     const placement = state.panels[id];
@@ -60,11 +75,31 @@ export function layoutHud(
     const at = attachPanel(placement, { ...to, ...to.layout }, layout);
     placed[id] = { id, ...at, layout };
   }
-  return PANEL_ORDER.flatMap((id) => placed[id] ?? []);
+  const panels = PANEL_ORDER.flatMap((id) => placed[id] ?? []);
+  const access = world.components.containerAccess.get(player);
+  const healthPanel = placed.health;
+  const contents = access && containerView(world, access.container);
+  if (contents && healthPanel) {
+    const layout = containerPanel(access.container, contents);
+    const at = attachPanel(
+      { to: "health", side: "above", gap: CONTAINER_GAP },
+      { ...healthPanel, ...healthPanel.layout },
+      layout,
+    );
+    panels.push({ id: "container", ...at, layout });
+  }
+  return panels;
 }
 
 // Screen-placed panels come before the ones attached to them.
-const PANEL_ORDER: PanelId[] = ["equipment", "health", "inventory"];
+const PANEL_ORDER: DockedPanelId[] = [
+  "equipment",
+  "health",
+  "inventory",
+  "stats",
+];
+
+const CONTAINER_GAP = 2;
 
 // Whose bar the player's health bar is, in HudState.hpBars.
 export const PLAYER_BAR = "player";
@@ -81,7 +116,7 @@ export function updateHpBars(
   if (health) {
     state.hpBars[PLAYER_BAR] = stepHpBar(
       state.hpBars[PLAYER_BAR],
-      health.hp,
+      health.value,
       time,
     );
   } else {
@@ -186,15 +221,19 @@ function hoveredItem(
 ): ItemDef | undefined {
   if (!state.hover || state.press?.dragging) return undefined;
   if (
+    state.hover.in === "container" &&
+    world.components.containerAccess.get(player)?.container !==
+      state.hover.entity
+  ) {
+    return undefined;
+  }
+  if (
     state.hoverSince === undefined ||
     time - state.hoverSince < TOOLTIP_DELAY
   ) {
     return undefined;
   }
-  const equipment = world.components.equipment.get(player);
-  const inventory = world.components.inventory.get(player);
-  if (!equipment || !inventory) return undefined;
-  return itemAt({ equipment, inventory }, state.hover)?.def;
+  return itemAtSlot(world, player, state.hover)?.def;
 }
 
 // How to draw elements beyond what they say: which slot is hovered, which

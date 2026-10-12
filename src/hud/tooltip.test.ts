@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { ring } from "../ecs/projectile/weapons";
 import type { ItemDef } from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
-import { testItem, testProjectile, testWeapon } from "../testing/defs";
+import {
+  testConsumable,
+  testItem,
+  testProjectile,
+  testWeapon,
+} from "../testing/defs";
 import {
   itemTooltip,
   placeTooltip,
@@ -24,6 +29,13 @@ describe("itemTooltip", () => {
     const [name, kind] = itemTooltip(testItem({ name: "Staff" }));
     expect(name).toEqual({ text: "Staff", color: TOOLTIP_COLORS.name });
     expect(kind.text).toBe("Weapon");
+  });
+
+  it("labels a consumable without treating it as equipment", () => {
+    expect(texts(testConsumable({ name: "Potion" }))).toEqual([
+      "Potion",
+      "Consumable",
+    ]);
   });
 
   it("gives a weapon's damage, rate and range from its definitions", () => {

@@ -1,6 +1,7 @@
 import type { Color } from "../ecs/sprite/components";
 import { healthColor } from "../render/healthBars";
 import type { HudElement, PanelLayout } from "./elements";
+import type { StatValue } from "../ecs/stats/components";
 
 // A big health bar for the HUD: the player's now, a boss's later. It only
 // draws what it's given, so anything with health can have one.
@@ -64,10 +65,10 @@ export function chunkTop(state: HpBarState, time: number): number | undefined {
 
 // The bar `uiWidth` UI pixels wide: a dark frame, health filled from the
 // left in healthColor, the white chunk above it up to `chunk` (in health),
-// and "hp/max" centered on top. Laid out in its own, smaller pixels (see
+// and "value/max" centered on top. Laid out in its own, smaller pixels (see
 // HP_BAR_SCALE).
 export function hpBar(
-  health: { hp: number; max: number },
+  health: StatValue,
   chunk: number | undefined,
   uiWidth: number,
 ): PanelLayout {
@@ -80,7 +81,7 @@ export function hpBar(
   };
   const widthOf = (hp: number) =>
     inner.w * Math.max(0, Math.min(1, hp / health.max));
-  const filled = widthOf(health.hp);
+  const filled = widthOf(health.value);
   const elements: HudElement[] = [
     {
       kind: "box",
@@ -93,7 +94,7 @@ export function hpBar(
     elements.push({
       kind: "rect",
       rect: { ...inner, w: filled },
-      fill: healthColor(health.hp / health.max),
+      fill: healthColor(health.value / health.max),
     });
   }
   if (chunk !== undefined && widthOf(chunk) > filled) {
@@ -107,7 +108,7 @@ export function hpBar(
     kind: "text",
     x: width / 2,
     y: BORDER + PADDING,
-    text: `${Math.ceil(health.hp)}/${health.max}`,
+    text: `${Math.ceil(health.value)}/${health.max}`,
     font: "regular",
     tint: HP_BAR_COLORS.text,
     outline: HP_BAR_COLORS.textOutline,

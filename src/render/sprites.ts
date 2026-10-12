@@ -1,12 +1,13 @@
 import { MAX_REACH } from "./distance";
 import type { Entity, World } from "../ecs/world";
-import type { Sprite, SpriteLayer } from "../ecs/sprite/components";
+import type { Color, Sprite, SpriteLayer } from "../ecs/sprite/components";
 import type { Vec2 } from "../ecs/shared/physics/math";
 import { lerpAngle } from "./angle";
 import { regionOf, type Art } from "./art";
 import { IDLE_CLIP, type SpriteFile } from "../ecs/sprite/art";
 import type { QuadBuffer } from "./quads";
 import { depthOf, worldToScreen, type View } from "./view";
+import { shotsPerSecond } from "../ecs/stats/runtime";
 
 // Sprite pixels per tile: an 8x8 sprite is one tile across.
 export const SPRITE_PIXELS_PER_TILE = 8;
@@ -15,6 +16,7 @@ export const OUTLINE_THICKNESS = 0.2;
 // Walk animation: frames per second, cycling step 1, stand, step 2, stand.
 export const WALK_FPS = 8;
 const WALK_CYCLE = [1, 0, 2, 0];
+const MIN_LOOT_BAG_FLASH_BRIGHTNESS = 0.35;
 
 // Sprite layers in the order they're drawn, so the player ends up on top.
 export const SPRITE_LAYERS: SpriteLayer[] = [
@@ -41,6 +43,31 @@ export function interpolatedPosition(
     x: previous.x + (current.x - previous.x) * alpha,
     y: previous.y + (current.y - previous.y) * alpha,
   };
+}
+
+// Shader tint for a bag nearing expiry. Its pulse eases from full color to
+// black and back; integrating the configured frequency keeps the phase smooth
+// while the flashes accelerate.
+export function lootBagTint(
+  world: World,
+  entity: Entity,
+  alpha: number,
+): Color | undefined {
+  const bag = world.components.lootBag.get(entity);
+  const flash = bag?.def.expiryFlash;
+  if (!bag || !flash) return undefined;
+  const age = bag.previousAge + (bag.age - bag.previousAge) * alpha;
+  const elapsed = age - (bag.def.lifetime - flash.duration);
+  if (elapsed <= 0) return undefined;
+  const withinWarning = Math.min(flash.duration, elapsed);
+  const acceleration =
+    (flash.endFrequency - flash.startFrequency) / flash.duration;
+  const cycles =
+    flash.startFrequency * withinWarning +
+    0.5 * acceleration * withinWarning * withinWarning;
+  const black = 0.5 - 0.5 * Math.cos(Math.PI * 2 * cycles);
+  const brightness = 1 - black * (1 - MIN_LOOT_BAG_FLASH_BRIGHTNESS);
+  return [brightness, brightness, brightness, 1];
 }
 
 // The art's true pixel dimensions after visual scale. Most sprites are 8px,
@@ -171,6 +198,7 @@ export function pushSprites(
         margin: marginOf(p.sprite),
         outline: p.sprite.outline,
         depth: depthOf(view, p.depth),
+        tint: lootBagTint(world, p.entity, alpha),
       },
     );
   }
@@ -248,6 +276,6 @@ function pickFrame(
 function isThrusting(world: World, entity: Entity): boolean {
   const shooter = world.components.shooter.get(entity);
   if (!shooter) return false;
-  const interval = 1 / shooter.weapon.rate;
+  const interval = 1 / shotsPerSecond(world, entity, shooter.weapon.rate);
   return shooter.cooldown > interval / 2;
 }

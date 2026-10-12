@@ -1,11 +1,11 @@
 import type { Entity, World } from "../world";
 import { emptyEquipment, INVENTORY_SIZE } from "./components";
-import type { ItemDef } from "./items";
+import type { EquipmentItemDef, ItemDef } from "./items";
 import { armWithEquippedWeapon } from "../shared/arming";
 
 type HoldingsOptions = {
   // The weapon to wear, if any. Other equipment slots start empty.
-  weapon?: ItemDef;
+  weapon?: EquipmentItemDef;
   // Fills the inventory from the first slot; the rest stay empty.
   carrying?: ItemDef[];
 };

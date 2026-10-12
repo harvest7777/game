@@ -23,7 +23,7 @@ const rects = (elements: HudElement[]) =>
 
 describe("hpBar", () => {
   it("is a frame the given width, in the bar's own smaller pixels", () => {
-    const bar = hpBar({ hp: 100, max: 100 }, undefined, WIDTH);
+    const bar = hpBar({ value: 100, max: 100 }, undefined, WIDTH);
     expect([bar.w, bar.h]).toEqual([WIDTH, HP_BAR_HEIGHT / HP_BAR_SCALE]);
     expect(bar.scale).toBe(HP_BAR_SCALE);
     expect(bar.elements[0]).toMatchObject({
@@ -34,14 +34,14 @@ describe("hpBar", () => {
 
   it("fills health from the left in its health color", () => {
     const [fill] = rects(
-      hpBar({ hp: 30, max: 100 }, undefined, WIDTH).elements,
+      hpBar({ value: 30, max: 100 }, undefined, WIDTH).elements,
     );
     expect(fill.rect).toEqual({ x: 1, y: 1, w: INNER * 0.3, h: INNER_H });
     expect(fill.fill).toEqual(healthColor(0.3));
   });
 
   it("draws the white chunk between health and the chunk's top", () => {
-    const [, chunk] = rects(hpBar({ hp: 30, max: 100 }, 50, WIDTH).elements);
+    const [, chunk] = rects(hpBar({ value: 30, max: 100 }, 50, WIDTH).elements);
     expect(chunk.rect.x).toBeCloseTo(1 + INNER * 0.3);
     expect(chunk.rect.w).toBeCloseTo(INNER * 0.2);
     expect(chunk.rect.h).toBe(INNER_H);
@@ -50,14 +50,16 @@ describe("hpBar", () => {
 
   it("leaves the fill out when empty", () => {
     expect(
-      rects(hpBar({ hp: 0, max: 100 }, undefined, WIDTH).elements),
+      rects(hpBar({ value: 0, max: 100 }, undefined, WIDTH).elements),
     ).toEqual([]);
   });
 
   it("says hp/max, centered, with room above and below", () => {
-    const text = hpBar({ hp: 449.5, max: 500 }, undefined, WIDTH).elements.find(
-      (e) => e.kind === "text",
-    );
+    const text = hpBar(
+      { value: 449.5, max: 500 },
+      undefined,
+      WIDTH,
+    ).elements.find((e) => e.kind === "text");
     expect(text).toMatchObject({
       text: "450/500",
       x: (WIDTH * HP_BAR_SCALE) / 2,

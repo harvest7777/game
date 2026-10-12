@@ -6,6 +6,7 @@ import { brainSystem } from "./brain";
 import { bossActionSystem } from "./actionSystem";
 import { phaseSystem } from "./phaseSystem";
 import { spawnEnemy } from "./spawn";
+import { STAT } from "../stats/components";
 
 const DT = 0.05;
 
@@ -17,7 +18,7 @@ function setup() {
   const phase = () => c.enemy.get(king)!.phase!;
   const action = () => c.bossAction.get(king)!;
   const hurtTo = (fraction: number) => {
-    c.health.get(king)!.hp = boss.health * fraction;
+    c.health.get(king)!.value = boss.stats[STAT.HEALTH].value * fraction;
   };
   const tick = (ticks = 1) => {
     for (let i = 0; i < ticks; i++) phaseSystem(world, DT);

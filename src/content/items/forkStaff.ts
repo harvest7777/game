@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { forkedNeedles } from "../weapons/forkedNeedles";
+import { special } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const forkStaff: ItemDef = {
+export const forkStaff = defineWeaponItem({
   name: "Forked Staff",
-  kind: "weapon",
   icon: "items/forkStaff",
+  loot: special,
   weapon: forkedNeedles,
-};
+});

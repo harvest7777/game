@@ -9,7 +9,7 @@ describe("targetsByTeam", () => {
     const { health, team, position } = world.components;
     const add = (side?: "player" | "enemy", placed = true) => {
       const e = spawn(world);
-      health.set(e, { hp: 1, max: 1 });
+      health.set(e, { value: 1, max: 1 });
       if (side) team.set(e, side);
       if (placed) position.set(e, { x: 0, y: 0 });
       return e;

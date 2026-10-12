@@ -1,12 +1,17 @@
 import { defineEnemy } from "../../ecs/enemy/definitions";
 import { slimeSpit } from "../weapons/slimeSpit";
+import { boarLoot } from "../loot/pools";
 import { OUTLINED } from "./shared";
+import { STAT, stat } from "../../ecs/stats/components";
 
 // Paces around, then charges at you in bursts, spitting as it goes.
 export const boar = defineEnemy({
   sprite: { art: { kind: "static", file: "enemies/boar" }, outline: OUTLINED },
   hitbox: { r: 0.4 },
-  health: 220,
+  stats: {
+    [STAT.HEALTH]: stat(220),
+    [STAT.DEFENSE]: stat(3),
+  },
   speed: 3,
   weapon: slimeSpit,
   detectRange: 8,
@@ -18,5 +23,6 @@ export const boar = defineEnemy({
     speedScale: 3.5,
     rest: 1.2,
   },
+  loot: boarLoot,
   deathSound: "enemyDeath",
 });

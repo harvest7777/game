@@ -1,8 +1,9 @@
 import type { Entity, World } from "../world";
+import { damageAfterDefense } from "../stats/formulas";
 
 // Takes `amount` off the target's health. The one place damage is applied,
-// so defense and armor piercing slot in here once stats exist. Records what
-// was dealt as a Damaged event. Health stops at 0, and reaching it records a
+// including defense, armor piercing and vulnerability. Records what was
+// dealt as a Damaged event. Health stops at 0, and reaching it records a
 // Death once. Something already at 0 takes nothing more, and something
 // invulnerable records the hit but keeps its health.
 export function applyDamage(
@@ -10,15 +11,24 @@ export function applyDamage(
   target: Entity,
   amount: number,
   source?: Entity,
+  armorPiercing = false,
 ): void {
   const health = world.components.health.get(target);
-  if (!health || health.hp <= 0) return;
-  const dealt =
-    amount * (world.components.vulnerable.get(target)?.multiplier ?? 1);
+  if (!health || health.value <= 0 || amount <= 0) return;
+  const defense = world.components.defense.get(target)?.value ?? 0;
+  const afterDefense = armorPiercing
+    ? amount
+    : damageAfterDefense(amount, defense);
+  const dealt = Math.max(
+    1,
+    Math.round(
+      afterDefense * (world.components.vulnerable.get(target)?.multiplier ?? 1),
+    ),
+  );
   world.events.damaged.push({ target, amount: dealt, source });
   if (world.components.invulnerable.has(target)) return;
-  health.hp = Math.max(0, health.hp - dealt);
-  if (health.hp === 0) {
+  health.value = Math.max(0, health.value - dealt);
+  if (health.value === 0) {
     world.events.deaths.push({ entity: target, killer: source });
   }
 }
@@ -26,7 +36,7 @@ export function applyDamage(
 // Applies every hit from this tick.
 export function damageSystem(world: World, _dt: number): void {
   for (const hit of world.events.hits) {
-    applyDamage(world, hit.target, hit.damage, hit.owner);
+    applyDamage(world, hit.target, hit.damage, hit.owner, hit.armorPiercing);
   }
 }
 

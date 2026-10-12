@@ -3,6 +3,7 @@ import type { EnemyDef } from "../../ecs/enemy/definitions";
 import { IDLE_CLIP } from "../../ecs/sprite/art";
 import { weapons } from "../weapons";
 import { enemies, enemyIds } from ".";
+import { STAT } from "../../ecs/stats/components";
 
 describe("enemy definitions", () => {
   for (const id of enemyIds) {
@@ -10,7 +11,7 @@ describe("enemy definitions", () => {
       const def: EnemyDef = enemies[id];
 
       it("starts with some health", () => {
-        expect(def.health).toBeGreaterThan(0);
+        expect(def.stats[STAT.HEALTH].value).toBeGreaterThan(0);
       });
 
       it("only moves to phases it has", () => {

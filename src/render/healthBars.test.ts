@@ -34,7 +34,7 @@ function setup(angle = 0) {
 function addHurt(world: World, hp: number, at = CENTER) {
   const e = spawn(world);
   world.components.position.set(e, { ...at });
-  world.components.health.set(e, { hp, max: 100 });
+  world.components.health.set(e, { value: hp, max: 100 });
   return e;
 }
 

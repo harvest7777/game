@@ -2,6 +2,7 @@ import { addControllable, addMovable, addSprite } from "../bundles";
 import { addHoldings } from "../inventory/bundle";
 import type { Vec2 } from "../shared/physics/math";
 import { spawn, type Entity, type World } from "../world";
+import { addStats } from "../stats/runtime";
 import type { CharacterDef } from "./definitions";
 
 // Creates a player-controlled character from its class at `at`: on the
@@ -18,7 +19,7 @@ export function spawnCharacter(
 
   components.character.set(entity, { def });
   addMovable(world, entity, { at, hitbox: def.hitbox });
-  addControllable(world, entity, { speed: def.speed });
+  addControllable(world, entity);
   addSprite(world, entity, {
     art: def.sprite.art,
     layer: "player",
@@ -28,7 +29,7 @@ export function spawnCharacter(
     }),
   });
   components.team.set(entity, "player");
-  components.health.set(entity, { hp: def.health, max: def.health });
+  addStats(world, entity, def.stats);
   addHoldings(world, entity, { weapon: def.startingWeapon });
   return entity;
 }

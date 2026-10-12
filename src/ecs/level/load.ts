@@ -3,6 +3,7 @@ import type { Vec2 } from "../shared/physics/math";
 import { createTiles, setGround, setWall, type Tiles } from "../tiles";
 import { createWorld, type World } from "../world";
 import type { LevelDef } from "./definitions";
+import type { LootRuntime } from "../loot/runtime";
 
 // A level's tiles, and the center of its spawn tile. Throws on a map that
 // breaks the rules, so a bad level fails as soon as it's loaded.
@@ -45,9 +46,10 @@ export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
 export function loadLevel(
   level: LevelDef,
   random: () => number = Math.random,
+  loot?: LootRuntime,
 ): { world: World; spawn: Vec2 } {
   const { tiles, spawn } = levelTiles(level);
-  const world = createWorld(tiles, random);
+  const world = createWorld(tiles, random, loot);
   for (const { enemy, at } of level.enemies ?? []) {
     spawnEnemy(world, enemy, at);
   }

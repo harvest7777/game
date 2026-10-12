@@ -1,4 +1,5 @@
 import { cameraSystem } from "./camera/system";
+import { containerAccessSystem } from "./container/system";
 import { gravestoneSystem } from "./character/system";
 import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
@@ -12,6 +13,7 @@ import { clearEvents } from "./events";
 import { outboxSystem } from "./outbox";
 import { autoFireSystem, playerInputSystem } from "./input/system";
 import { inventorySystem } from "./inventory/system";
+import { lootBagSystem, lootSystem } from "./loot/system";
 import { movementSystem } from "./movement/system";
 import { shootSystem } from "./projectile/shoot";
 import { projectileSystem } from "./projectile/system";
@@ -19,13 +21,17 @@ import { projectileWallHitSystem } from "./projectile/walls";
 import { soundSystem } from "./sound/system";
 import { facingSystem } from "./sprite/system";
 import type { System, World } from "./world";
+import { statSystem } from "./stats/system";
 
 // Every system, in the order they run each tick. This is the only place that
 // knows about all of them, so systems never need to import each other.
-// Camera turns before input so movement uses this tick's angle; input and
-// projectiles set velocity before movement applies it, and facing follows it.
+// Camera turns first. Stat commands and regeneration apply before input, so
+// maxing Speed affects movement immediately. Input and projectiles set
+// velocity before movement applies it, and facing follows it.
 // Item commands apply before shooting, so a weapon swap fires on the same
-// tick. Enemies pick targets, move through their phases, then their brains steer
+// tick. Bag lifetime and empty cleanup follow transfers. Proximity container
+// access updates after movement and only writes access state. Enemies pick
+// targets, move through their phases, then their brains steer
 // toward or around them, before shooting aims at them. Shooting aims before
 // facing, so this tick's aim decides which way a shooter
 // faces, and fires before projectiles are steered, so a new shot already
@@ -36,8 +42,10 @@ import type { System, World } from "./world";
 // cleanup removes whoever died.
 export const tickSystems: System[] = [
   cameraSystem,
+  statSystem,
   playerInputSystem,
   inventorySystem,
+  lootBagSystem,
   autoFireSystem,
   aggroSystem,
   phaseSystem,
@@ -47,11 +55,13 @@ export const tickSystems: System[] = [
   facingSystem,
   projectileSystem,
   movementSystem,
+  containerAccessSystem,
   hitSystem,
   projectileWallHitSystem,
   damageSystem,
   floatingTextSystem,
   damageTextSystem,
+  lootSystem,
   deathSystem,
   gravestoneSystem,
   soundSystem,

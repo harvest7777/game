@@ -49,7 +49,7 @@ function target(
   c.previousPosition.set(e, { ...from });
   c.position.set(e, { ...to });
   c.hitbox.set(e, { r: 0.4 });
-  c.health.set(e, { hp: 100, max: 100 });
+  c.health.set(e, { value: 100, max: 100 });
   c.team.set(e, team);
   return e;
 }

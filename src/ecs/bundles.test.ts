@@ -59,11 +59,11 @@ describe("addControllable", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
 
-    addControllable(world, e, { speed: 5 });
+    addControllable(world, e, { moveSpeed: 5 });
 
     expect(world.components.playerControlled.has(e)).toBe(true);
     expect(world.components.autoFire.get(e)).toBe(false);
-    expect(world.components.speed.get(e)).toBe(5);
+    expect(world.components.moveSpeed.get(e)).toBe(5);
   });
 });
 

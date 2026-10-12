@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { singleFastBolt } from "../weapons/singleFastBolt";
+import { tiered } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const hasteStaff: ItemDef = {
+export const hasteStaff = defineWeaponItem({
   name: "Staff of Haste",
-  kind: "weapon",
   icon: "items/hasteStaff",
+  loot: tiered(2),
   weapon: singleFastBolt,
-};
+});

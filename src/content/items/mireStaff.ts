@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { singleSlowing } from "../weapons/singleSlowing";
+import { tiered } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const mireStaff: ItemDef = {
+export const mireStaff = defineWeaponItem({
   name: "Mire Staff",
-  kind: "weapon",
   icon: "items/mireStaff",
+  loot: tiered(6),
   weapon: singleSlowing,
-};
+});

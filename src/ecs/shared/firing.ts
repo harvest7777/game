@@ -3,6 +3,7 @@ import { fireProjectile } from "../projectile/spawn";
 import { volley, type WeaponDef } from "../projectile/weapons";
 import type { Vec2 } from "./physics/math";
 import type { Entity, World } from "../world";
+import { damageMultiplier } from "../stats/runtime";
 
 export type FireWeaponOptions = {
   entity: Entity;
@@ -35,6 +36,7 @@ export function fireWeapon(
       team,
       at: { x: at.x + toward.x * offset, y: at.y + toward.y * offset },
       toward,
+      damageScale: damageMultiplier(world, entity),
     });
   }
 }

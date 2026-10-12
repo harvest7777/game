@@ -142,6 +142,57 @@ describe("inventorySystem", () => {
     expect(c.inventory.get(player)!.slots[0]).toEqual({ def: LANCE });
     expect(c.equipment.get(player)!.ring).toBeNull();
   });
+
+  it("moves items between inventory and the currently open container", () => {
+    const { world, player, c, run } = setup();
+    const bag = spawn(world);
+    c.container.set(bag, { slots: [{ def: PHANTOM }, null] });
+    c.containerAccess.set(player, { container: bag });
+
+    run({
+      kind: "move",
+      from: { in: "container", entity: bag, index: 0 },
+      to: { in: "inventory", index: 1 },
+    });
+
+    expect(c.inventory.get(player)!.slots[1]).toEqual({ def: PHANTOM });
+    expect(c.container.get(bag)!.slots[0]).toEqual({ def: COMET });
+  });
+
+  it("takes a container item into the first empty slot", () => {
+    const { world, player, c, run } = setup();
+    const bag = spawn(world);
+    c.container.set(bag, { slots: [{ def: PHANTOM }] });
+    c.containerAccess.set(player, { container: bag });
+
+    run({
+      kind: "take",
+      from: { in: "container", entity: bag, index: 0 },
+    });
+
+    expect(c.inventory.get(player)!.slots[2]).toEqual({ def: PHANTOM });
+    expect(c.container.get(bag)!.slots[0]).toBeNull();
+    expect(world.events.itemsMoved).toEqual([
+      {
+        entity: player,
+        from: { in: "container", entity: bag, index: 0 },
+        to: { in: "inventory", index: 2 },
+      },
+    ]);
+  });
+
+  it("rejects transfers from a container the player cannot access", () => {
+    const { world, c, run } = setup();
+    const bag = spawn(world);
+    c.container.set(bag, { slots: [{ def: PHANTOM }] });
+
+    run({
+      kind: "take",
+      from: { in: "container", entity: bag, index: 0 },
+    });
+
+    expect(c.container.get(bag)!.slots[0]).toEqual({ def: PHANTOM });
+  });
 });
 
 describe("slotHotkeys", () => {

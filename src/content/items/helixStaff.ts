@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { twinHelix } from "../weapons/twinHelix";
+import { special } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const helixStaff: ItemDef = {
+export const helixStaff = defineWeaponItem({
   name: "Staff of the Double Helix",
-  kind: "weapon",
   icon: "items/helixStaff",
+  loot: special,
   weapon: twinHelix,
-};
+});

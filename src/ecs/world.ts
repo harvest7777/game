@@ -8,18 +8,26 @@ import type {
   WallResponse,
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
-import type { Health, Invulnerable, Vulnerable } from "./combat/components";
+import type { Invulnerable, Vulnerable } from "./combat/components";
 import type { Character } from "./character/components";
 import type { BossAction, Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
+import type {
+  Container,
+  ContainerAccess,
+  ProximityContainer,
+} from "./container/components";
+import type { LootBag } from "./loot/components";
+import { emptyLootRuntime, type LootRuntime } from "./loot/runtime";
 import { createEvents, type Events } from "./events";
 import type { OutboxMessage } from "./outbox";
 import type { Input } from "./input/actions";
-import type { AutoFire, PlayerControlled, Speed } from "./input/components";
+import type { AutoFire, MoveSpeed, PlayerControlled } from "./input/components";
 import type { Projectile, Shooter, Team } from "./projectile/components";
 import type { Animation, Facing, Rotation, Sprite } from "./sprite/components";
 import type { FloatingText } from "./text/components";
 import type { Tiles } from "./tiles";
+import { STAT, type StatKind, type StatValue } from "./stats/components";
 
 export type Entity = number;
 
@@ -44,7 +52,7 @@ export type Components = {
   blocked: Store<Blocked>;
   playerControlled: Store<PlayerControlled>;
   autoFire: Store<AutoFire>;
-  speed: Store<Speed>;
+  moveSpeed: Store<MoveSpeed>;
   sprite: Store<Sprite>;
   animation: Store<Animation>;
   facing: Store<Facing>;
@@ -52,7 +60,6 @@ export type Components = {
   projectile: Store<Projectile>;
   shooter: Store<Shooter>;
   team: Store<Team>;
-  health: Store<Health>;
   invulnerable: Store<Invulnerable>;
   character: Store<Character>;
   enemy: Store<Enemy>;
@@ -64,7 +71,11 @@ export type Components = {
   floatingText: Store<FloatingText>;
   equipment: Store<Equipment>;
   inventory: Store<Inventory>;
-};
+  container: Store<Container>;
+  proximityContainer: Store<ProximityContainer>;
+  containerAccess: Store<ContainerAccess>;
+  lootBag: Store<LootBag>;
+} & Record<StatKind, Store<StatValue>>;
 
 export type World = {
   nextEntity: Entity;
@@ -74,6 +85,7 @@ export type World = {
   camera: Camera;
   events: Events;
   outbox: OutboxMessage[];
+  loot: LootRuntime;
   // Random number in [0, 1), for anything random like damage rolls. Tests
   // swap it for a predictable one.
   random: () => number;
@@ -84,6 +96,7 @@ export type System = (world: World, dt: number) => void;
 export function createWorld(
   tiles: Tiles,
   random: () => number = Math.random,
+  loot: LootRuntime = emptyLootRuntime(),
 ): World {
   return {
     nextEntity: 0,
@@ -92,6 +105,7 @@ export function createWorld(
     camera: createCamera(),
     events: createEvents(),
     outbox: [],
+    loot,
     random,
     components: {
       position: createStore(),
@@ -103,7 +117,7 @@ export function createWorld(
       blocked: createStore(),
       playerControlled: createStore(),
       autoFire: createStore(),
-      speed: createStore(),
+      moveSpeed: createStore(),
       sprite: createStore(),
       animation: createStore(),
       facing: createStore(),
@@ -111,7 +125,14 @@ export function createWorld(
       projectile: createStore(),
       shooter: createStore(),
       team: createStore(),
-      health: createStore(),
+      [STAT.HEALTH]: createStore(),
+      [STAT.MANA]: createStore(),
+      [STAT.ATTACK]: createStore(),
+      [STAT.DEFENSE]: createStore(),
+      [STAT.SPEED]: createStore(),
+      [STAT.DEXTERITY]: createStore(),
+      [STAT.VITALITY]: createStore(),
+      [STAT.WISDOM]: createStore(),
       invulnerable: createStore(),
       character: createStore(),
       enemy: createStore(),
@@ -122,6 +143,10 @@ export function createWorld(
       floatingText: createStore(),
       equipment: createStore(),
       inventory: createStore(),
+      container: createStore(),
+      proximityContainer: createStore(),
+      containerAccess: createStore(),
+      lootBag: createStore(),
     },
   };
 }

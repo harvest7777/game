@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { leafVolley } from "../weapons/leafVolley";
+import { special } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const leafStaff: ItemDef = {
+export const leafStaff = defineWeaponItem({
   name: "Leafblade Staff",
-  kind: "weapon",
   icon: "items/leafStaff",
+  loot: special,
   weapon: leafVolley,
-};
+});

@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { singleBoomerang } from "../weapons/singleBoomerang";
+import { special } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const boomerang: ItemDef = {
+export const boomerang = defineWeaponItem({
   name: "Wanderer's Boomerang",
-  kind: "weapon",
   icon: "items/boomerang",
+  loot: special,
   weapon: singleBoomerang,
-};
+});

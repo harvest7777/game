@@ -41,6 +41,7 @@ describe("fireProjectile", () => {
       direction: { x: 0, y: 1 },
       age: 0,
       struck: [],
+      damageScale: 1,
       mirror: false,
     });
   });

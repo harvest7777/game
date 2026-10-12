@@ -101,6 +101,7 @@ export function hudPointer(
     if (hit.slot && hit.hasItem && !state.editMode) {
       state.press = { at: point, dragging: false, item: hit.slot };
     } else if (state.editMode) {
+      if (hit.panel === "container") return { commands, used: true };
       // In edit mode, pressing anywhere on a panel grabs its whole group, by
       // the panel the group is placed with.
       const root = rootOf(state, hit.panel);
@@ -163,16 +164,19 @@ export function hudPointer(
   return { commands, used: true };
 }
 
-// Double-clicking an item: equip it from the inventory, or take a worn item
-// off into the first empty inventory slot.
+// Double-clicking an item: equip it from the inventory, take a worn item off,
+// or take a container item into the first empty inventory slot.
 function useItem(ref: SlotRef): Command {
-  return ref.in === "inventory"
-    ? { kind: "equip", index: ref.index }
-    : { kind: "unequip", slot: ref.slot };
+  if (ref.in === "inventory") return { kind: "equip", index: ref.index };
+  if (ref.in === "equipment") return { kind: "unequip", slot: ref.slot };
+  return { kind: "take", from: ref };
 }
 
 // The screen-placed panel a panel hangs off, or the panel itself.
-function rootOf(state: HudState, id: PanelId): CornerPanelId {
+function rootOf(
+  state: HudState,
+  id: Exclude<PanelId, "container">,
+): CornerPanelId {
   const placement = state.panels[id];
   return "corner" in placement
     ? (id as CornerPanelId)

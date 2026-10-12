@@ -86,7 +86,7 @@ export function pushHealthBars(
       top - BORDER > view.height;
     if (offScreen) continue;
 
-    const fraction = Math.max(0, Math.min(1, health.hp / health.max));
+    const fraction = Math.max(0, Math.min(1, health.value / health.max));
     const depth = depthOf(view, center.y);
     pushRect(
       out,

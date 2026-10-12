@@ -3,6 +3,8 @@ import type { AnimatedArt, SpriteFile } from "../../ecs/sprite/art";
 import { kingFrenzy } from "../weapons/kingFrenzy";
 import { kingRing } from "../weapons/kingRing";
 import { kingSpray } from "../weapons/kingSpray";
+import { slimeKingLoot } from "../loot/pools";
+import { STAT, stat } from "../../ecs/stats/components";
 
 const CLIPS = [
   "idle",
@@ -39,7 +41,10 @@ export const slimeKing = defineEnemy({
     outline: { color: [1, 0.85, 0.2, 1], glow: { radius: 1, pulseHz: 1 } },
   },
   hitbox: { r: 0.7 },
-  health: 1500,
+  stats: {
+    [STAT.HEALTH]: stat(1500),
+    [STAT.DEFENSE]: stat(8),
+  },
   speed: 2.5,
   detectRange: 11,
   idle: { kind: "wander", radius: 2 },
@@ -194,5 +199,6 @@ export const slimeKing = defineEnemy({
       ],
     },
   },
+  loot: slimeKingLoot,
   deathSound: "bossDeath",
 });

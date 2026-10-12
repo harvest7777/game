@@ -1,4 +1,4 @@
-import type { SlotRef } from "../inventory/components";
+import type { ContainerSlotRef, SlotRef } from "../inventory/components";
 import type { ItemDef, ItemKind } from "../inventory/items";
 
 // One-off requests from the player: hotkeys and the HUD both send these, and
@@ -7,12 +7,16 @@ import type { ItemDef, ItemKind } from "../inventory/items";
 export type Command =
   // Move an item between any two slots, swapping with what's there.
   | { kind: "move"; from: SlotRef; to: SlotRef }
+  // Take from an open world container into the first empty inventory slot.
+  | { kind: "take"; from: ContainerSlotRef }
   // Equip the item in inventory slot `index` (number keys, double-click).
   | { kind: "equip"; index: number }
   // Take off what's worn in `slot`, into the first empty inventory slot.
   | { kind: "unequip"; slot: ItemKind }
   // Start or stop the player's equipped weapon autofiring.
   | { kind: "toggleAutoFire" }
+  // Debug/UI convenience: raise every current player stat to its cap.
+  | { kind: "maxStats" }
   // Debug: add an item to the inventory.
   | { kind: "give"; item: ItemDef };
 

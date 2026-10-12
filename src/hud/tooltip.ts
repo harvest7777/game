@@ -1,4 +1,4 @@
-import type { ItemDef } from "../ecs/inventory/items";
+import { ITEM_CATEGORIES, type ItemDef } from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
 import { pathOffset } from "../ecs/projectile/path";
 import type { Color } from "../ecs/sprite/components";
@@ -19,9 +19,16 @@ export const TOOLTIP_COLORS = {
 export function itemTooltip(item: ItemDef): TooltipLine[] {
   const lines: TooltipLine[] = [
     { text: item.name, color: TOOLTIP_COLORS.name },
-    { text: KIND_LABELS[item.kind].name, color: TOOLTIP_COLORS.kind },
+    {
+      text:
+        item.category === ITEM_CATEGORIES.CONSUMABLE
+          ? "Consumable"
+          : KIND_LABELS[item.kind].name,
+      color: TOOLTIP_COLORS.kind,
+    },
   ];
-  if (!item.weapon) return lines;
+  if (item.category === ITEM_CATEGORIES.CONSUMABLE || !item.weapon)
+    return lines;
 
   const weapon = item.weapon;
   // Each kind of projectile in a shot, with how many of it.

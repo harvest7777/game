@@ -1,9 +1,16 @@
 import type { CharacterDef } from "../ecs/character/definitions";
 import type { EnemyDef } from "../ecs/enemy/definitions";
 import type { BossSequence } from "../ecs/enemy/sequences";
-import type { ItemDef } from "../ecs/inventory/items";
+import {
+  ITEM_CATEGORIES,
+  ITEM_KIND,
+  itemTier,
+  type ConsumableItemDef,
+  type EquipmentItemDef,
+} from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
 import { ring, spread, type WeaponDef } from "../ecs/projectile/weapons";
+import { STAT, stat } from "../ecs/stats/components";
 
 // Small stand-in definitions for engine tests, so retuning game content never
 // breaks them. Each takes only the fields a test cares about; the rest are
@@ -31,12 +38,28 @@ export function testWeapon(changes: Partial<WeaponDef> = {}): WeaponDef {
 
 // A weapon item firing the test weapon. Give each item in a test its own
 // name, so items that look alike can still be told apart.
-export function testItem(changes: Partial<ItemDef> = {}): ItemDef {
+export function testItem(
+  changes: Partial<EquipmentItemDef> = {},
+): EquipmentItemDef {
   return {
     name: "Test Staff",
-    kind: "weapon",
+    category: ITEM_CATEGORIES.EQUIPMENT,
+    kind: ITEM_KIND.WEAPON,
     icon: "test/staff",
+    loot: { tier: itemTier(1), tags: [] },
     weapon: testWeapon(),
+    ...changes,
+  };
+}
+
+export function testConsumable(
+  changes: Partial<ConsumableItemDef> = {},
+): ConsumableItemDef {
+  return {
+    name: "Test Consumable",
+    category: ITEM_CATEGORIES.CONSUMABLE,
+    icon: "test/consumable",
+    loot: { tags: [] },
     ...changes,
   };
 }
@@ -51,7 +74,9 @@ export function testEnemy(changes: Partial<EnemyDef> = {}): EnemyDef {
       outline: { color: [0, 0, 0, 1] },
     },
     hitbox: { r: 0.4 },
-    health: 150,
+    stats: {
+      [STAT.HEALTH]: stat(150),
+    },
     speed: 2,
     detectRange: 7,
     idle: { kind: "wander", radius: 2.5 },
@@ -106,7 +131,9 @@ export function testBoss(): EnemyDef {
   return {
     sprite: { art: { kind: "static", file: "test/boss" } },
     hitbox: { r: 0.7 },
-    health: 1000,
+    stats: {
+      [STAT.HEALTH]: stat(1000),
+    },
     speed: 2.5,
     detectRange: 11,
     idle: { kind: "wander", radius: 2 },
@@ -166,8 +193,16 @@ export function testCharacter(
     name: "Tester",
     sprite: { art: { kind: "static", file: "test/character" } },
     hitbox: { r: 0.4 },
-    health: 500,
-    speed: 5,
+    stats: {
+      [STAT.HEALTH]: stat(500),
+      [STAT.MANA]: stat(100),
+      [STAT.ATTACK]: stat(25, 75),
+      [STAT.DEFENSE]: stat(0, 25),
+      [STAT.SPEED]: stat(25, 75),
+      [STAT.DEXTERITY]: stat(25, 75),
+      [STAT.VITALITY]: stat(10, 75),
+      [STAT.WISDOM]: stat(25, 75),
+    },
     gravestone: { kind: "static", file: "test/gravestone" },
     ...changes,
   };

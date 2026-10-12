@@ -7,6 +7,8 @@ import type { SpriteArt } from "../ecs/sprite/art";
 import type { Color, Sprite, SpriteLayer } from "../ecs/sprite/components";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type Entity, type World } from "../ecs/world";
+import { defineLootBag, itemQuery } from "../ecs/loot/definitions";
+import { itemTier } from "../ecs/inventory/items";
 import type { Art } from "./art";
 import type { Manifest } from "./assets";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
@@ -314,6 +316,51 @@ describe("pushSprites", () => {
 
       expect(quad.margin).toBe(0);
       expect(quad.outline[3]).toBe(0);
+    });
+  });
+
+  describe("loot bag expiry", () => {
+    const bag = defineLootBag({
+      name: "Bag",
+      art: ORB,
+      priority: 1,
+      capacity: 8,
+      lifetime: 60,
+      expiryFlash: {
+        duration: 10,
+        startFrequency: 1,
+        endFrequency: 7,
+      },
+      matches: itemQuery({
+        tier: { min: itemTier(1), max: itemTier(1) },
+      }),
+    });
+
+    it("eases toward black after the warning begins", () => {
+      const { world, view } = setup();
+      const entity = addAt(world, CENTER, { art: ORB });
+      world.components.lootBag.set(entity, {
+        def: bag,
+        previousAge: 50,
+        age: 50.25,
+      });
+
+      expect(draw(world, view, 0)[0].tint).toEqual([1, 1, 1, 1]);
+      const darkened = draw(world, view, 1)[0].tint[0];
+      expect(darkened).toBeLessThan(0.7);
+      expect(darkened).toBeGreaterThanOrEqual(0.35);
+    });
+
+    it("does not tint before the final ten seconds", () => {
+      const { world, view } = setup();
+      const entity = addAt(world, CENTER, { art: ORB });
+      world.components.lootBag.set(entity, {
+        def: bag,
+        previousAge: 40,
+        age: 49.99,
+      });
+
+      expect(draw(world, view)[0].tint).toEqual([1, 1, 1, 1]);
     });
   });
 

@@ -23,13 +23,17 @@ export type Projectile = {
   age: number;
   // What it has already hit, so piercing shots hit each thing once.
   struck: Entity[];
+  // Owner Attack converted to a multiplier when fired, so the projectile no
+  // longer depends on its owner existing or keeping the same stats.
+  damageScale: number;
   // Its path's sideways part is flipped: it curves and weaves the other way.
   mirror: boolean;
 };
 
-// Fires its weapon automatically at the weapon's rate. `cooldown` is seconds
-// until the next shot. `aim` is the direction it's aiming (unit vector),
-// updated every tick, which is also the way it faces while shooting.
+// Fires its weapon automatically at its authored rate scaled by Dexterity.
+// `cooldown` is seconds until the next shot. `aim` is the direction it's
+// aiming (unit vector), updated every tick, which is also the way it faces
+// while shooting.
 export type Shooter = {
   weapon: WeaponDef;
   cooldown: number;

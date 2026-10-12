@@ -6,6 +6,8 @@ import type { HpBarState } from "./hpBar";
 // window resizes; dragging a panel later just changes its offset.
 
 export type Corner = "topLeft" | "topRight" | "bottomLeft" | "bottomRight";
+export type DockedPanelId = "health" | "equipment" | "inventory" | "stats";
+export type PanelId = DockedPanelId | "container";
 
 // Where a panel sits: `x`/`y` UI pixels in from its corner, measured to the
 // panel's matching corner (so a bottom-right panel's bottom-right corner is
@@ -16,15 +18,18 @@ export type Placement = { corner: Corner; x: number; y: number };
 // their left edges lined up, or to its `right` with their bottoms lined up.
 // It moves with that panel, so only the panel at the root of a group is
 // placed on the screen.
-export type Attachment = { to: PanelId; side: "above" | "right"; gap: number };
-
-export type PanelId = "health" | "equipment" | "inventory";
+export type Attachment = {
+  to: DockedPanelId;
+  side: "above" | "right" | "left";
+  gap: number;
+};
 
 // Which panels sit in a corner of the screen, and which hang off them.
 export type Panels = {
   equipment: Placement;
   health: Attachment;
   inventory: Attachment;
+  stats: Attachment;
 };
 
 // A press on the HUD: on an item (to click or drag it) or on a panel (to
@@ -73,6 +78,7 @@ export function createHudState(): HudState {
       equipment: { corner: "bottomRight", x: 62, y: 6 },
       health: { to: "equipment", side: "above", gap: 2 },
       inventory: { to: "equipment", side: "right", gap: 2 },
+      stats: { to: "equipment", side: "left", gap: 2 },
     },
     hpBars: {},
     inventoryOpen: true,
@@ -120,6 +126,9 @@ export function attachPanel(
 ): { x: number; y: number } {
   if (attachment.side === "above") {
     return { x: to.x, y: to.y - attachment.gap - size.h };
+  }
+  if (attachment.side === "left") {
+    return { x: to.x - attachment.gap - size.w, y: to.y + to.h - size.h };
   }
   return { x: to.x + to.w + attachment.gap, y: to.y + to.h - size.h };
 }

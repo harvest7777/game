@@ -28,7 +28,7 @@ function setup() {
 
 // Hurts the boss into its enraged phase, which opens with a charge.
 function enrage(world: World, king: Entity) {
-  world.components.health.get(king)!.hp = 500;
+  world.components.health.get(king)!.value = 500;
   phaseSystem(world, 0.05);
 }
 

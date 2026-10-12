@@ -5,6 +5,7 @@ import { phaseOf } from "./definitions";
 import { separation, withSeparation } from "./separation";
 import { stageVelocity } from "./stageMovement";
 import { bossStage } from "../shared/bossActions";
+import { movementSpeed } from "../stats/runtime";
 
 // Moves enemies by their behavior: `aggro` while they have a target, `idle`
 // otherwise, taken from their current phase when it sets them. Switching
@@ -13,7 +14,7 @@ import { bossStage } from "../shared/bossActions";
 // input does, so movement handles walls for enemies too. Slow ground, like
 // water, slows them as it does the player.
 export function brainSystem(world: World, dt: number): void {
-  const { enemy, brain, position, target, speed, velocity } = world.components;
+  const { enemy, brain, position, target, velocity } = world.components;
   const pushes = separation(world);
 
   for (const [entity, e] of enemy) {
@@ -34,7 +35,7 @@ export function brainSystem(world: World, dt: number): void {
 
     const behavior = phaseOf(def, e.phase?.name)?.[mode] ?? def[mode];
     const moveSpeed =
-      (speed.get(entity) ?? def.speed) * groundSpeedScale(world.tiles, at);
+      movementSpeed(world, entity) * groundSpeedScale(world.tiles, at);
     const stageMove =
       actionStage &&
       stageVelocity(actionStage.movement, {

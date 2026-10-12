@@ -1,9 +1,10 @@
-import type { ItemDef } from "../../ecs/inventory/items";
 import { singleSpiral } from "../weapons/singleSpiral";
+import { tiered } from "./loot";
+import { defineWeaponItem } from "./shared";
 
-export const spiralStaff: ItemDef = {
+export const spiralStaff = defineWeaponItem({
   name: "Spiral Staff",
-  kind: "weapon",
   icon: "items/spiralStaff",
+  loot: tiered(7),
   weapon: singleSpiral,
-};
+});

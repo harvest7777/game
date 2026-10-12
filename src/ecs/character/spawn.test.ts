@@ -3,6 +3,7 @@ import { testCharacter, testItem } from "../../testing/defs";
 import { createTiles } from "../tiles";
 import { createWorld } from "../world";
 import { spawnCharacter } from "./spawn";
+import { STAT } from "../stats/components";
 
 function setup(changes: Parameters<typeof testCharacter>[0] = {}) {
   const world = createWorld(createTiles(20, 20));
@@ -18,9 +19,9 @@ describe("spawnCharacter", () => {
     expect(c.position.get(entity)).toEqual({ x: 5, y: 6 });
     expect(c.hitbox.get(entity)).toEqual(def.hitbox);
     expect(c.playerControlled.has(entity)).toBe(true);
-    expect(c.speed.get(entity)).toBe(def.speed);
+    expect(c.moveSpeed.has(entity)).toBe(false);
     expect(c.team.get(entity)).toBe("player");
-    expect(c.health.get(entity)).toEqual({ hp: def.health, max: def.health });
+    expect(c.health.get(entity)).toEqual(def.stats[STAT.HEALTH]);
   });
 
   it("remembers its class and draws its art on the player layer", () => {

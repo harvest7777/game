@@ -157,7 +157,7 @@ describe("agreement with player input", () => {
     world.camera.angle = angle;
     world.input.held = new Set([action]);
     const player = spawn(world);
-    addControllable(world, player, { speed: 1 });
+    addControllable(world, player, { moveSpeed: 1 });
     playerInputSystem(world, 1);
     const velocity = world.components.velocity.get(player)!;
 

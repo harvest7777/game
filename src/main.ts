@@ -29,6 +29,7 @@ import { QuadBuffer } from "./render/quads";
 import { screenToWorld, type View } from "./render/view";
 import { createSoundPlayer } from "./audio/player";
 import type { SoundMessage } from "./ecs/outbox";
+import { gameLoot } from "./content/loot";
 
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
@@ -38,7 +39,7 @@ const canvas = document.getElementById("game") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 if (!gl) throw new Error("WebGL2 isn't available");
 
-const { world, spawn } = loadLevel(levels.nexus);
+const { world, spawn } = loadLevel(levels.nexus, Math.random, gameLoot);
 // Who's being played: replaced on respawn. Once they die, the entity has no
 // components left, so everything reading it finds nothing.
 let player = spawnCharacter(world, characters.wizard, spawn);

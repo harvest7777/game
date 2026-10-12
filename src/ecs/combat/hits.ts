@@ -58,7 +58,8 @@ export function hitSystem(world: World, _dt: number): void {
         projectile: shot,
         target,
         owner: p.owner,
-        damage: min + Math.floor(world.random() * (max - min + 1)),
+        damage:
+          (min + Math.floor(world.random() * (max - min + 1))) * p.damageScale,
         armorPiercing: def.armorPiercing ?? false,
       });
       p.struck.push(target);

@@ -1,5 +1,6 @@
 import { addShooter } from "../bundles";
 import { phaseOf } from "../enemy/definitions";
+import { isEquipmentItem } from "../inventory/items";
 import type { Entity, World } from "../world";
 
 // Keeps an entity's Shooter in step with what it should fire.
@@ -8,7 +9,8 @@ import type { Entity, World } from "../world";
 // so swapping can't skip it; with no weapon equipped it can't shoot.
 export function armWithEquippedWeapon(world: World, entity: Entity): void {
   const worn = world.components.equipment.get(entity)?.weapon;
-  const weapon = worn?.def.weapon;
+  const weapon =
+    worn && isEquipmentItem(worn.def) ? worn.def.weapon : undefined;
   const shooter = world.components.shooter.get(entity);
   if (!weapon) world.components.shooter.delete(entity);
   else if (shooter) shooter.weapon = weapon;

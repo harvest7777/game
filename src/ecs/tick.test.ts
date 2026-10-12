@@ -8,6 +8,7 @@ import { CROUCH_SPEED } from "./input/system";
 import { runTick } from "./tick";
 import { createTiles, setWall } from "./tiles";
 import { createWorld, spawn, type World } from "./world";
+import { STAT } from "./stats/components";
 
 const SPEED = 4;
 const DT = 0.1;
@@ -19,7 +20,7 @@ function setup() {
   const world = createWorld(createTiles(20, 20));
   const player = spawn(world);
   addMovable(world, player, { at: START, hitbox: { r: R } });
-  addControllable(world, player, { speed: SPEED });
+  addControllable(world, player, { moveSpeed: SPEED });
   world.components.team.set(player, "player");
   world.components.autoFire.set(player, true);
   addSprite(world, player, {
@@ -222,7 +223,7 @@ describe("runTick", () => {
       at: { x: START.x + 3, y: START.y },
       hitbox: { r: 0.4 },
     });
-    world.components.health.set(dummy, { hp: 50, max: 50 });
+    world.components.health.set(dummy, { value: 50, max: 50 });
     world.components.team.set(dummy, "enemy");
     world.input.aim = { x: START.x + 3, y: START.y };
 
@@ -249,7 +250,8 @@ describe("runTick", () => {
       runTick(world, DT);
     }
     const [[text, number]] = [...world.components.floatingText];
-    const hurt = dummyDef.health - world.components.health.get(dummy)!.hp;
+    const full = dummyDef.stats[STAT.HEALTH].value;
+    const hurt = full - world.components.health.get(dummy)!.value;
     expect(Number(number.text)).toBe(hurt);
     // A new number starts fresh on the tick it appears.
     expect(number.age).toBe(0);
@@ -266,9 +268,9 @@ describe("runTick", () => {
     function withPlayerHealth() {
       const result = setup();
       const player = [...result.world.components.playerControlled][0][0];
-      result.world.components.health.set(player, { hp: 500, max: 500 });
+      result.world.components.health.set(player, { value: 500, max: 500 });
       result.world.components.team.set(player, "player");
-      const hp = () => result.world.components.health.get(player)!.hp;
+      const hp = () => result.world.components.health.get(player)!.value;
       return { ...result, hp };
     }
 
@@ -300,7 +302,7 @@ describe("runTick", () => {
         y: START.y,
       });
       // Below two thirds of its 1000 health.
-      world.components.health.get(king)!.hp = 600;
+      world.components.health.get(king)!.value = 600;
 
       runTick(world, DT);
 
@@ -314,7 +316,7 @@ describe("runTick", () => {
     it("kill the player once its health runs out", () => {
       const { world } = withPlayerHealth();
       const player = [...world.components.playerControlled][0][0];
-      world.components.health.get(player)!.hp = 1;
+      world.components.health.get(player)!.value = 1;
       spawnEnemy(world, SLIME, { x: START.x + 3, y: START.y });
 
       for (let i = 0; i < 20; i++) runTick(world, DT);

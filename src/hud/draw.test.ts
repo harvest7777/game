@@ -153,7 +153,7 @@ describe("layoutHud", () => {
     const player = spawn(world);
     addHoldings(world, player, { weapon: LANCE });
     if (hp !== undefined) {
-      world.components.health.set(player, { hp, max: 500 });
+      world.components.health.set(player, { value: hp, max: 500 });
     }
     return { world, player };
   }
@@ -193,7 +193,7 @@ describe("layoutHud", () => {
     const { world, player } = playerWith(500);
     const state = createHudState();
     updateHpBars(state, world, player, 0);
-    world.components.health.get(player)!.hp = 250;
+    world.components.health.get(player)!.value = 250;
     updateHpBars(state, world, player, 1);
 
     const { health } = byId(layoutHud(world, player, state, SCREEN, 1));
@@ -221,6 +221,23 @@ describe("layoutHud", () => {
     expect(
       layoutHud(world, spawn(world), createHudState(), SCREEN, 0),
     ).toHaveLength(0);
+  });
+
+  it("places an accessible container above the health bar", () => {
+    const { world, player } = playerWith(500);
+    const bag = spawn(world);
+    world.components.container.set(bag, {
+      slots: Array.from({ length: 8 }, () => null),
+    });
+    world.components.containerAccess.set(player, { container: bag });
+
+    const { health, container } = byId(
+      layoutHud(world, player, createHudState(), SCREEN, 0),
+    );
+
+    expect(container.id).toBe("container");
+    expect(container.x).toBe(health.x);
+    expect(health.y - (container.y + container.layout.h)).toBe(2);
   });
 });
 

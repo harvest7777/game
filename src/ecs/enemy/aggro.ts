@@ -21,7 +21,7 @@ export function aggroSystem(world: World, _dt: number): void {
     if (!opponentsOf.has(side)) opponentsOf.set(side, opponents(byTeam, side));
     for (const other of opponentsOf.get(side)!) {
       const otherAt = position.get(other)!;
-      if (health.get(other)!.hp <= 0) continue;
+      if (health.get(other)!.value <= 0) continue;
       const distance = Math.hypot(otherAt.x - at.x, otherAt.y - at.y);
       if (distance <= range && distance < nearestDistance) {
         nearest = other;

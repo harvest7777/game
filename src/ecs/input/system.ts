@@ -2,6 +2,7 @@ import type { Vec2 } from "../shared/physics/math";
 import { groundSpeedScale } from "../tiles";
 import type { World } from "../world";
 import { Action } from "./actions";
+import { movementSpeed } from "../stats/runtime";
 
 // Fraction of normal speed while Crouch (shift) is held.
 export const CROUCH_SPEED = 0.5;
@@ -31,7 +32,7 @@ export function autoFireSystem(world: World, _dt: number): void {
 // with no movement keys held the velocity is zeroed so the entity stops.
 // Slow ground, like water, scales the speed.
 export function playerInputSystem(world: World, _dt: number): void {
-  const { playerControlled, speed, velocity, position } = world.components;
+  const { playerControlled, velocity, position } = world.components;
   const { held } = world.input;
 
   const screen = { x: 0, y: 0 };
@@ -46,7 +47,7 @@ export function playerInputSystem(world: World, _dt: number): void {
   for (const [entity] of playerControlled) {
     const at = position.get(entity);
     const ground = at ? groundSpeedScale(world.tiles, at) : 1;
-    const tilesPerSecond = (speed.get(entity) ?? 0) * multiplier * ground;
+    const tilesPerSecond = movementSpeed(world, entity) * multiplier * ground;
     velocity.set(entity, {
       x: direction.x * tilesPerSecond,
       y: direction.y * tilesPerSecond,

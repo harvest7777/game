@@ -39,7 +39,11 @@ function centerOf(panels: PlacedPanel[], ref: SlotRef) {
         e.ref.in === ref.in &&
         (e.ref.in === "equipment"
           ? ref.in === "equipment" && e.ref.slot === ref.slot
-          : ref.in === "inventory" && e.ref.index === ref.index);
+          : e.ref.in === "inventory"
+            ? ref.in === "inventory" && e.ref.index === ref.index
+            : ref.in === "container" &&
+              e.ref.entity === ref.entity &&
+              e.ref.index === ref.index);
       if (same) {
         return {
           x: panel.x + e.rect.x + e.rect.w / 2,
@@ -53,6 +57,11 @@ function centerOf(panels: PlacedPanel[], ref: SlotRef) {
 
 const inv = (index: number): SlotRef => ({ in: "inventory", index });
 const worn: SlotRef = { in: "equipment", slot: "weapon" };
+const bagSlot = (entity: number, index: number): SlotRef => ({
+  in: "container",
+  entity,
+  index,
+});
 
 function send(
   state: HudState,
@@ -229,6 +238,45 @@ describe("hudPointer", () => {
       expect(doubleClick(worn).commands).toEqual([
         { kind: "unequip", slot: "weapon" },
       ]);
+    });
+
+    it("takes an item from a world container", () => {
+      const ref = bagSlot(42, 0);
+      const panel: PlacedPanel = {
+        id: "container",
+        x: 0,
+        y: 0,
+        layout: {
+          w: 12,
+          h: 12,
+          elements: [
+            {
+              kind: "slot",
+              rect: { x: 0, y: 0, w: 12, h: 12 },
+              ref,
+            },
+            {
+              kind: "icon",
+              rect: { x: 2, y: 2, w: 8, h: 8 },
+              file: "items/lance",
+              ref,
+            },
+          ],
+        },
+      };
+      const state = createHudState();
+      const at = centerOf([panel], ref);
+
+      const { commands } = send(
+        state,
+        [panel],
+        { kind: "down", ...at, time: 0 },
+        { kind: "up", ...at, time: 0.05 },
+        { kind: "down", ...at, time: 0.2 },
+        { kind: "up", ...at, time: 0.25 },
+      );
+
+      expect(commands).toEqual([{ kind: "take", from: ref }]);
     });
 
     it("needs both clicks close together", () => {

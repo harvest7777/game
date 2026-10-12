@@ -6,6 +6,7 @@ import { freshMemory } from "./behaviors";
 import { resetBossAction } from "../shared/bossActions";
 import { armForPhase } from "../shared/arming";
 import type { EnemyDef } from "./definitions";
+import { addStats } from "../stats/runtime";
 
 // Creates an enemy from its definition at `at`, which becomes its origin.
 // Everything taken from the definition is copied, so enemies never share
@@ -24,10 +25,13 @@ export function spawnEnemy(world: World, def: EnemyDef, at: Vec2): Entity {
       outline: structuredClone(def.sprite.outline),
     }),
   });
-  components.health.set(entity, { hp: def.health, max: def.health });
+  addStats(world, entity, def.stats);
   components.team.set(entity, "enemy");
   const random = world.random;
-  components.speed.set(entity, def.speed * between(random, ...SPEED_SPREAD));
+  components.moveSpeed.set(
+    entity,
+    def.speed * between(random, ...SPEED_SPREAD),
+  );
   components.enemy.set(entity, {
     def,
     origin: { x: at.x, y: at.y },

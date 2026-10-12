@@ -4,7 +4,8 @@ import type { SlotRef } from "./components";
 import {
   equipFromInventory,
   giveItem,
-  moveItem,
+  moveBetweenSlots,
+  takeFromContainer,
   unequip,
   type Holdings,
 } from "./slots";
@@ -22,9 +23,12 @@ export function inventorySystem(world: World, _dt: number): void {
 
     for (const command of commands) {
       if (command.kind === "move") {
-        if (moveItem(h, command.from, command.to)) {
+        if (moveBetweenSlots(world, entity, command.from, command.to)) {
           moved(world, entity, command.to, command.from);
         }
+      } else if (command.kind === "take") {
+        const to = takeFromContainer(world, entity, command.from);
+        if (to) moved(world, entity, to, command.from);
       } else if (command.kind === "equip") {
         const to = equipFromInventory(h, command.index);
         if (to)

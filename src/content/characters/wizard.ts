@@ -1,6 +1,7 @@
 import type { CharacterDef } from "../../ecs/character/definitions";
 import type { SpriteFile, WalkerArt } from "../../ecs/sprite/art";
 import { apprenticeStaff } from "../items/apprenticeStaff";
+import { STAT, stat } from "../../ecs/stats/components";
 
 function frames(facing: string): SpriteFile[] {
   return [0, 1, 2].map((frame) => `player/${facing}-${frame}`);
@@ -24,8 +25,16 @@ export const wizard: CharacterDef = {
   name: "Wizard",
   sprite: { art: wizardArt, outline: { color: [0, 0, 0, 1] } },
   hitbox: { r: 0.4 },
-  health: 500,
-  speed: 5,
+  stats: {
+    [STAT.HEALTH]: stat(700),
+    [STAT.MANA]: stat(100),
+    [STAT.ATTACK]: stat(25, 75),
+    [STAT.DEFENSE]: stat(0, 25),
+    [STAT.SPEED]: stat(25, 75),
+    [STAT.DEXTERITY]: stat(25, 75),
+    [STAT.VITALITY]: stat(10, 75),
+    [STAT.WISDOM]: stat(25, 75),
+  },
   startingWeapon: apprenticeStaff,
   gravestone: { kind: "static", file: "characters/gravestone" },
 };

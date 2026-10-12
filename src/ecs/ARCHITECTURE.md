@@ -15,7 +15,7 @@ A system is a series of pure helper functions that update the world state for so
 
 # Content
 
-Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies/` and `characters/`. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
+Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies`, `characters` and reusable loot definitions. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`, `LootTableDef`, `LootBagDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
 
 - **Definitions refer to each other directly**, by importing them: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so a typo or a missing definition doesn't compile, and nothing is looked up by id at runtime.
 - **Each folder's `index.ts` lists everything in it**, keyed by id, for debug pickers and for the content tests, which check every definition makes sense and that whatever it refers to is listed too.
@@ -34,13 +34,19 @@ The game starts in the **nexus**, a cozy place to rest between fights: a rounded
 
 # Debug panel
 
-`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), an item giver and an enemy spawner. Every new character is handed a kit of weapons to try.
+`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver and an enemy spawner. Every new character is handed a kit of weapons to try.
 
 # Characters
 
-The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, health, speed and starting weapon. `spawnCharacter` makes it player-controlled on the `player` team at full health, wearing its starting weapon, with a `Character` component recording its class.
+The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, all eight starting stats and caps, and a starting weapon. `spawnCharacter` makes it player-controlled on the `player` team at full health and mana, wearing its starting weapon, with a `Character` component recording its class.
 
 Characters die like anything else. `gravestoneSystem` leaves the class's `gravestone` art where one died, on the `ground` sprite layer under everything, for good, and moves a camera that was following the character onto it. The overlay's respawn button, shown while there's no character, spawns a fresh one at the level's spawn.
+
+# Stats
+
+The eight typed stat kinds are Health, Mana, Attack, Defense, Speed, Dexterity, Vitality and Wisdom. Each is a sparse ECS component holding `{ value, max }`, selected through the `STAT` constants rather than authored string ids. For Health and Mana, `value` is the resource left and `max` its capacity; for the six attributes, they are the base rating and class cap. A character definition supplies all eight. Enemy definitions require Health and opt into only the other stats they use, so thousands of ordinary enemies do not carry six empty values.
+
+Pure helpers turn attributes into behavior: Attack scales projectile damage, Dexterity scales an authored weapon rate, Speed becomes tiles per second, Defense subtracts incoming damage with a 15% floor, and Vitality/Wisdom become health/mana regeneration. Missing attributes are neutral, preserving existing enemy tuning. Projectiles snapshot Attack when fired, so an owner disappearing or changing stats cannot alter a shot already in flight. The stat system only applies the `maxStats` command and regeneration; movement, shooting and damage read the shared helpers without calling it.
 
 # Units
 
@@ -71,7 +77,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 # Events
 
-`world.events` holds what happened this tick, for other systems to react to: shots, hits, damage, deaths, item moves and despawns. A system records what happened, and each reaction is its own system reading the list, so adding a reaction (loot, sounds, damage numbers) never touches the system that found the event.
+`world.events` holds what happened this tick, for other systems to react to: shots, hits, damage, deaths, item moves and despawns. A system records what happened, and each reaction is its own system reading the list, so loot, sounds and damage numbers never touch the system that found the event.
 
 - Events last **one tick**: `runTick` clears them first, and the order in `tick.ts` runs producers before consumers.
 - `despawns` is the removal queue. Systems ask for an entity to be removed, and `cleanupSystem` removes them all at the end of the tick, so nothing disappears while another system is iterating over it.
@@ -79,17 +85,17 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 # Combat
 
-`Health { hp, max }` works on anything, player or enemy. Each tick, after movement:
+The Health stat works on anything, player or enemy. Each tick, after movement:
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
-2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. It records a `damaged` event with the amount dealt, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
+2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
 3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal, the player included. Only `invulnerable` keeps something alive.
 5. `cleanupSystem` removes everything queued.
 
 # Enemies
 
-An enemy is an ordinary entity built from an `EnemyDef` (one file per kind under `src/content/enemies/`, made with `defineEnemy`): sprite, hitbox, health, speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, `Health`, the `enemy` team, `Speed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
+An enemy is an ordinary entity built from an `EnemyDef` (one file per kind under `src/content/enemies/`, made with `defineEnemy`): sprite, hitbox, sparse stats (Health required), authored movement speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, its declared stats, the `enemy` team, `MoveSpeed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
 
 - `aggroSystem` sets each enemy's `target` to the nearest living thing on another team within its `detectRange`, and clears it when nothing is. Like `hitSystem`, it groups targets by team once a tick (`targetsByTeam`) and only looks at other teams, so ten thousand enemies each check the player rather than each other.
 - `spawnCrowd` scatters many enemies over a disc around a point, loose enough not to start piled up and off walls, for swarms and stress tests.
@@ -128,16 +134,30 @@ A boss phase can instead declare a deterministic `rotation` of named sequences. 
 
 # Items and inventory
 
-Items are data, one file each under `src/content/items/`: a name, a `kind` (one of `ITEM_KINDS`: `weapon`, `ability`, `armor` or `ring`), an icon file, and for weapons the weapon they fire. What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
+Items are data, one file each under `src/content/items/`. Every item has a name, icon and loot profile. Equipment also has a `kind` (one of `ITEM_KINDS`: `weapon`, `ability`, `armor` or `ring`), while consumables are a separate category that can sit in general storage but never in an equipment slot. A loot profile has either a validated numeric tier or typed tag-definition references such as `SPECIAL`; definitions refer to those tags directly, never by string id.
+
+What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
 
 - `Equipment`: one slot per kind in `ITEM_KINDS`. Only weapons exist so far, so the other three stay empty.
 - `Inventory`: 8 slots that take anything.
 
-A `SlotRef` names any slot (`{ in: "equipment", slot }` or `{ in: "inventory", index }`). The rules are pure functions in `slots.ts`: moving onto an occupied slot swaps, an equipment slot only takes its own kind, and a swap only happens if _both_ items fit where they land.
+A `SlotRef` names any slot: equipment and inventory slots are local to the acting entity, while `{ in: "container", entity, index }` identifies a world container explicitly. The rules are pure functions in `slots.ts`: moving onto an occupied slot swaps, an equipment slot only takes its own kind, and a swap only happens if _both_ items fit where they land. Any move involving a world container is accepted only when that player has current `ContainerAccess` to that exact entity, so stale UI commands cannot loot at a distance.
 
-**Commands.** The player's one-off requests (`move`, `equip`, debug `give`) arrive as `world.input.commands`, from number keys today and the HUD later, so neither source touches the world. `inventorySystem` applies them in order early in the tick, records an `itemsMoved` event for each move that happened, and keeps the player's `Shooter` firing the equipped weapon (keeping its cooldown, or removing it when no weapon is worn). The equipped weapon is the one source of truth; enemies still use `Shooter` directly.
+**Commands.** The player's one-off requests (`move`, `take`, `equip`, debug `give`) arrive as `world.input.commands`, so neither keys nor the HUD touch the world. `inventorySystem` applies them in order early in the tick, records an `itemsMoved` event for each move that happened, and keeps the player's `Shooter` firing the equipped weapon (keeping its cooldown, or removing it when no weapon is worn). The equipped weapon is the one source of truth; enemies still use `Shooter` directly.
 
 Number keys 1–8 equip that inventory slot in every control layout. The overlay's item picker gives any item.
+
+# Loot
+
+An enemy definition can hold a `LootTableDef`. A table is a list of independent rolls whose sources can be exact item-definition references, catalog queries, or weighted combinations of either. Tier-range sources choose uniformly among the eligible non-empty equipment kinds first, then uniformly among that kind's matching items, so adding hundreds of weapons does not crowd armor and rings out of a general pool.
+
+At startup, `createLootRuntime` indexes the item registry by category, equipment kind, tier and typed tag. It compiles and memoizes every query used by enemy tables and bags, validates exact references and probabilities, and rejects a droppable item that matches no bag. A death therefore rolls only precompiled arrays; it never scans all content. Adding a tiered item to the item registry automatically places it in every matching tier-range pool.
+
+`lootSystem` reacts to death events before cleanup removes the enemy. Successful rolls from one death are ordered by their highest matching bag priority and partitioned into eight-item bundles. Each becomes a ground entity with generic `Container` and `ProximityContainer` components plus a `LootBag` component. A special item upgrades the bundle containing it to the white-and-blue special bag; overflow creates more bags and is resolved independently. Current ordinary gear (tiers 0–8) and consumables use the brown bag, while the lower-priority blue tiered fallback automatically catches future tier 9+ gear. Existing bags age in `lootBagSystem`; emptied bags leave immediately and all others expire after 60 seconds through the normal despawn queue.
+
+Bag appearance is data under `src/content/loot/`. A `LootBagDef` has art, shader outline, priority, capacity, lifetime, expiry flash and one or more item queries. The highest-priority bag matching any item in a bundle wins, so stat potions override brown bags and special items override everything without conditionals in the loot system. Bag PNGs contain only colored art; the normal 0.2-pixel sprite shader draws their black outline. During the final 10 seconds, rendering interpolates bag age and eases its tint to black and back with frequency accelerating from 1 Hz to 7 Hz. `Container` is deliberately independent from `LootBag`, leaving the same storage component reusable for chests, vaults and trades.
+
+Container access is independent too. After movement, `containerAccessSystem` chooses the nearest non-empty `ProximityContainer` whose radius covers each player and writes only that player's `ContainerAccess`; it never transfers items or calls another system. `inventorySystem` consumes commands against that state, `lootBagSystem` owns bag cleanup, and the HUD only reads it. Future containers can therefore add another access policy without changing storage, transfers or bag behavior.
 
 # Projectiles
 
@@ -204,7 +224,7 @@ Walkers with `attack` art thrust their weapon for the first half of each shot in
 
 ## Health bars
 
-Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: blending smoothly from green when full through yellow at half to red when empty (`healthColor`, shared with the HUD). Bars are solid quads (`fill`), so they need no art. They're drawn layer by layer with the sprites, each just before its own layer's sprites: an enemy's sprite covers its bar, and the player's bar shows over enemies and their bars. Each is at its owner's depth, so a wall that hides an entity hides its bar too.
+Everything with the Health stat gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: blending smoothly from green when full through yellow at half to red when empty (`healthColor`, shared with the HUD). Bars are solid quads (`fill`), so they need no art. They're drawn layer by layer with the sprites, each just before its own layer's sprites: an enemy's sprite covers its bar, and the player's bar shows over enemies and their bars. Each is at its owner's depth, so a wall that hides an entity hides its bar too.
 
 ## Fonts and text
 
@@ -223,22 +243,22 @@ Damage numbers are drawn in the bold font at 0.48 of a tile tall, centered over 
 
 The HUD lives in `src/hud/`, outside the ECS, and is drawn with the same renderer as the game: same atlas, outline shader and font, so it looks of a piece with the world.
 
-- **It's a view.** It reads the world (`equipmentView`, `inventoryView`) and never changes it. Clicks become the same commands the number keys send (`move`, `equip`), queued for the next tick.
+- **It's a view.** It reads the world (`equipmentView`, `inventoryView`, `containerView`) and never changes it. Clicks become commands (`move`, `take`, `equip`) queued for the next tick.
 - **`HudState` is client-side:** where each panel sits (a screen corner plus a whole-UI-pixel offset, saved in the browser), what's hovered and since when, what's pressed or dragged, the last click, which slots are flashing, and whether edit mode is on.
-- **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text, invisible `slot` areas), in UI pixels relative to the panel. A panel is just its slot squares (12 UI pixels, an 8×8 icon with a pixel of room inside a lighter border, 2 apart), with nothing behind them. Drawing turns elements into quads; `hitTest` reads the same list, so what you see is what you can click.
+- **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text and invisible `slot` areas), in UI pixels relative to the panel. A panel is just its slot squares (12 UI pixels, an 8×8 icon with a pixel of room inside a lighter border, 2 apart), with nothing behind them. Drawing turns elements into quads; `hitTest` reads the same list, so what you see is what you can click.
 - **Input is a pure state machine** (`hudPointer`): pointer events in, commands out, plus whether the HUD used the event.
   - Press an item and drag it past 2 UI pixels to move it; dropping on any slot sends `move` (swaps, equips and unequips all follow the inventory rules).
-  - Double-click an inventory item to equip it, or a worn item to take it off (`unequip`, into the first empty inventory slot).
+  - Double-click an inventory item to equip it, a worn item to take it off, or a bag item to take it into the first empty inventory slot.
   - In **edit mode** (`editMode`, no way to turn it on yet), pressing anywhere on a panel grabs its whole group instead; on release the group's screen-placed panel attaches to its nearest screen corner, kept on screen.
 - **Feedback:** the hovered slot's border lights up, a dragged item follows the pointer with a faint copy left behind, and a slot an item lands in flashes white (fed by the outbox).
 - **Tooltips** appear after hovering an item for 0.3 s, never while dragging, beside the pointer and kept on screen, drawn at half the HUD's scale. `itemTooltip` works them out from the item, weapon and projectile definitions: name, kind, damage (×shots), rate, range (the farthest the projectile's real path gets) and traits.
 - **UI scale is its own.** One UI pixel is one art pixel, at 6 CSS pixels rounded to whole device pixels, so the HUD stays crisp whatever the world zoom.
 
-Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), the **health** bar just above it, and the **inventory** (8 slots, numbered by the key that equips them) to its right, bottoms lined up, in the bottom-right corner. A panel is placed either against a screen corner or attached to another panel (`above` it or to its `right`), so a group moves together, and hiding one panel never moves the others.
+Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), stacked **health/mana** bars just above it, the read-only six-attribute **stats** widget to its left, and the **inventory** (8 slots, numbered by the key that equips them) to its right, bottoms lined up, in the bottom-right corner. A panel is placed either against a screen corner or attached to another panel (`above`, to its `left`, or to its `right`), so a group moves together, and hiding one panel never moves the others. While proximity grants access to a container, its transient panel attaches above the vitals; world movement never changes its screen position, and it is not draggable or persisted.
 
 **HUD hotkeys** (`hotkeys.ts`) change only the HUD and never reach the game: G toggles the inventory, rebindable in settings to any key the game isn't using.
 
-**HP bar** (`hpBar.ts`) is render-only, so it serves the player now and bosses later: give it health and a width and it lays out a frame, the fill in `healthColor`, and `hp/max` in the regular font with room above and below it, all at a third of the HUD's size (a panel can have its own smaller pixels, `PanelLayout.scale`). Damage shows as a white chunk of what was lost, which holds for 0.15 s then shrinks to the new health over 0.4 s, slowly at first and then faster (eased in, cubed); more damage while it shrinks extends it from where it's got to. That memory (`HpBarState`) lives in `HudState.hpBars`, stepped once a frame by `updateHpBars`.
+**Vitals** (`hpBar.ts` and `vitals.ts`) are render-only: health keeps its green-to-red fill and animated white damage chunk, while mana is blue. Each shows `value/max` in the regular font at a third of the HUD's size (a panel can have its own smaller pixels, `PanelLayout.scale`). A health chunk holds for 0.15 s then shrinks to the new health over 0.4 s, slowly at first and then faster (eased in, cubed); more damage while it shrinks extends it from where it has got to. That memory (`HpBarState`) lives in `HudState.hpBars`, stepped once a frame by `updateHpBars`.
 
 ## Outbox
 

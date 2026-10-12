@@ -10,13 +10,14 @@ export type Hit = {
   target: Entity;
   // Who fired the projectile.
   owner: Entity;
-  // Rolled from the projectile's damage range, before defense.
+  // Rolled from the projectile's damage range and scaled by its Attack
+  // snapshot, before defense.
   damage: number;
   armorPiercing: boolean;
 };
 
-// Something took damage, after defense (once there is any). Shows the full
-// amount even when that's more than it had left, like RotMG.
+// Something took damage after defense. Shows the full amount even when that's
+// more than it had left, like RotMG.
 export type Damaged = { target: Entity; amount: number; source?: Entity };
 
 // An item landed in `to` (from `from`, unless it was just given).

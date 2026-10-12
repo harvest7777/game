@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { testItem } from "../../testing/defs";
-import { INVENTORY_SIZE, type Item, type SlotRef } from "./components";
+import { testConsumable, testItem } from "../../testing/defs";
+import { INVENTORY_SIZE, type HoldingSlotRef, type Item } from "./components";
 import type { ItemDef } from "./items";
 import {
   equipFromInventory,
@@ -17,11 +17,10 @@ const BOOMERANG = testItem({ name: "Boomerang" });
 const COMET = testItem({ name: "Comet" });
 
 const item = (def: ItemDef): Item => ({ def });
-const inv = (index: number): SlotRef => ({ in: "inventory", index });
-const worn = (slot: "weapon" | "ability" | "armor" | "ring"): SlotRef => ({
-  in: "equipment",
-  slot,
-});
+const inv = (index: number): HoldingSlotRef => ({ in: "inventory", index });
+const worn = (
+  slot: "weapon" | "ability" | "armor" | "ring",
+): HoldingSlotRef => ({ in: "equipment", slot });
 
 function holdings(weapon: Item | null, slots: (Item | null)[] = []): Holdings {
   return {
@@ -40,6 +39,10 @@ describe("fits", () => {
   it("only lets an item into the equipment slot for its kind", () => {
     expect(fits(item(LANCE), worn("weapon"))).toBe(true);
     expect(fits(item(LANCE), worn("ring"))).toBe(false);
+  });
+
+  it("keeps consumables out of equipment slots", () => {
+    expect(fits(item(testConsumable()), worn("weapon"))).toBe(false);
   });
 
   it("lets an empty slot go anywhere", () => {
@@ -126,6 +129,13 @@ describe("equipFromInventory", () => {
     const h = holdings(item(STAFF));
     expect(equipFromInventory(h, 0)).toBeUndefined();
     expect(h.equipment.weapon).toEqual(item(STAFF));
+  });
+
+  it("does not equip a consumable", () => {
+    const potion = item(testConsumable());
+    const h = holdings(item(STAFF), [potion]);
+    expect(equipFromInventory(h, 0)).toBeUndefined();
+    expect(h.inventory.slots[0]).toEqual(potion);
   });
 });
 

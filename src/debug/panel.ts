@@ -22,8 +22,8 @@ export type DebugPanel = {
 };
 
 // Wires up the overlay's debug controls: render toggles, invulnerability,
-// and pickers that give items and spawn enemies. `commands` is the queue the
-// next tick reads; `player` is whoever is being played right now.
+// max stats, and pickers that give items and spawn enemies. `commands` is the
+// queue the next tick reads; `player` is whoever is being played right now.
 export function installDebugPanel(
   world: World,
   commands: Command[],
@@ -37,6 +37,7 @@ export function installDebugPanel(
   const invulnerable = checkbox("debugInvulnerable", (on) =>
     setInvulnerable(player(), on),
   );
+  button("debugMaxStats", () => commands.push({ kind: "maxStats" }));
   function setInvulnerable(entity: Entity, on: boolean) {
     // A dead player has nothing left to protect.
     if (!world.components.character.has(entity)) return;

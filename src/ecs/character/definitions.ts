@@ -1,8 +1,8 @@
-import type { Speed } from "../input/components";
-import type { ItemDef } from "../inventory/items";
+import type { EquipmentItemDef } from "../inventory/items";
 import type { Hitbox } from "../movement/components";
 import type { SpriteArt } from "../sprite/art";
 import type { Sprite } from "../sprite/components";
+import type { CompleteStatBlock } from "../stats/components";
 
 // What a playable character is: a class to pick from the character list.
 // Each is its own file under src/content/characters. Fields reuse the
@@ -11,12 +11,10 @@ export type CharacterDef = {
   name: string;
   sprite: Pick<Sprite, "art" | "outline" | "scale">;
   hitbox: Hitbox;
-  // Starting and maximum health.
-  health: number;
-  // Tiles per second.
-  speed: Speed;
+  // Starting resources, attributes and class caps.
+  stats: CompleteStatBlock;
   // Worn from the start.
-  startingWeapon?: ItemDef;
+  startingWeapon?: EquipmentItemDef;
   // Left where it dies.
   gravestone: SpriteArt;
 };

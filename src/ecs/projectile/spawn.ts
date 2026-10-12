@@ -13,6 +13,7 @@ export type FireOptions = {
   toward: Vec2;
   // Curves and weaves to the other side.
   mirror?: boolean;
+  damageScale?: number;
 };
 
 // Creates a projectile entity from its definition. Everything taken from the
@@ -49,6 +50,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
     direction,
     age: 0,
     struck: [],
+    damageScale: options.damageScale ?? 1,
     mirror: options.mirror ?? false,
   });
 

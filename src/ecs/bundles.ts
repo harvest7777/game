@@ -26,18 +26,20 @@ export function addMovable(
   if (response !== "pass") components.wallResponse.set(entity, response);
 }
 
-type ControllableOptions = { speed: number };
+type ControllableOptions = { moveSpeed?: number };
 
-// Steered by the keyboard at `speed` tiles per second, with autofire off
-// until it's toggled on. Pair with addMovable.
+// Steered by the keyboard, with autofire off until it's toggled on. A
+// stat-bearing character derives movement from Speed; callers can provide a
+// fallback movement speed for a simpler controllable entity.
 export function addControllable(
   world: World,
   entity: Entity,
-  { speed }: ControllableOptions,
+  { moveSpeed }: ControllableOptions = {},
 ): void {
   world.components.playerControlled.set(entity, true);
   world.components.autoFire.set(entity, false);
-  world.components.speed.set(entity, speed);
+  if (moveSpeed !== undefined)
+    world.components.moveSpeed.set(entity, moveSpeed);
 }
 
 // Drawn with `sprite`, starting out facing toward the viewer (world +y).

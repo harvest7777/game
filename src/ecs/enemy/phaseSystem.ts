@@ -25,7 +25,7 @@ export function phaseSystem(world: World, dt: number): void {
       targetEntity === undefined ? undefined : position.get(targetEntity);
     const to = nextPhase(phase, {
       time: e.phase.time,
-      healthFraction: hp ? hp.hp / hp.max : 1,
+      healthFraction: hp ? hp.value / hp.max : 1,
       targetDistance:
         at && targetAt
           ? Math.hypot(targetAt.x - at.x, targetAt.y - at.y)

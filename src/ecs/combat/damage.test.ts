@@ -7,8 +7,8 @@ function setup(hp = 50) {
   const world = createWorld(createTiles(1, 1));
   const target = spawn(world);
   const attacker = spawn(world);
-  world.components.health.set(target, { hp, max: 100 });
-  const hpOf = () => world.components.health.get(target)!.hp;
+  world.components.health.set(target, { value: hp, max: 100 });
+  const hpOf = () => world.components.health.get(target)!.value;
   return { world, target, attacker, hpOf };
 }
 
@@ -54,6 +54,24 @@ describe("applyDamage", () => {
     expect(world.events.damaged).toEqual([
       { target, amount: 30, source: attacker },
     ]);
+  });
+
+  it("subtracts defense down to fifteen percent of the hit", () => {
+    const { world, target, hpOf } = setup(100);
+    world.components.defense.set(target, { value: 90, max: 90 });
+
+    applyDamage(world, target, 100);
+
+    expect(hpOf()).toBe(85);
+  });
+
+  it("lets armor-piercing damage bypass defense", () => {
+    const { world, target, hpOf } = setup(100);
+    world.components.defense.set(target, { value: 90, max: 90 });
+
+    applyDamage(world, target, 40, undefined, true);
+
+    expect(hpOf()).toBe(60);
   });
 
   it("records nothing once it's at 0", () => {

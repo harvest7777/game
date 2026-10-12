@@ -1,6 +1,7 @@
 import type { Vec2 } from "../shared/physics/math";
 import type { Entity, World } from "../world";
 import { fireWeapon, wantsToFire } from "../shared/firing";
+import { shotsPerSecond } from "../stats/runtime";
 
 // Autofire: every shooter fires its weapon at the weapon's rate, from where
 // it stands, every projectile of each shot at once.
@@ -35,7 +36,7 @@ export function shootSystem(world: World, dt: number): void {
     s.cooldown -= dt;
     while (s.cooldown <= 0) {
       fireWeapon(world, { entity, weapon: s.weapon, at, aim: s.aim });
-      s.cooldown += 1 / s.weapon.rate;
+      s.cooldown += 1 / shotsPerSecond(world, entity, s.weapon.rate);
     }
   }
 }

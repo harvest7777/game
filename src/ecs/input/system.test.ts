@@ -4,6 +4,7 @@ import { createTiles, setGround } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
 import { Action } from "./actions";
 import { autoFireSystem, CROUCH_SPEED, playerInputSystem } from "./system";
+import { STAT, stat } from "../stats/components";
 
 const SPEED = 4;
 
@@ -13,7 +14,7 @@ function setup(held: Action[], cameraAngle = 0) {
   world.camera.angle = cameraAngle;
   const player = spawn(world);
   world.components.playerControlled.set(player, true);
-  world.components.speed.set(player, SPEED);
+  world.components.moveSpeed.set(player, SPEED);
   world.components.velocity.set(player, { x: 0, y: 0 });
   return { world, player };
 }
@@ -87,6 +88,15 @@ describe("playerInputSystem", () => {
     expectVelocity(world, player, SPEED * CROUCH_SPEED, 0);
   });
 
+  it("uses the Speed stat instead of fallback movement speed", () => {
+    const { world, player } = setup([Action.Right]);
+    world.components[STAT.SPEED].set(player, stat(25, 75));
+
+    playerInputSystem(world, 1);
+
+    expectVelocity(world, player, 5, 0);
+  });
+
   describe("with the camera rotated", () => {
     it("Up still moves toward the top of the screen, which faces world +x at π/2", () => {
       const { world, player } = setup([Action.Up], Math.PI / 2);
@@ -110,7 +120,7 @@ describe("playerInputSystem", () => {
   it("leaves entities that aren't player controlled alone", () => {
     const { world } = setup([Action.Right]);
     const enemy = spawn(world);
-    world.components.speed.set(enemy, SPEED);
+    world.components.moveSpeed.set(enemy, SPEED);
     world.components.velocity.set(enemy, { x: 0, y: 1 });
 
     playerInputSystem(world, 1);
@@ -127,7 +137,7 @@ describe("playerInputSystem on slow ground", () => {
     world.input.held = new Set([Action.Right]);
     const player = spawn(world);
     world.components.playerControlled.set(player, true);
-    world.components.speed.set(player, SPEED);
+    world.components.moveSpeed.set(player, SPEED);
 
     world.components.position.set(player, { x: 0.5, y: 0.5 });
     playerInputSystem(world, 1);

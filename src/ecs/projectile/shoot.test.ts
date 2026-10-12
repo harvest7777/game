@@ -6,6 +6,7 @@ import { createWorld, spawn, type World } from "../world";
 import { Action } from "../input/actions";
 import { shootSystem } from "./shoot";
 import { ring, type WeaponDef } from "./weapons";
+import { STAT, stat } from "../stats/components";
 
 const DT = 0.05;
 const AT = { x: 10, y: 10 };
@@ -62,6 +63,15 @@ describe("shootSystem", () => {
       tick(world, 1, 0.6);
       expect(shots(world)).toHaveLength(3);
     });
+
+    it("multiplies the authored weapon rate by Dexterity", () => {
+      const { world, shooter } = setup();
+      world.components[STAT.DEXTERITY].set(shooter, stat(75));
+
+      tick(world, 1, 0.6);
+
+      expect(shots(world)).toHaveLength(4);
+    });
   });
 
   it("fires from where the shooter stands, as its team, owned by it", () => {
@@ -72,6 +82,17 @@ describe("shootSystem", () => {
     expect(shot.owner).toBe(shooter);
     expect(shot.team).toBe("player");
     expect(shot.def).toBe(STAFF.fires[0].projectile);
+  });
+
+  it("snapshots Attack onto each projectile", () => {
+    const { world, shooter } = setup();
+    world.components[STAT.ATTACK].set(shooter, stat(75));
+
+    tick(world);
+    const shot = shots(world)[0];
+    world.components[STAT.ATTACK].get(shooter)!.value = 0;
+
+    expect(shot.damageScale).toBe(2);
   });
 
   it("does not fire while player autofire is off", () => {

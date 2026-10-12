@@ -4,6 +4,7 @@ import { createWorld } from "../world";
 import { testEnemy, testWeapon } from "../../testing/defs";
 import type { EnemyDef } from "./definitions";
 import { spawnCrowd, spawnEnemy } from "./spawn";
+import { STAT } from "../stats/components";
 
 const SLIME = testEnemy({ weapon: testWeapon() });
 
@@ -19,10 +20,7 @@ describe("spawnEnemy", () => {
 
     expect(c.position.get(entity)).toEqual({ x: 5, y: 6 });
     expect(c.hitbox.get(entity)).toEqual(SLIME.hitbox);
-    expect(c.health.get(entity)).toEqual({
-      hp: SLIME.health,
-      max: SLIME.health,
-    });
+    expect(c.health.get(entity)).toEqual(SLIME.stats[STAT.HEALTH]);
     expect(c.team.get(entity)).toBe("enemy");
   });
 
@@ -31,7 +29,7 @@ describe("spawnEnemy", () => {
       const world = createWorld(createTiles(20, 20), () => roll);
       const entity = spawnEnemy(world, SLIME, { x: 5, y: 6 });
       return {
-        speed: world.components.speed.get(entity)!,
+        speed: world.components.moveSpeed.get(entity)!,
         quirks: world.components.enemy.get(entity)!.quirks,
       };
     };

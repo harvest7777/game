@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import html from "../index.html?raw";
 import mainSource from "./main.ts?raw";
 import observabilitySource from "./observability.ts?raw";
+import debugPanelSource from "./debug/panel.ts?raw";
 
 // The page's scripts look elements up by id and break on load if one is
 // missing, which nothing else would catch outside a browser.
@@ -20,4 +21,9 @@ describe("index.html", () => {
       }
     });
   }
+
+  it("includes the max-stats control wired by the debug panel", () => {
+    expect(html).toContain('id="debugMaxStats"');
+    expect(debugPanelSource).toContain('button("debugMaxStats"');
+  });
 });
