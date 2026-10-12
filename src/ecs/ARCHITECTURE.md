@@ -53,7 +53,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 `Health { hp, max }` works on anything, player or enemy. Each tick, after movement:
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
-2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. It records a `damaged` event with the amount dealt, and reaching 0 records a death once.
+2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. It records a `damaged` event with the amount dealt, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
 3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. The text follows the target (copying its position and previous position each tick, so it's drawn moving with it), and stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal. The player doesn't die yet: it stays at 0.
 5. `cleanupSystem` removes everything queued.
@@ -62,7 +62,8 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 An enemy is an ordinary entity built from an `EnemyDef` in `src/ecs/enemy/definitions.ts`: sprite, hitbox, health, speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, `Health`, the `enemy` team, `Speed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
 
-- `aggroSystem` sets each enemy's `target` to the nearest living thing on another team within its `detectRange`, and clears it when nothing is.
+- `aggroSystem` sets each enemy's `target` to the nearest living thing on another team within its `detectRange`, and clears it when nothing is. Like `hitSystem`, it groups targets by team once a tick (`targetsByTeam`) and only looks at other teams, so ten thousand enemies each check the player rather than each other.
+- `spawnCrowd` scatters many enemies over a disc around a point, loose enough not to start piled up and off walls, for swarms and stress tests.
 - Shooters the player doesn't control aim at their target and only fire while they have one, ready to shoot the moment they get one.
 - Enemy shots are ordinary projectiles on the `enemy` team, so the same hit, damage and death systems hurt the player.
 
@@ -80,6 +81,11 @@ How an enemy moves is data too (`src/ecs/enemy/behaviors.ts`). Each definition h
 - `returnHome`: walks back to its origin.
 
 Each behavior is a pure steering function from position, origin, target, speed and a small `BehaviorMemory` to a velocity. `brainSystem` picks idle or aggro, starts a fresh memory whenever that switches, and sets velocity, the way player input does. Movement then handles walls for enemies the same as for everything else.
+
+So a group doesn't move as one:
+
+- **Quirks.** Each enemy rolls its own at spawn (from `world.random`, so still deterministic): speed within 10% of its kind's, a `reach` of 0.8–1.2 that scales how far off it stops (`chase`) or circles (`orbit`), and a coin flip on orbit direction.
+- **Separation.** Enemies that move ease apart from other enemies closer than their hitboxes plus 0.5 tiles, harder the closer they are (`separation.ts`). The push is added to the steering and capped at the enemy's speed (or a dash's own speed), so they still chase, just as a loose arc instead of a pile. Neighbors come from a grid of cells sorted into flat arrays each tick, so thousands of enemies stay cheap. Only enemies space out, not the player, and stationary ones aren't pushed.
 
 ## Phases
 

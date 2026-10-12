@@ -74,6 +74,13 @@ describe("chase", () => {
   it("stands still without a target", () => {
     expect(steer(chase, freshMemory(), ctx())).toEqual({ x: 0, y: 0 });
   });
+
+  it("stops nearer or farther by its reach", () => {
+    const target = { x: 15, y: 10 };
+    const quirks = { reach: 1.25, flipOrbit: false };
+    const path = simulate(chase, { target, quirks }, 60);
+    expect(distance(path[path.length - 1], target)).toBeCloseTo(2.5, 5);
+  });
 });
 
 describe("returnHome", () => {
@@ -111,6 +118,35 @@ describe("orbit", () => {
       ctx({ at: { x: 13, y: 10 }, target }),
     );
     expect(v.y).toBeCloseTo(-SPEED);
+  });
+
+  it("goes the other way when its quirks flip it", () => {
+    const at = { x: 13, y: 10 };
+    const flipOrbit = { reach: 1, flipOrbit: true };
+    const flipped = (clockwise?: boolean) =>
+      steer(
+        { kind: "orbit", radius: 3, clockwise },
+        freshMemory(),
+        ctx({ at, target, quirks: flipOrbit }),
+      ).y;
+    expect(flipped()).toBeCloseTo(-SPEED);
+    expect(flipped(false)).toBeCloseTo(SPEED);
+  });
+
+  it("circles farther out by its reach", () => {
+    const path = simulate(
+      { kind: "orbit", radius: 3 },
+      {
+        at: { x: 18, y: 10 },
+        target,
+        quirks: { reach: 1.5, flipOrbit: false },
+      },
+      200,
+    );
+    for (const p of path.slice(-60)) {
+      expect(distance(p, target)).toBeGreaterThan(4);
+      expect(distance(p, target)).toBeLessThan(5);
+    }
   });
 
   it("closes in from outside the ring and backs off from inside it", () => {

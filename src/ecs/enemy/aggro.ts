@@ -1,3 +1,5 @@
+import { opponents, targetsByTeam } from "../combat/teams";
+import type { Team } from "../projectile/components";
 import type { Entity, World } from "../world";
 import { enemyDef } from "./definitions";
 
@@ -6,6 +8,8 @@ import { enemyDef } from "./definitions";
 // chasing and shooting until something comes back.
 export function aggroSystem(world: World, _dt: number): void {
   const { enemy, position, team, health, target } = world.components;
+  const byTeam = targetsByTeam(world);
+  const opponentsOf = new Map<Team | undefined, Entity[]>();
 
   for (const [entity, e] of enemy) {
     const at = position.get(entity);
@@ -15,13 +19,10 @@ export function aggroSystem(world: World, _dt: number): void {
 
     let nearest: Entity | undefined;
     let nearestDistance = Infinity;
-    for (const [other, h] of health) {
-      const otherSide = team.get(other);
-      if (other === entity || otherSide === undefined || otherSide === side) {
-        continue;
-      }
-      const otherAt = position.get(other);
-      if (!otherAt || h.hp <= 0) continue;
+    if (!opponentsOf.has(side)) opponentsOf.set(side, opponents(byTeam, side));
+    for (const other of opponentsOf.get(side)!) {
+      const otherAt = position.get(other)!;
+      if (health.get(other)!.hp <= 0) continue;
       const distance = Math.hypot(otherAt.x - at.x, otherAt.y - at.y);
       if (distance <= range && distance < nearestDistance) {
         nearest = other;

@@ -33,6 +33,17 @@ describe("applyDamage", () => {
     expect(world.events.damaged[0].amount).toBe(25);
   });
 
+  it("leaves something invulnerable at full health but still records the hit", () => {
+    const { world, target, hpOf } = setup(50);
+    world.components.invulnerable.set(target, true);
+
+    applyDamage(world, target, 999);
+
+    expect(hpOf()).toBe(50);
+    expect(world.events.damaged).toHaveLength(1);
+    expect(world.events.deaths).toHaveLength(0);
+  });
+
   it("records nothing once it's at 0", () => {
     const { world, target } = setup(10);
     applyDamage(world, target, 25);

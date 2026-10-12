@@ -39,6 +39,12 @@ export type BehaviorMemory = {
   heading?: Vec2;
 };
 
+// What makes one enemy move a little differently from others of its kind,
+// rolled when it spawns, so a group doesn't move in lockstep: `reach`
+// scales how far off it stops or circles, and `flipOrbit` sends it around
+// the other way.
+export type Quirks = { reach: number; flipOrbit: boolean };
+
 export type SteerContext = {
   at: Vec2;
   origin: Vec2;
@@ -48,6 +54,7 @@ export type SteerContext = {
   speed: number;
   dt: number;
   random: () => number;
+  quirks?: Quirks;
 };
 
 const STILL: Vec2 = { x: 0, y: 0 };
@@ -74,7 +81,13 @@ export function steer(
       return wander(behavior, memory, ctx);
     case "chase":
       if (!ctx.target) return STILL;
-      return toward(ctx.at, ctx.target, ctx.speed, behavior.stopAt, ctx.dt);
+      return toward(
+        ctx.at,
+        ctx.target,
+        ctx.speed,
+        behavior.stopAt * (ctx.quirks?.reach ?? 1),
+        ctx.dt,
+      );
     case "orbit":
       return orbit(behavior, ctx);
     case "charge":
@@ -150,13 +163,12 @@ function orbit(
   const out = { x: dx / distance, y: dy / distance };
   // Clockwise on screen (y down) is the outward direction turned a quarter
   // clockwise.
-  const sign = behavior.clockwise === false ? -1 : 1;
+  const clockwise = (behavior.clockwise !== false) !== !!ctx.quirks?.flipOrbit;
+  const sign = clockwise ? 1 : -1;
+  const radius = behavior.radius * (ctx.quirks?.reach ?? 1);
   const around = { x: -out.y * sign, y: out.x * sign };
   // Lean in or out toward the ring, harder the further off it is.
-  const off = Math.max(
-    -1,
-    Math.min(1, (behavior.radius - distance) / behavior.radius),
-  );
+  const off = Math.max(-1, Math.min(1, (radius - distance) / radius));
   const x = around.x + out.x * off * 2;
   const y = around.y + out.y * off * 2;
   const length = Math.hypot(x, y);

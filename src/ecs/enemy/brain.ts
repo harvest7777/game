@@ -1,13 +1,16 @@
 import type { World } from "../world";
 import { freshMemory, steer } from "./behaviors";
 import { enemyDef, phaseOf } from "./definitions";
+import { separation, withSeparation } from "./separation";
 
 // Moves enemies by their behavior: `aggro` while they have a target, `idle`
 // otherwise, taken from their current phase when it sets them. Switching
-// starts the new behavior fresh. It only sets velocity,
-// the way player input does, so movement handles walls for enemies too.
+// starts the new behavior fresh. Enemies that move also ease apart from
+// each other so they don't pile up. It only sets velocity, the way player
+// input does, so movement handles walls for enemies too.
 export function brainSystem(world: World, dt: number): void {
   const { enemy, brain, position, target, speed, velocity } = world.components;
+  const pushes = separation(world);
 
   for (const [entity, e] of enemy) {
     const mind = brain.get(entity);
@@ -24,16 +27,22 @@ export function brainSystem(world: World, dt: number): void {
       mind.memory = freshMemory();
     }
 
+    const behavior = phaseOf(def, e.phase?.name)?.[mode] ?? def[mode];
+    const moveSpeed = speed.get(entity) ?? def.speed;
+    const steering = steer(behavior, mind.memory, {
+      at,
+      origin: e.origin,
+      target: targetAt,
+      speed: moveSpeed,
+      dt,
+      random: world.random,
+      quirks: e.quirks,
+    });
     velocity.set(
       entity,
-      steer(phaseOf(def, e.phase?.name)?.[mode] ?? def[mode], mind.memory, {
-        at,
-        origin: e.origin,
-        target: targetAt,
-        speed: speed.get(entity) ?? def.speed,
-        dt,
-        random: world.random,
-      }),
+      behavior.kind === "stationary"
+        ? steering
+        : withSeparation(steering, pushes.get(entity), moveSpeed),
     );
   }
 }

@@ -8,7 +8,7 @@ import type {
   WallResponse,
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
-import type { Health } from "./combat/components";
+import type { Health, Invulnerable } from "./combat/components";
 import type { Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
 import { createEvents, type Events } from "./events";
@@ -50,6 +50,7 @@ export type Components = {
   shooter: Store<Shooter>;
   team: Store<Team>;
   health: Store<Health>;
+  invulnerable: Store<Invulnerable>;
   enemy: Store<Enemy>;
   brain: Store<Brain>;
   // Who this entity is after, e.g. what an enemy aims at.
@@ -103,6 +104,7 @@ export function createWorld(
       shooter: createStore(),
       team: createStore(),
       health: createStore(),
+      invulnerable: createStore(),
       enemy: createStore(),
       brain: createStore(),
       target: createStore(),

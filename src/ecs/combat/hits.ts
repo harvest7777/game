@@ -4,7 +4,9 @@ import {
   sweptCircleCircle,
 } from "../shared/physics/geometry";
 import type { Vec2 } from "../shared/physics/math";
+import type { Team } from "../projectile/components";
 import type { Entity, World } from "../world";
+import { opponents, targetsByTeam } from "./teams";
 
 // Finds projectiles that touched something with health on another team this
 // tick, and records each as a Hit. Runs after movement, comparing where both
@@ -15,8 +17,10 @@ import type { Entity, World } from "../world";
 // is removed. One that pierces hits everything it touched, each thing once
 // over its whole flight.
 export function hitSystem(world: World, _dt: number): void {
-  const { projectile, health, team, position, previousPosition, hitbox } =
-    world.components;
+  const { projectile, position, previousPosition, hitbox } = world.components;
+
+  const byTeam = targetsByTeam(world);
+  const opponentsOf = new Map<Team, Entity[]>();
 
   for (const [shot, p] of projectile) {
     const def = projectileDef(p.def);
@@ -26,12 +30,12 @@ export function hitSystem(world: World, _dt: number): void {
     const shotCircle = hitbox.get(shot) ?? { r: 0 };
 
     const touched: { target: Entity; t: number }[] = [];
-    for (const [target] of health) {
-      const side = team.get(target);
-      if (side === undefined || side === p.team) continue;
+    if (!opponentsOf.has(p.team)) {
+      opponentsOf.set(p.team, opponents(byTeam, p.team));
+    }
+    for (const target of opponentsOf.get(p.team)!) {
       if (p.struck.includes(target)) continue;
-      const targetNow = position.get(target);
-      if (!targetNow) continue;
+      const targetNow = position.get(target)!;
       const targetFrom = previousPosition.get(target) ?? targetNow;
       const targetCircle = hitbox.get(target) ?? { r: 0 };
 

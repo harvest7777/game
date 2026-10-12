@@ -3,7 +3,8 @@ import type { Entity, World } from "../world";
 // Takes `amount` off the target's health. The one place damage is applied,
 // so defense and armor piercing slot in here once stats exist. Records what
 // was dealt as a Damaged event. Health stops at 0, and reaching it records a
-// Death once. Something already at 0 takes nothing more.
+// Death once. Something already at 0 takes nothing more, and something
+// invulnerable records the hit but keeps its health.
 export function applyDamage(
   world: World,
   target: Entity,
@@ -12,8 +13,9 @@ export function applyDamage(
 ): void {
   const health = world.components.health.get(target);
   if (!health || health.hp <= 0) return;
-  health.hp = Math.max(0, health.hp - amount);
   world.events.damaged.push({ target, amount, source });
+  if (world.components.invulnerable.has(target)) return;
+  health.hp = Math.max(0, health.hp - amount);
   if (health.hp === 0) {
     world.events.deaths.push({ entity: target, killer: source });
   }

@@ -24,6 +24,10 @@
       <p>debug renders</p>
       <label><input type="checkbox" id="debugHitboxes" /> hitboxes</label>
       <label><input type="checkbox" id="debugFont" /> font</label>
+      <label
+        ><input type="checkbox" id="debugInvulnerable" checked />
+        invulnerable</label
+      >
       <p>
         <label
           >item
@@ -36,6 +40,9 @@
           >enemy
           <select id="debugEnemy"></select
         ></label>
+        <label
+          >× <input id="debugCount" type="number" value="1" min="1" max="20000"
+        /></label>
         <button id="debugSpawn">spawn</button>
       </p>
     </div>

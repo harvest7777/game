@@ -11,7 +11,7 @@ import { addHoldings } from "./ecs/inventory/bundle";
 import { itemIds, items, type ItemId } from "./ecs/inventory/items";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { enemyIds, type EnemyId } from "./ecs/enemy/definitions";
-import { spawnEnemy } from "./ecs/enemy/spawn";
+import { spawnCrowd, spawnEnemy } from "./ecs/enemy/spawn";
 import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
@@ -34,13 +34,17 @@ const canvas = document.getElementById("game") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 if (!gl) throw new Error("WebGL2 isn't available");
 
-// A small walled test map with a few obstacles to walk around.
-const tiles = createTiles(32, 32);
-for (let i = 0; i < 32; i++) {
+// A walled test map, big enough to stress test crowds in, with a few
+// obstacles to walk around near the middle where the player starts.
+const MAP_SIZE = 128;
+// Where the original 32x32 test area sits, in the middle of the map.
+const MIDDLE = 48;
+const tiles = createTiles(MAP_SIZE, MAP_SIZE);
+for (let i = 0; i < MAP_SIZE; i++) {
   setWall(tiles, i, 0);
-  setWall(tiles, i, 31);
+  setWall(tiles, i, MAP_SIZE - 1);
   setWall(tiles, 0, i);
-  setWall(tiles, 31, i);
+  setWall(tiles, MAP_SIZE - 1, i);
 }
 for (const [x, y] of [
   [12, 12],
@@ -53,12 +57,15 @@ for (const [x, y] of [
   [20, 19],
   [8, 22],
 ]) {
-  setWall(tiles, x, y);
+  setWall(tiles, MIDDLE + x, MIDDLE + y);
 }
 
 const world = createWorld(tiles);
 const player = spawn(world);
-addMovable(world, player, { at: { x: 16, y: 16 }, hitbox: { r: 0.4 } });
+addMovable(world, player, {
+  at: { x: MIDDLE + 16, y: MIDDLE + 16 },
+  hitbox: { r: 0.4 },
+});
 addControllable(world, player, { speed: 5 });
 addSprite(world, player, {
   name: "player",
@@ -80,19 +87,20 @@ addHoldings(world, player, {
   ],
 });
 world.components.health.set(player, { hp: 500, max: 500 });
+world.components.invulnerable.set(player, true);
 world.camera.target = player;
 
 // Something to fight: dummies that just take hits, and enemies that shoot
 // back once you're close.
-for (const at of [
-  { x: 20, y: 14 },
-  { x: 22, y: 16 },
-]) {
-  spawnEnemy(world, "dummy", at);
+for (const [id, x, y] of [
+  ["dummy", 20, 14],
+  ["dummy", 22, 16],
+  ["slime", 7, 26],
+  ["archer", 26, 26],
+  ["boar", 26, 6],
+] as const) {
+  spawnEnemy(world, id, { x: MIDDLE + x, y: MIDDLE + y });
 }
-spawnEnemy(world, "slime", { x: 7, y: 26 });
-spawnEnemy(world, "archer", { x: 26, y: 26 });
-spawnEnemy(world, "boar", { x: 26, y: 6 });
 
 const art = await buildAtlas(
   manifest,
@@ -144,18 +152,33 @@ document.getElementById("debugGive")!.addEventListener("click", (event) => {
 });
 
 // Enemy spawner: puts the picked enemy a few tiles from the player, toward
-// where it's aiming.
+// where it's aiming, or a crowd of them around there.
 const enemyPicker = document.getElementById("debugEnemy") as HTMLSelectElement;
+const enemyCount = document.getElementById("debugCount") as HTMLInputElement;
 for (const id of enemyIds) enemyPicker.add(new Option(id, id));
 document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
   const at = world.components.position.get(player)!;
   const aim = world.components.shooter.get(player)?.aim ??
     world.components.facing.get(player) ?? { x: 1, y: 0 };
-  spawnEnemy(world, enemyPicker.value as EnemyId, {
-    x: at.x + aim.x * 4,
-    y: at.y + aim.y * 4,
-  });
+  const center = { x: at.x + aim.x * 4, y: at.y + aim.y * 4 };
+  const id = enemyPicker.value as EnemyId;
+  const count = Math.max(1, Math.floor(Number(enemyCount.value) || 1));
+  if (count === 1) spawnEnemy(world, id, center);
+  else spawnCrowd(world, id, center, count);
   (event.currentTarget as HTMLButtonElement).blur();
+});
+
+// Invulnerability, on to start with so stress tests can't kill you.
+const invulnerableToggle = document.getElementById(
+  "debugInvulnerable",
+) as HTMLInputElement;
+invulnerableToggle.addEventListener("change", () => {
+  if (invulnerableToggle.checked) {
+    world.components.invulnerable.set(player, true);
+  } else {
+    world.components.invulnerable.delete(player);
+  }
+  invulnerableToggle.blur();
 });
 
 // Controls picker, remembered between visits.
@@ -202,6 +225,13 @@ const inputs = new Set<string>();
 const frameTimesInTheLastSecond: Array<Array<number>> = [];
 
 window.addEventListener("keydown", (event) => {
+  // Typing into a debug field isn't playing.
+  if (
+    event.target instanceof HTMLInputElement &&
+    event.target.type !== "checkbox"
+  ) {
+    return;
+  }
   inputs.add(event.code);
   const command = slotHotkeys[event.code];
   if (command && !event.repeat) pendingCommands.push(command);
