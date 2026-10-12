@@ -15,6 +15,10 @@ import { archerVolley } from "./archerVolley";
 import { kingSpray } from "./kingSpray";
 import { kingRing } from "./kingRing";
 import { kingFrenzy } from "./kingFrenzy";
+import { twinHelix } from "./twinHelix";
+import { leafVolley } from "./leafVolley";
+import { forkedNeedles } from "./forkedNeedles";
+import { bloom } from "./bloom";
 
 // Every weapon, by id.
 export const weapons = {
@@ -34,6 +38,10 @@ export const weapons = {
   kingSpray,
   kingRing,
   kingFrenzy,
+  twinHelix,
+  leafVolley,
+  forkedNeedles,
+  bloom,
 } satisfies Record<string, WeaponDef>;
 
 export type WeaponId = keyof typeof weapons;

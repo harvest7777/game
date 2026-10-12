@@ -23,6 +23,8 @@ export type Projectile = {
   age: number;
   // What it has already hit, so piercing shots hit each thing once.
   struck: Entity[];
+  // Its path's sideways part is flipped: it curves and weaves the other way.
+  mirror: boolean;
 };
 
 // Fires its weapon automatically at the weapon's rate. `cooldown` is seconds

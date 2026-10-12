@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ring } from "../ecs/projectile/weapons";
 import type { ItemDef } from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
 import { testItem, testProjectile, testWeapon } from "../testing/defs";
@@ -14,7 +15,9 @@ const texts = (item: ItemDef) => itemTooltip(item).map((l) => l.text);
 
 // A staff whose shot has `shot`'s traits.
 const firing = (shot: Partial<ProjectileDef>) =>
-  testItem({ weapon: testWeapon({ projectile: testProjectile(shot) }) });
+  testItem({
+    weapon: testWeapon({ fires: [{ projectile: testProjectile(shot) }] }),
+  });
 
 describe("itemTooltip", () => {
   it("names the item and its kind first", () => {
@@ -28,11 +31,15 @@ describe("itemTooltip", () => {
       name: "Staff",
       weapon: testWeapon({
         rate: 4,
-        projectile: testProjectile({
-          damage: [20, 30],
-          speed: 12,
-          lifetime: 0.6,
-        }),
+        fires: [
+          {
+            projectile: testProjectile({
+              damage: [20, 30],
+              speed: 12,
+              lifetime: 0.6,
+            }),
+          },
+        ],
       }),
     });
     // 12 tiles/s for 0.6 s.
@@ -45,14 +52,30 @@ describe("itemTooltip", () => {
     ]);
   });
 
-  it("counts the shots in a volley", () => {
-    const ring = testItem({
+  it("counts the projectiles in a shot", () => {
+    const shard = testProjectile({ damage: [25, 40] });
+    const tenRing = testItem({
+      weapon: testWeapon({ fires: ring(shard, 10) }),
+    });
+    expect(texts(tenRing)).toContain("Damage: 25-40 x10");
+  });
+
+  it("lists each kind of projectile in a mixed shot, and the farthest range", () => {
+    const straight = testProjectile({ damage: [30, 40], lifetime: 1 });
+    const short = testProjectile({ damage: [10, 20], lifetime: 0.5 });
+    const trident = testItem({
       weapon: testWeapon({
-        count: 10,
-        projectile: testProjectile({ damage: [25, 40] }),
+        fires: [
+          { projectile: short, angle: -0.3 },
+          { projectile: straight },
+          { projectile: short, angle: 0.3 },
+        ],
       }),
     });
-    expect(texts(ring)).toContain("Damage: 25-40 x10");
+    // 10 tiles/s for 1 s at the farthest.
+    expect(texts(trident)).toEqual(
+      expect.arrayContaining(["Damage: 10-20 x2, 30-40", "Range: 10 tiles"]),
+    );
   });
 
   it("lists what's special about its shots", () => {

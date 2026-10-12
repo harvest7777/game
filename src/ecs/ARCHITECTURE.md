@@ -153,6 +153,7 @@ A projectile's path is a **pure function of its age** (`pathOffset`), in a local
 
 - It runs along a track at `speed`, changed by `acceleration` and held between `minSpeed` and `maxSpeed`. A negative `minSpeed` lets it fly backwards.
 - `turnRate` curves the track. It's radians per second at the starting speed, applied as a fixed curvature, so speeding up covers the same curve faster.
+- `turnAcceleration` changes the turn rate as it flies (radians per second²), for curves that aren't perfect arcs: against `turnRate` the curve straightens out. A track like that has no exact formula, so it's worked out in 1/240 s steps once per definition and kept.
 - `wave` weaves across the track, perpendicular to it even while turning.
 - `boomerang` retraces the whole path, wave included, back to the origin at the end of its lifetime.
 
@@ -160,7 +161,7 @@ Each tick, `projectileSystem` sets velocity to exactly cover this tick's stretch
 
 ## Weapons and shooting
 
-A **weapon** (one file each under `src/content/weapons/`) decides what a shooter fires and in what pattern: which projectile, `rate` (shots per second), `count` (projectiles per shot), `arcGap` (radians between them, centered on the aim) and its firing `sound`. `extremePrejudice` fires ten `prejudice` shards in a full ring.
+A **weapon** (one file each under `src/content/weapons/`) decides how often it shoots (`rate`, shots per second), its firing `sound`, and what each shot `fires`: a list of projectiles, each with its own kind, `angle` from the aim (positive is clockwise on screen) and whether it's `mirror`ed, curving and weaving to the other side. So one shot can mix kinds: the Leafblade Staff fires a straight vein between two edges that bow out and close back in, and two of the same weaving shot, one mirrored, braid into a helix. `spread` and `ring` build the evenly spaced lists, like `extremePrejudice`'s ten shards in a full ring.
 
 A shooter's shots take its own `team`, so every shooter needs one: firing without one throws rather than guessing a side.
 
@@ -237,7 +238,7 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), th
 
 **HUD hotkeys** (`hotkeys.ts`) change only the HUD and never reach the game: G toggles the inventory, rebindable in settings to any key the game isn't using.
 
-**HP bar** (`hpBar.ts`) is render-only, so it serves the player now and bosses later: give it health and a width and it lays out a frame, the fill in `healthColor`, and `hp/max` in the regular font with a pixel of room around it, all at half the HUD's size (a panel can have its own smaller pixels, `PanelLayout.scale`). Damage shows as a white chunk of what was lost, which holds for 0.15 s then shrinks to the new health over 0.4 s, slowly at first and then faster (eased in, cubed); more damage while it shrinks extends it from where it's got to. That memory (`HpBarState`) lives in `HudState.hpBars`, stepped once a frame by `updateHpBars`.
+**HP bar** (`hpBar.ts`) is render-only, so it serves the player now and bosses later: give it health and a width and it lays out a frame, the fill in `healthColor`, and `hp/max` in the regular font with room above and below it, all at a third of the HUD's size (a panel can have its own smaller pixels, `PanelLayout.scale`). Damage shows as a white chunk of what was lost, which holds for 0.15 s then shrinks to the new health over 0.4 s, slowly at first and then faster (eased in, cubed); more damage while it shrinks extends it from where it's got to. That memory (`HpBarState`) lives in `HudState.hpBars`, stepped once a frame by `updateHpBars`.
 
 ## Outbox
 

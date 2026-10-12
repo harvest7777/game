@@ -5,12 +5,13 @@ import type { HudElement, PanelLayout } from "./elements";
 // A big health bar for the HUD: the player's now, a boss's later. It only
 // draws what it's given, so anything with health can have one.
 
-// Drawn at half the HUD's size: each of the bar's pixels is half a UI pixel.
-export const HP_BAR_SCALE = 2;
-// In the bar's own pixels: a 1-pixel frame around a fill with a pixel of
+// Drawn at a third of the HUD's size: each of the bar's pixels is a third
+// of a UI pixel, which keeps the text small.
+export const HP_BAR_SCALE = 3;
+// In the bar's own pixels: a 1-pixel frame around a fill with 3 pixels of
 // room above and below the regular font's 7-pixel digits.
 const BORDER = 1;
-const PADDING = 1;
+const PADDING = 3;
 const TEXT_HEIGHT = 7;
 export const HP_BAR_HEIGHT = 2 * (BORDER + PADDING) + TEXT_HEIGHT;
 

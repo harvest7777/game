@@ -27,9 +27,10 @@ export function fireWeapon(
     owner: entity,
     at: { ...at },
   });
-  for (const toward of volley(weapon, aim)) {
+  for (const { fired, direction: toward } of volley(weapon, aim)) {
     fireProjectile(world, {
-      def: weapon.projectile,
+      def: fired.projectile,
+      mirror: fired.mirror,
       owner: entity,
       team,
       at: { x: at.x + toward.x * offset, y: at.y + toward.y * offset },

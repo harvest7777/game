@@ -3,7 +3,7 @@ import type { EnemyDef } from "../ecs/enemy/definitions";
 import type { BossSequence } from "../ecs/enemy/sequences";
 import type { ItemDef } from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
-import type { WeaponDef } from "../ecs/projectile/weapons";
+import { ring, spread, type WeaponDef } from "../ecs/projectile/weapons";
 
 // Small stand-in definitions for engine tests, so retuning game content never
 // breaks them. Each takes only the fields a test cares about; the rest are
@@ -26,7 +26,7 @@ export function testProjectile(
 
 // One test projectile at a time, 4 shots a second.
 export function testWeapon(changes: Partial<WeaponDef> = {}): WeaponDef {
-  return { projectile: testProjectile(), rate: 4, ...changes };
+  return { rate: 4, fires: [{ projectile: testProjectile() }], ...changes };
 }
 
 // A weapon item firing the test weapon. Give each item in a test its own
@@ -128,13 +128,10 @@ export function testBoss(): EnemyDef {
     },
     sequences: {
       ring: attack(
-        testWeapon({
-          count: BOSS_RING_COUNT,
-          arcGap: (2 * Math.PI) / BOSS_RING_COUNT,
-        }),
+        testWeapon({ fires: ring(testProjectile(), BOSS_RING_COUNT) }),
       ),
-      spray: attack(testWeapon({ count: 5, arcGap: 0.3 })),
-      frenzy: attack(testWeapon({ count: 8, arcGap: (2 * Math.PI) / 8 })),
+      spray: attack(testWeapon({ fires: spread(testProjectile(), 5, 0.3) })),
+      frenzy: attack(testWeapon({ fires: ring(testProjectile(), 8) })),
       charge: {
         stages: [
           {

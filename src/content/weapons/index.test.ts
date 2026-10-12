@@ -10,11 +10,13 @@ describe("weapon definitions", () => {
 
       it("fires at a positive rate with at least one projectile", () => {
         expect(def.rate).toBeGreaterThan(0);
-        expect(def.count ?? 1).toBeGreaterThanOrEqual(1);
+        expect(def.fires.length).toBeGreaterThanOrEqual(1);
       });
 
-      it("fires a listed projectile", () => {
-        expect(Object.values(projectiles)).toContain(def.projectile);
+      it("fires only listed projectiles", () => {
+        for (const { projectile } of def.fires) {
+          expect(Object.values(projectiles)).toContain(projectile);
+        }
       });
     });
   }

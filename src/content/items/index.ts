@@ -10,6 +10,10 @@ import { phantomStaff } from "./phantomStaff";
 import { prejudiceStaff } from "./prejudiceStaff";
 import { boomerang } from "./boomerang";
 import { lance } from "./lance";
+import { helixStaff } from "./helixStaff";
+import { leafStaff } from "./leafStaff";
+import { forkStaff } from "./forkStaff";
+import { bloomStaff } from "./bloomStaff";
 
 // Every item, by id.
 export const items = {
@@ -24,6 +28,10 @@ export const items = {
   prejudiceStaff,
   boomerang,
   lance,
+  helixStaff,
+  leafStaff,
+  forkStaff,
+  bloomStaff,
 } satisfies Record<string, ItemDef>;
 
 export type ItemId = keyof typeof items;

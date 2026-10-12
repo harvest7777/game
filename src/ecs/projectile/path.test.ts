@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Vec2 } from "../shared/physics/math";
 import type { ProjectileDef } from "./definitions";
-import { pathOffset, pathPoint, trackDistance } from "./path";
+import { headingAt, pathOffset, pathPoint, trackDistance } from "./path";
 
 function def(changes: Partial<ProjectileDef>): ProjectileDef {
   return {
@@ -127,6 +127,59 @@ describe("pathOffset", () => {
     });
   });
 
+  describe("changing turn rate", () => {
+    // Starts turning at 2 rad/s, slowing by 2 rad/s², so it stops turning a
+    // second in, having turned 1 rad, and flies straight after that.
+    const easing = def({ speed: 6, turnRate: 2, turnAcceleration: -2 });
+
+    // The same path, followed in tiny steps.
+    function bruteForce(changes: Partial<ProjectileDef>, t: number): Vec2 {
+      const d = def(changes);
+      const steps = 20000;
+      let x = 0;
+      let y = 0;
+      for (let i = 0; i < steps; i++) {
+        const t0 = (t * i) / steps;
+        const t1 = (t * (i + 1)) / steps;
+        const heading = headingAt(d, (t0 + t1) / 2);
+        const covered = trackDistance(d, t1) - trackDistance(d, t0);
+        x += covered * Math.cos(heading);
+        y += covered * Math.sin(heading);
+      }
+      return { x, y };
+    }
+
+    it("turns by the turn rate plus half the change, squared over time", () => {
+      expect(headingAt(easing, 1)).toBeCloseTo(2 * 1 - (2 * 1 * 1) / 2);
+    });
+
+    it("follows the curve it describes", () => {
+      for (const t of [0.1, 0.55, 1, 1.7]) {
+        const expected = bruteForce(
+          { speed: 6, turnRate: 2, turnAcceleration: -2 },
+          t,
+        );
+        const actual = pathOffset(easing, t);
+        expect(actual.x, `x at ${t}`).toBeCloseTo(expected.x, 3);
+        expect(actual.y, `y at ${t}`).toBeCloseTo(expected.y, 3);
+      }
+    });
+
+    it("bends less and less as it straightens out", () => {
+      const turnBetween = (a: number, b: number) =>
+        headingAt(easing, b) - headingAt(easing, a);
+      expect(turnBetween(0, 0.25)).toBeGreaterThan(turnBetween(0.5, 0.75));
+    });
+
+    it("can curve without a starting turn rate", () => {
+      const tightening = def({ speed: 6, turnAcceleration: 3 });
+      expect(pathOffset(tightening, 0.1).y).toBeGreaterThan(0);
+      expect(pathOffset(tightening, 1).y).toBeGreaterThan(
+        pathOffset(tightening, 0.5).y * 2,
+      );
+    });
+  });
+
   describe("boomerang", () => {
     const boomerang = def({ speed: 10, lifetime: 1.2, boomerang: true });
 
@@ -169,5 +222,14 @@ describe("pathPoint", () => {
     expectPoint(pathPoint(wavy, origin, { x: 1, y: 0 }, 0.125), 6.25, 5.5);
     // Fired down (+y): right of travel is screen-left (-x).
     expectPoint(pathPoint(wavy, origin, { x: 0, y: 1 }, 0.125), 4.5, 6.25);
+  });
+
+  it("goes left of travel instead when mirrored", () => {
+    // Fired right (+x): a quarter wave in it's 0.5 above (-y).
+    expectPoint(
+      pathPoint(wavy, origin, { x: 1, y: 0 }, 0.125, true),
+      6.25,
+      4.5,
+    );
   });
 });

@@ -32,19 +32,9 @@ export function pathOffset(def: ProjectileDef, age: number): Vec2 {
   const t = def.boomerang
     ? Math.max(0, Math.min(age, def.lifetime - age))
     : age;
-  const distance = trackDistance(def, t);
-
-  // The track: a straight line, or an arc of fixed curvature when turning.
-  let x = distance;
-  let y = 0;
-  let along = { x: 1, y: 0 };
-  if (def.turnRate) {
-    const curvature = def.turnRate / def.speed;
-    const heading = curvature * distance;
-    x = Math.sin(heading) / curvature;
-    y = (1 - Math.cos(heading)) / curvature;
-    along = { x: Math.cos(heading), y: Math.sin(heading) };
-  }
+  let { x, y } = trackPoint(def, t);
+  const heading = headingAt(def, t);
+  const along = { x: Math.cos(heading), y: Math.sin(heading) };
 
   // The wave weaves across the track, perpendicular to it.
   if (def.wave) {
@@ -57,15 +47,84 @@ export function pathOffset(def: ProjectileDef, age: number): Vec2 {
   return { x, y };
 }
 
+// Which way the track points `t` seconds in, in radians from the firing
+// direction: the turn rate as a fixed curvature over the distance covered,
+// plus however much turnAcceleration has changed it since.
+export function headingAt(def: ProjectileDef, t: number): number {
+  const curvature = def.turnRate ? def.turnRate / def.speed : 0;
+  const changed = ((def.turnAcceleration ?? 0) * t * t) / 2;
+  return curvature * trackDistance(def, t) + changed;
+}
+
+// Where the track is `t` seconds in, before any wave: a straight line, an
+// exact arc when it turns at a fixed rate, or followed step by step when the
+// turn rate changes.
+function trackPoint(def: ProjectileDef, t: number): Vec2 {
+  if (def.turnAcceleration) return integratedTrack(def, t);
+  const distance = trackDistance(def, t);
+  if (!def.turnRate) return { x: distance, y: 0 };
+  const curvature = def.turnRate / def.speed;
+  const heading = curvature * distance;
+  return {
+    x: Math.sin(heading) / curvature,
+    y: (1 - Math.cos(heading)) / curvature,
+  };
+}
+
+// Seconds between the samples a changing-turn track is worked out at.
+export const TRACK_STEP = 1 / 240;
+
+// Each definition's track sampled every TRACK_STEP, worked out once and kept,
+// so following one costs a lookup and one partial step.
+const tracks = new WeakMap<ProjectileDef, Vec2[]>();
+
+function integratedTrack(def: ProjectileDef, t: number): Vec2 {
+  let samples = tracks.get(def);
+  if (!samples) {
+    samples = [{ x: 0, y: 0 }];
+    const steps = Math.ceil(def.lifetime / TRACK_STEP);
+    for (let i = 0; i < steps; i++) {
+      samples.push(trackStep(def, samples[i], i * TRACK_STEP, TRACK_STEP));
+    }
+    tracks.set(def, samples);
+  }
+  const i = Math.max(
+    0,
+    Math.min(samples.length - 1, Math.floor(t / TRACK_STEP)),
+  );
+  return trackStep(def, samples[i], i * TRACK_STEP, t - i * TRACK_STEP);
+}
+
+// Moves along the track from `from` at time `t0` for `dt` seconds, heading
+// the way it points halfway through.
+function trackStep(
+  def: ProjectileDef,
+  from: Vec2,
+  t0: number,
+  dt: number,
+): Vec2 {
+  if (dt <= 0) return from;
+  const covered = trackDistance(def, t0 + dt) - trackDistance(def, t0);
+  const heading = headingAt(def, t0 + dt / 2);
+  return {
+    x: from.x + covered * Math.cos(heading),
+    y: from.y + covered * Math.sin(heading),
+  };
+}
+
 // The path in world space, for a projectile fired from `origin` toward the
-// unit vector `direction`.
+// unit vector `direction`. A mirrored path goes to the left of travel
+// wherever it would go right.
 export function pathPoint(
   def: ProjectileDef,
   origin: Vec2,
   direction: Vec2,
   age: number,
+  mirror = false,
 ): Vec2 {
-  const { x, y } = pathOffset(def, age);
+  const offset = pathOffset(def, age);
+  const x = offset.x;
+  const y = mirror ? -offset.y : offset.y;
   // To the right of travel: the direction turned a quarter clockwise.
   const rightX = -direction.y;
   const rightY = direction.x;

@@ -41,6 +41,7 @@ describe("fireProjectile", () => {
       direction: { x: 0, y: 1 },
       age: 0,
       struck: [],
+      mirror: false,
     });
   });
 
@@ -97,6 +98,11 @@ describe("fireProjectile", () => {
 
     expect(GHOST.hitbox.r).not.toBe(99);
     expect(GHOST.sprite.outline!.color[0]).not.toBe(0);
+  });
+
+  it("remembers when it's mirrored", () => {
+    const { entity, c } = fire(BOLT, { mirror: true });
+    expect(c.projectile.get(entity)!.mirror).toBe(true);
   });
 
   it("fires right when given no direction", () => {

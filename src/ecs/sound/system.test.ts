@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spread } from "../projectile/weapons";
 import { testEnemy, testProjectile, testWeapon } from "../../testing/defs";
 import { spawnEnemy } from "../enemy/spawn";
 import { fireProjectile } from "../projectile/spawn";
@@ -10,7 +11,10 @@ describe("soundSystem", () => {
   it("turns one volley into one firing sound", () => {
     const world = createWorld(createTiles(10, 10));
     world.events.shotsFired.push({
-      weapon: testWeapon({ count: 5, sound: "magicFire" }),
+      weapon: testWeapon({
+        fires: spread(testProjectile(), 5, 0.2),
+        sound: "magicFire",
+      }),
       owner: 3,
       at: { x: 2, y: 4 },
     });

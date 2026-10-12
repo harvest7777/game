@@ -12,8 +12,8 @@ import {
   stepHpBar,
 } from "./hpBar";
 
-// 52 UI pixels wide is 104 of the bar's half-size pixels, so the fill
-// inside the 1-pixel frame is 102 across and 9 tall.
+// 52 UI pixels wide is HP_BAR_SCALE times as many of the bar's own pixels;
+// the fill sits inside a 1-pixel frame.
 const WIDTH = 52;
 const INNER = WIDTH * HP_BAR_SCALE - 2;
 const INNER_H = HP_BAR_HEIGHT - 2;
@@ -22,7 +22,7 @@ const rects = (elements: HudElement[]) =>
   elements.flatMap((e) => (e.kind === "rect" ? [e] : []));
 
 describe("hpBar", () => {
-  it("is a frame the given width, at half the HUD's size", () => {
+  it("is a frame the given width, in the bar's own smaller pixels", () => {
     const bar = hpBar({ hp: 100, max: 100 }, undefined, WIDTH);
     expect([bar.w, bar.h]).toEqual([WIDTH, HP_BAR_HEIGHT / HP_BAR_SCALE]);
     expect(bar.scale).toBe(HP_BAR_SCALE);
@@ -54,19 +54,19 @@ describe("hpBar", () => {
     ).toEqual([]);
   });
 
-  it("says hp/max, centered, a pixel clear of the frame", () => {
+  it("says hp/max, centered, with room above and below", () => {
     const text = hpBar({ hp: 449.5, max: 500 }, undefined, WIDTH).elements.find(
       (e) => e.kind === "text",
     );
     expect(text).toMatchObject({
       text: "450/500",
       x: (WIDTH * HP_BAR_SCALE) / 2,
-      // Below the 1-pixel frame and a pixel of room; the 7-pixel digits
-      // then leave a pixel above the bottom frame too.
-      y: 2,
+      // Below the 1-pixel frame and 3 pixels of room; the 7-pixel digits
+      // then leave the same room above the bottom frame.
+      y: 4,
       align: "center",
     });
-    expect(HP_BAR_HEIGHT).toBe(2 + 7 + 2);
+    expect(HP_BAR_HEIGHT).toBe(4 + 7 + 4);
   });
 });
 

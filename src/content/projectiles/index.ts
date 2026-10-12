@@ -12,6 +12,12 @@ import { prejudice } from "./prejudice";
 import { slimeBall } from "./slimeBall";
 import { arrow } from "./arrow";
 import { lance } from "./lance";
+import { helix } from "./helix";
+import { leafVein } from "./leafVein";
+import { leafEdge } from "./leafEdge";
+import { needle } from "./needle";
+import { petal } from "./petal";
+import { bud } from "./bud";
 
 // Every kind of projectile, by id.
 export const projectiles = {
@@ -28,6 +34,12 @@ export const projectiles = {
   slimeBall,
   arrow,
   lance,
+  helix,
+  leafVein,
+  leafEdge,
+  needle,
+  petal,
+  bud,
 } satisfies Record<string, ProjectileDef>;
 
 export type ProjectileId = keyof typeof projectiles;

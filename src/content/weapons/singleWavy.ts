@@ -3,7 +3,7 @@ import { wavy } from "../projectiles/wavy";
 
 // One wavy at a time, 4 a second.
 export const singleWavy: WeaponDef = {
-  projectile: wavy,
   rate: 4,
+  fires: [{ projectile: wavy }],
   sound: "magicFire",
 };

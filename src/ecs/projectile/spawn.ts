@@ -11,6 +11,8 @@ export type FireOptions = {
   at: Vec2;
   // Which way to fire; doesn't need to be unit length.
   toward: Vec2;
+  // Curves and weaves to the other side.
+  mirror?: boolean;
 };
 
 // Creates a projectile entity from its definition. Everything taken from the
@@ -47,6 +49,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
     direction,
     age: 0,
     struck: [],
+    mirror: options.mirror ?? false,
   });
 
   if (def.faceDirection || def.spin) {

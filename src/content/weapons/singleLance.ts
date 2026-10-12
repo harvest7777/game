@@ -3,7 +3,7 @@ import { lance } from "../projectiles/lance";
 
 // One lance at a time, 4 a second.
 export const singleLance: WeaponDef = {
-  projectile: lance,
   rate: 4,
+  fires: [{ projectile: lance }],
   sound: "magicFire",
 };

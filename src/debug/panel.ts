@@ -7,14 +7,10 @@ import { createRenderDebug, type RenderDebug } from "../render/debug";
 
 // Weapons every new character is given to try.
 const DEBUG_KIT = [
-  items.hasteStaff,
-  items.serpentStaff,
-  items.cometStaff,
-  items.mireStaff,
-  items.spiralStaff,
-  items.boomerang,
-  items.lance,
-  items.prejudiceStaff,
+  items.helixStaff,
+  items.leafStaff,
+  items.forkStaff,
+  items.bloomStaff,
 ];
 
 export type DebugPanel = {

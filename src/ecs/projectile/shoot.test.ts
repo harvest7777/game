@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { testWeapon } from "../../testing/defs";
+import { testProjectile, testWeapon } from "../../testing/defs";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type World } from "../world";
 import { Action } from "../input/actions";
 import { shootSystem } from "./shoot";
-import type { WeaponDef } from "./weapons";
+import { ring, type WeaponDef } from "./weapons";
 
 const DT = 0.05;
 const AT = { x: 10, y: 10 };
@@ -71,7 +71,7 @@ describe("shootSystem", () => {
     expect(shot.origin).toEqual(AT);
     expect(shot.owner).toBe(shooter);
     expect(shot.team).toBe("player");
-    expect(shot.def).toBe(STAFF.projectile);
+    expect(shot.def).toBe(STAFF.fires[0].projectile);
   });
 
   it("does not fire while player autofire is off", () => {
@@ -186,15 +186,16 @@ describe("shootSystem", () => {
 
   describe("patterns", () => {
     it("fires a full ring of shots at once", () => {
-      const ring = testWeapon({ count: 10, arcGap: (2 * Math.PI) / 10 });
-      const { world } = setup(ring);
+      const shard = testProjectile();
+      const tenRing = testWeapon({ fires: ring(shard, 10) });
+      const { world } = setup(tenRing);
       world.input.aim = { x: 20, y: 10 };
 
       tick(world);
 
       const fired = shots(world);
       expect(fired).toHaveLength(10);
-      expect(fired.every((p) => p.def === ring.projectile)).toBe(true);
+      expect(fired.every((p) => p.def === shard)).toBe(true);
       const angles = fired
         .map((p) => Math.atan2(p.direction.y, p.direction.x))
         .map((a) => (a + 2 * Math.PI) % (2 * Math.PI))
@@ -204,7 +205,7 @@ describe("shootSystem", () => {
       }
       expect(world.events.shotsFired).toHaveLength(1);
       expect(world.events.shotsFired[0]).toMatchObject({
-        weapon: ring,
+        weapon: tenRing,
       });
     });
   });
@@ -213,6 +214,21 @@ describe("shootSystem", () => {
     const { world, shooter } = setup();
     world.components.team.delete(shooter);
     expect(() => tick(world)).toThrow();
+  });
+
+  it("fires each projectile its weapon lists, mirrored where it says", () => {
+    const helix = testProjectile({ wave: { amplitude: 1, frequency: 1 } });
+    const twin = testWeapon({
+      fires: [{ projectile: helix }, { projectile: helix, mirror: true }],
+    });
+    const { world } = setup(twin);
+
+    tick(world);
+
+    expect(shots(world).map((p) => [p.def, p.mirror])).toEqual([
+      [helix, false],
+      [helix, true],
+    ]);
   });
 
   it("skips shooters with no position", () => {

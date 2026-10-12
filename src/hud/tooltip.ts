@@ -24,18 +24,27 @@ export function itemTooltip(item: ItemDef): TooltipLine[] {
   if (!item.weapon) return lines;
 
   const weapon = item.weapon;
-  const shot = weapon.projectile;
-  const [min, max] = shot.damage;
-  const count = weapon.count ?? 1;
-  lines.push(
-    {
-      text: `Damage: ${min}-${max}${count > 1 ? ` x${count}` : ""}`,
-      color: TOOLTIP_COLORS.stat,
-    },
-    { text: `Rate: ${round(weapon.rate)}/s`, color: TOOLTIP_COLORS.stat },
-    { text: `Range: ${round(range(shot))} tiles`, color: TOOLTIP_COLORS.stat },
+  // Each kind of projectile in a shot, with how many of it.
+  const kinds = new Map<ProjectileDef, number>();
+  for (const { projectile } of weapon.fires) {
+    kinds.set(projectile, (kinds.get(projectile) ?? 0) + 1);
+  }
+  const damage = [...kinds].map(
+    ([
+      {
+        damage: [min, max],
+      },
+      count,
+    ]) => (count > 1 ? `${min}-${max} x${count}` : `${min}-${max}`),
   );
-  for (const trait of traits(shot)) {
+  const farthest = Math.max(...[...kinds.keys()].map(range));
+  lines.push(
+    { text: `Damage: ${damage.join(", ")}`, color: TOOLTIP_COLORS.stat },
+    { text: `Rate: ${round(weapon.rate)}/s`, color: TOOLTIP_COLORS.stat },
+    { text: `Range: ${round(farthest)} tiles`, color: TOOLTIP_COLORS.stat },
+  );
+  const allTraits = new Set([...kinds.keys()].flatMap(traits));
+  for (const trait of allTraits) {
     lines.push({ text: trait, color: TOOLTIP_COLORS.trait });
   }
   return lines;
@@ -61,7 +70,7 @@ function traits(def: ProjectileDef): string[] {
   if (def.walls === "slide") out.push("Skids along walls");
   if (def.boomerang) out.push("Returns");
   if (def.wave) out.push("Weaves");
-  if (def.turnRate) out.push("Curves");
+  if (def.turnRate || def.turnAcceleration) out.push("Curves");
   if (def.acceleration && def.acceleration > 0) out.push("Speeds up");
   if (def.acceleration && def.acceleration < 0) out.push("Slows down");
   return out;

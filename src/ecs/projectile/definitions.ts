@@ -13,6 +13,8 @@ import type { SoundId } from "../../audio/assets";
 //   between `minSpeed` and `maxSpeed`.
 // - `turnRate` curves the track. It's radians per second at the starting
 //   speed; the curve's shape stays the same if the speed changes.
+// - `turnAcceleration` changes the turn rate as it flies, for curves that
+//   aren't perfect arcs.
 // - `wave` weaves side to side across the track.
 // - `boomerang` retraces the path back to where it was fired, arriving at
 //   the end of its lifetime.
@@ -42,6 +44,10 @@ export type ProjectileDef = {
   wave?: { amplitude: number; frequency: number; phase?: number };
   // Radians per second; positive curves clockwise on screen.
   turnRate?: number;
+  // Radians per second², changing the turn rate over the flight: against
+  // turnRate it straightens out, with it the curve tightens. Paths that use
+  // it are worked out numerically rather than as an exact arc.
+  turnAcceleration?: number;
   boomerang?: boolean;
   // Passes through what it hits instead of stopping, hitting each thing
   // once.

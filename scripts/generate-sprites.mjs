@@ -594,6 +594,22 @@ const STAFF_GEMS = {
     [230, 60, 220],
     [255, 190, 250],
   ],
+  helixStaff: [
+    [220, 70, 110],
+    [255, 180, 200],
+  ],
+  leafStaff: [
+    [110, 190, 50],
+    [210, 250, 150],
+  ],
+  forkStaff: [
+    [140, 150, 210],
+    [225, 230, 255],
+  ],
+  bloomStaff: [
+    [240, 110, 170],
+    [255, 215, 235],
+  ],
 };
 for (const [item, [gem, shine]] of Object.entries(STAFF_GEMS)) {
   RECOLORED[`items/${item}`] = {

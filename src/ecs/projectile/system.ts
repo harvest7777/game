@@ -21,8 +21,8 @@ export function projectileSystem(world: World, dt: number): void {
     }
 
     const next = Math.min(p.age + dt, def.lifetime);
-    const from = pathPoint(def, p.origin, p.direction, p.age);
-    const to = pathPoint(def, p.origin, p.direction, next);
+    const from = pathPoint(def, p.origin, p.direction, p.age, p.mirror);
+    const to = pathPoint(def, p.origin, p.direction, next, p.mirror);
     const step = { x: to.x - from.x, y: to.y - from.y };
     velocity.set(entity, { x: step.x / dt, y: step.y / dt });
     p.age += dt;

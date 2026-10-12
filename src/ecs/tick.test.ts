@@ -189,7 +189,7 @@ describe("runTick", () => {
       runTick(world, DT);
 
       const shots = [...world.components.projectile].map(([, p]) => p.def);
-      expect(shots).toEqual([lance.weapon!.projectile]);
+      expect(shots).toEqual([lance.weapon!.fires[0].projectile]);
     });
 
     it("faces the cursor while walking the other way", () => {
