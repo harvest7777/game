@@ -3,7 +3,9 @@ import {
   Action,
   actionsFromKeys,
   keybindPresets,
+  layoutHotkeys,
   wasdKeybinds,
+  type KeybindPreset,
   type Keybinds,
 } from "./actions";
 import { commandHotkeys } from "./commands";
@@ -58,5 +60,23 @@ describe("keybind presets", () => {
 describe("command hotkeys", () => {
   it("maps Tab to toggling autofire", () => {
     expect(commandHotkeys.Tab).toEqual({ kind: "toggleAutoFire" });
+  });
+});
+
+describe("layoutHotkeys", () => {
+  it("never puts a command on a key the layout moves or turns with", () => {
+    for (const preset of Object.keys(keybindPresets) as KeybindPreset[]) {
+      for (const key of Object.keys(layoutHotkeys[preset])) {
+        expect(keybindPresets[preset], `${preset} ${key}`).not.toHaveProperty(
+          key,
+        );
+        expect(commandHotkeys, `${preset} ${key}`).not.toHaveProperty(key);
+      }
+    }
+  });
+
+  it("goes back to the nexus on B in the default layout and R with WASD", () => {
+    expect(layoutHotkeys.default.KeyB).toEqual({ kind: "returnToNexus" });
+    expect(layoutHotkeys.wasd.KeyR).toEqual({ kind: "returnToNexus" });
   });
 });

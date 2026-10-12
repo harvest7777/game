@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dungeonDef, parseDungeonDef } from "./definition";
+import { dungeonDef, LIMITS, parseDungeonDef } from "./definition";
 
 // The smallest valid dungeon, as JSON would give it.
 function minimal(): Record<string, unknown> {
@@ -121,6 +121,22 @@ describe("parseDungeonDef", () => {
     const value = minimal();
     value.placement = { kind: "scatter" };
     expect(errorsOf(value)).toEqual(["placement.kind: should be one of grow"]);
+  });
+
+  it("refuses numbers big enough to hang the game", () => {
+    const value = minimal();
+    value.graph = {
+      mainPath: [3, 500],
+      branches: [0, 0],
+      branchLength: [1, 1],
+    };
+    (value.rooms as { start: unknown[] }).start = [
+      { weight: 1, shape: { kind: "cave", w: [10, 1000], h: [10, 10] } },
+    ];
+    expect(errorsOf(value)).toEqual([
+      `graph.mainPath[1]: should be at most ${LIMITS.mainPath}`,
+      `rooms.start[0].shape.w[1]: should be at most ${LIMITS.roomSize}`,
+    ]);
   });
 
   it("checks each kind's own fields", () => {

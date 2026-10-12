@@ -200,7 +200,35 @@ type KindCheck = {
   check: (c: Checker, path: string, fields: Fields) => void;
 };
 
+// The most each number may be. Generous for real dungeons, but small enough
+// that a typo or a runaway asset can't ask for something that would hang the
+// game building it.
+export const LIMITS = {
+  // Tiles across a room's shape.
+  roomSize: 64,
+  mainPath: 30,
+  branches: 20,
+  // Rooms in a branch or detour.
+  chain: 6,
+  loops: 10,
+  // Tiles between rooms, and kept clear around them.
+  gap: 20,
+  margin: 6,
+  corridorWidth: 6,
+  wiggle: 10,
+  turnCost: 20,
+  smoothing: 10,
+  pillarSpacing: 32,
+  borderWidth: 8,
+  rolls: 50,
+  // Enemies one pick brings.
+  count: 20,
+  // Tiles for spawn spacing and radii.
+  spread: 32,
+};
+
 const size = { min: 1, whole: true };
+const roomSize = { ...size, max: LIMITS.roomSize };
 
 // Each table has an entry for every kind its stage has, so adding a kind
 // without saying how to check it doesn't compile.
@@ -208,15 +236,15 @@ const SHAPE_CHECKS: Record<ShapeKind, KindCheck> = {
   rect: {
     required: ["w", "h"],
     check: (c, path, f) => {
-      c.range(`${path}.w`, f.w, size);
-      c.range(`${path}.h`, f.h, size);
+      c.range(`${path}.w`, f.w, roomSize);
+      c.range(`${path}.h`, f.h, roomSize);
     },
   },
   ellipse: {
     required: ["w", "h"],
     check: (c, path, f) => {
-      c.range(`${path}.w`, f.w, size);
-      c.range(`${path}.h`, f.h, size);
+      c.range(`${path}.w`, f.w, roomSize);
+      c.range(`${path}.h`, f.h, roomSize);
     },
   },
   cave: {
@@ -224,11 +252,15 @@ const SHAPE_CHECKS: Record<ShapeKind, KindCheck> = {
     optional: ["fill", "smoothing"],
     check: (c, path, f) => {
       // Smaller boxes than this hardly ever grow a usable cave.
-      c.range(`${path}.w`, f.w, { min: 6, whole: true });
-      c.range(`${path}.h`, f.h, { min: 6, whole: true });
+      c.range(`${path}.w`, f.w, { ...roomSize, min: 6 });
+      c.range(`${path}.h`, f.h, { ...roomSize, min: 6 });
       if ("fill" in f) c.number(`${path}.fill`, f.fill, { min: 0, max: 1 });
       if ("smoothing" in f) {
-        c.number(`${path}.smoothing`, f.smoothing, { min: 0, whole: true });
+        c.number(`${path}.smoothing`, f.smoothing, {
+          min: 0,
+          max: LIMITS.smoothing,
+          whole: true,
+        });
       }
     },
   },
@@ -248,13 +280,17 @@ const FEATURE_CHECKS: Record<FeatureKind, KindCheck> = {
   pillars: {
     required: ["spacing"],
     check: (c, path, f) =>
-      c.number(`${path}.spacing`, f.spacing, { min: 2, whole: true }),
+      c.number(`${path}.spacing`, f.spacing, {
+        min: 2,
+        max: LIMITS.pillarSpacing,
+        whole: true,
+      }),
   },
   border: {
     required: ["width"],
     optional: ["cell"],
     check: (c, path, f) => {
-      c.number(`${path}.width`, f.width, size);
+      c.number(`${path}.width`, f.width, { ...size, max: LIMITS.borderWidth });
       if ("cell" in f) c.oneOf<CellKind>(`${path}.cell`, f.cell, PAINTABLE);
     },
   },
@@ -264,16 +300,32 @@ const LOOP_CHECKS: Record<LoopKind, KindCheck> = {
   shortcut: {
     required: ["count", "span"],
     check: (c, path, f) => {
-      c.range(`${path}.count`, f.count, { min: 0, whole: true });
-      c.range(`${path}.span`, f.span, { min: 2, whole: true });
+      c.range(`${path}.count`, f.count, {
+        min: 0,
+        max: LIMITS.loops,
+        whole: true,
+      });
+      c.range(`${path}.span`, f.span, {
+        min: 2,
+        max: LIMITS.mainPath,
+        whole: true,
+      });
     },
   },
   detour: {
     required: ["count", "span", "length"],
     check: (c, path, f) => {
-      c.range(`${path}.count`, f.count, { min: 0, whole: true });
-      c.range(`${path}.span`, f.span, { min: 2, whole: true });
-      c.range(`${path}.length`, f.length, size);
+      c.range(`${path}.count`, f.count, {
+        min: 0,
+        max: LIMITS.loops,
+        whole: true,
+      });
+      c.range(`${path}.span`, f.span, {
+        min: 2,
+        max: LIMITS.mainPath,
+        whole: true,
+      });
+      c.range(`${path}.length`, f.length, { ...size, max: LIMITS.chain });
     },
   },
 };
@@ -283,8 +335,10 @@ const PLACEMENT_CHECKS: Record<PlacementKind, KindCheck> = {
     required: ["gap"],
     optional: ["margin"],
     check: (c, path, f) => {
-      c.range(`${path}.gap`, f.gap, size);
-      if ("margin" in f) c.number(`${path}.margin`, f.margin, size);
+      c.range(`${path}.gap`, f.gap, { ...size, max: LIMITS.gap });
+      if ("margin" in f) {
+        c.number(`${path}.margin`, f.margin, { ...size, max: LIMITS.margin });
+      }
     },
   },
 };
@@ -295,9 +349,14 @@ const ROUTER_CHECKS: Record<RouterKind, KindCheck> = {
   astar: {
     optional: ["wiggle", "turnCost"],
     check: (c, path, f) => {
-      if ("wiggle" in f) c.number(`${path}.wiggle`, f.wiggle, { min: 0 });
+      if ("wiggle" in f) {
+        c.number(`${path}.wiggle`, f.wiggle, { min: 0, max: LIMITS.wiggle });
+      }
       if ("turnCost" in f) {
-        c.number(`${path}.turnCost`, f.turnCost, { min: 0 });
+        c.number(`${path}.turnCost`, f.turnCost, {
+          min: 0,
+          max: LIMITS.turnCost,
+        });
       }
     },
   },
@@ -307,17 +366,21 @@ const SPAWN_PLACEMENT_CHECKS: Record<SpawnPlacementKind, KindCheck> = {
   scatter: {
     optional: ["spacing"],
     check: (c, path, f) => {
-      if ("spacing" in f) c.number(`${path}.spacing`, f.spacing, { min: 0 });
+      if ("spacing" in f) {
+        c.number(`${path}.spacing`, f.spacing, { min: 0, max: LIMITS.spread });
+      }
     },
   },
   center: { check: () => {} },
   ring: {
     required: ["radius"],
-    check: (c, path, f) => c.number(`${path}.radius`, f.radius, { min: 0 }),
+    check: (c, path, f) =>
+      c.number(`${path}.radius`, f.radius, { min: 0, max: LIMITS.spread }),
   },
   cluster: {
     required: ["radius"],
-    check: (c, path, f) => c.number(`${path}.radius`, f.radius, { min: 0 }),
+    check: (c, path, f) =>
+      c.number(`${path}.radius`, f.radius, { min: 0, max: LIMITS.spread }),
   },
 };
 
@@ -353,9 +416,20 @@ function checkDungeon(c: Checker, value: unknown): void {
     ["loops"],
   );
   if (graph) {
-    c.range("graph.mainPath", graph.mainPath, { min: 2, whole: true });
-    c.range("graph.branches", graph.branches, { min: 0, whole: true });
-    c.range("graph.branchLength", graph.branchLength, size);
+    c.range("graph.mainPath", graph.mainPath, {
+      min: 2,
+      max: LIMITS.mainPath,
+      whole: true,
+    });
+    c.range("graph.branches", graph.branches, {
+      min: 0,
+      max: LIMITS.branches,
+      whole: true,
+    });
+    c.range("graph.branchLength", graph.branchLength, {
+      ...size,
+      max: LIMITS.chain,
+    });
     if ("loops" in graph) {
       c.array("graph.loops", graph.loops, { nonEmpty: false }).forEach(
         (loop, i) => c.kind(`graph.loops[${i}]`, loop, LOOP_CHECKS),
@@ -370,7 +444,10 @@ function checkDungeon(c: Checker, value: unknown): void {
     c.array("corridors.routers", corridors.routers).forEach((router, i) =>
       c.kind(`corridors.routers[${i}]`, router, ROUTER_CHECKS),
     );
-    c.number("corridors.width", corridors.width, size);
+    c.number("corridors.width", corridors.width, {
+      ...size,
+      max: LIMITS.corridorWidth,
+    });
   }
 
   const rooms = c.object(
@@ -408,7 +485,7 @@ function checkRoom(c: Checker, path: string, value: unknown): void {
 function checkSpawnGroup(c: Checker, path: string, value: unknown): void {
   const f = c.object(path, value, ["rolls", "pick", "placement"]);
   if (!f) return;
-  c.range(`${path}.rolls`, f.rolls, { min: 0, whole: true });
+  c.range(`${path}.rolls`, f.rolls, { min: 0, max: LIMITS.rolls, whole: true });
   c.array(`${path}.pick`, f.pick).forEach((pick, i) => {
     const p = c.object(
       `${path}.pick[${i}]`,
@@ -419,7 +496,12 @@ function checkSpawnGroup(c: Checker, path: string, value: unknown): void {
     if (!p) return;
     c.id(`${path}.pick[${i}].enemy`, p.enemy, c.known.enemies);
     c.number(`${path}.pick[${i}].weight`, p.weight, { min: Number.MIN_VALUE });
-    if ("count" in p) c.range(`${path}.pick[${i}].count`, p.count, size);
+    if ("count" in p) {
+      c.range(`${path}.pick[${i}].count`, p.count, {
+        ...size,
+        max: LIMITS.count,
+      });
+    }
   });
   c.kind(`${path}.placement`, f.placement, SPAWN_PLACEMENT_CHECKS);
 }

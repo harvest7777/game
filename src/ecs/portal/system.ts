@@ -3,19 +3,30 @@ import type { World } from "../world";
 import { portalAt, spawnPortal } from "./spawn";
 
 // Asks the outside world to take the player through the portal it's
-// standing on, when it asks to enter one. The simulation only says where to;
-// swapping levels happens outside it.
+// standing on when it asks to enter one, or straight to the nexus when it
+// asks to go back. The simulation only says where to; swapping levels
+// happens outside it.
 export function portalSystem(world: World, _dt: number): void {
-  if (!world.input.commands.some((c) => c.kind === "enterPortal")) return;
+  const { commands } = world.input;
+  const entering = commands.some((c) => c.kind === "enterPortal");
+  const goingHome = commands.some((c) => c.kind === "returnToNexus");
+  if (!entering && !goingHome) return;
   for (const [entity] of world.components.playerControlled) {
     const at = world.components.position.get(entity);
     if (!at || !world.components.character.has(entity)) continue;
+    if (goingHome) {
+      world.outbox.push({ kind: "travel", entity, to: NEXUS });
+      continue;
+    }
     const portal = portalAt(world, at);
     if (portal === undefined) continue;
     const { to } = world.components.portal.get(portal)!.def;
     world.outbox.push({ kind: "travel", entity, to });
   }
 }
+
+// Where going back home leads.
+export const NEXUS = "nexus";
 
 // Opens a portal where each enemy with a `deathPortal` died, like the way
 // home when a dungeon's boss falls, moved to the nearest safe ground if it

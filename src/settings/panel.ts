@@ -1,9 +1,10 @@
 import {
   keybindPresets,
+  layoutHotkeys,
   type KeybindPreset,
   type Keybinds,
 } from "../ecs/input/actions";
-import { commandHotkeys } from "../ecs/input/commands";
+import { commandHotkeys, type Command } from "../ecs/input/commands";
 import {
   canBindHudKey,
   DEFAULT_HUD_KEYBINDS,
@@ -15,6 +16,9 @@ import {
 export type Settings = {
   // The movement layout's keys, for the game.
   keybinds(): Keybinds;
+  // Keys for one-off commands in the current layout: the ones every layout
+  // shares, plus its own.
+  commandKeys(): Record<string, Command>;
   // Keys for HUD-only actions, like toggling the inventory.
   hudKeybinds(): HudKeybinds;
 };
@@ -36,9 +40,10 @@ export function installSettings(controlsChanged: () => void): Settings {
 
   // The keys the game already uses in the current layout, which HUD keys
   // can't take.
+  const commandKeys = () => ({ ...commandHotkeys, ...layoutHotkeys[preset] });
   const gameKeys = () => [
     ...Object.keys(keybindPresets[preset]),
-    ...Object.keys(commandHotkeys),
+    ...Object.keys(commandKeys()),
   ];
 
   const inventoryKey = rebindButton("settingsInventoryKey", "toggleInventory");
@@ -96,6 +101,7 @@ export function installSettings(controlsChanged: () => void): Settings {
 
   return {
     keybinds: () => keybindPresets[preset],
+    commandKeys,
     hudKeybinds: () => hudKeybinds,
   };
 }

@@ -49,6 +49,14 @@ export const keybindPresets = {
 
 export type KeybindPreset = keyof typeof keybindPresets;
 
+// One-off controls that sit on different keys in each layout, on top of
+// the ones every layout shares (commandHotkeys): back to the nexus is B
+// beside the Colemak movement keys, and R beside WASD.
+export const layoutHotkeys: Record<KeybindPreset, Record<string, Command>> = {
+  default: { KeyB: { kind: "returnToNexus" } },
+  wasd: { KeyR: { kind: "returnToNexus" } },
+};
+
 // What the player is asking for this tick, as actions rather than keys.
 // `aim` is the world point under the cursor, once the cursor has been over
 // the game. `commands` are this tick's one-off requests, in order.

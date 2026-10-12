@@ -1,7 +1,7 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
 import { Action, actionsFromKeys } from "./ecs/input/actions";
-import { commandHotkeys, type Command } from "./ecs/input/commands";
+import type { Command } from "./ecs/input/commands";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { runTick } from "./ecs/tick";
 import { loadLevel } from "./ecs/level/load";
@@ -21,6 +21,7 @@ import {
 } from "./hud/draw";
 import { hudPointer, type PointerEvent } from "./hud/input";
 import { pushQuestPointer } from "./hud/quest";
+import { pushPortalPrompt } from "./hud/portalPrompt";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
 import { installDebugPanel } from "./debug/panel";
 import { hudHotkey } from "./hud/hotkeys";
@@ -46,7 +47,8 @@ if (!gl) throw new Error("WebGL2 isn't available");
 
 // The world being played and where characters arrive in it: replaced when
 // travelling to another level.
-let { world, spawn } = loadLevel(levels.nexus, Math.random, gameLoot);
+let level: LevelDef = levels.nexus;
+let { world, spawn } = loadLevel(level, Math.random, gameLoot);
 // Who's being played: replaced on respawn. Once they die, the entity has no
 // components left, so everything reading it finds nothing.
 let player = spawnCharacter(world, characters.wizard, spawn);
@@ -95,14 +97,15 @@ window.addEventListener("pointerdown", unlockAudio);
 // next tick.
 const pendingCommands: Command[] = [];
 
-// Swaps to a fresh world for `level`, bringing the character along with all
+// Swaps to a fresh world for `to`, bringing the character along with all
 // its gear. A dead character has nothing to bring; respawning puts a new one
 // at the new spawn.
-function enterLevel(level: LevelDef) {
-  const next = loadLevel(level, Math.random, gameLoot);
+function enterLevel(to: LevelDef) {
+  const next = loadLevel(to, Math.random, gameLoot);
   if (world.components.character.has(player)) {
     player = travel(world, next.world, player, next.spawn);
   }
+  level = to;
   world = next.world;
   spawn = next.spawn;
   // Requests aimed at the old world, like moving a bag's item, mean nothing
@@ -114,7 +117,6 @@ const debug = installDebugPanel(
   () => world,
   pendingCommands,
   () => player,
-  enterLevel,
 );
 debug.characterSpawned(player);
 
@@ -165,7 +167,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   inputs.add(event.code);
-  const command = commandHotkeys[event.code];
+  const command = settings.commandKeys()[event.code];
   if (command && !event.repeat) {
     pendingCommands.push(command);
     event.preventDefault();
@@ -291,9 +293,10 @@ function travelTo(to: string) {
   if (travelling) return;
   travelling = true;
   destination(to, generateDungeons)
-    .then((level) => {
-      if (level) enterLevel(level);
-      else console.error(`no destination "${to}"`);
+    .then((found) => {
+      if (!found) console.error(`no destination "${to}"`);
+      // Already there, like heading home from the nexus: nothing to do.
+      else if (found !== level) enterLevel(found);
     })
     .catch((error) => console.error(`couldn't travel to "${to}":`, error))
     .finally(() => {
@@ -351,6 +354,15 @@ function render(time: number) {
     (out) => {
       // Under the panels, so a panel in the same corner covers the pointer.
       pushQuestPointer(out, frameArt, world, player, view, alpha, uiPixel(dpr));
+      pushPortalPrompt(
+        out,
+        frameArt,
+        world,
+        player,
+        width,
+        height,
+        uiPixel(dpr),
+      );
       drawHud(
         out,
         frameArt,

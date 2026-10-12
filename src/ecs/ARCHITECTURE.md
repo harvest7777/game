@@ -62,7 +62,7 @@ Every variable piece is a table keyed by `kind` (`LOOPS`, `SHAPES`, `PLACERS`, `
 
 # Debug panel
 
-`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver, an enemy spawner, and a dungeon picker that enters any dungeon from a typed seed (or a random one, then shown as the seed box's hint) and a button back to the nexus. Every new character is handed a kit of weapons to try.
+`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver, and an enemy spawner. Dungeons are entered through their portals. Every new character is handed a kit of weapons to try.
 
 # Characters
 
@@ -95,7 +95,7 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 # Controls
 
-Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout; it starts off, and holding the left mouse button on the game shoots either way. The overlay's settings (`src/settings/panel.ts`) switch presets and rebind HUD keys, remembering both in the browser. Only `main.ts` sees keys; everything else works with actions.
+Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout, and Enter goes through the portal you're standing on. Some one-off keys depend on the layout (`layoutHotkeys`): back to the nexus is B in `default` and R in `wasd`. Autofire starts off, and holding the left mouse button on the game shoots either way. The overlay's settings (`src/settings/panel.ts`) switch presets and rebind HUD keys, remembering both in the browser. Only `main.ts` sees keys; everything else works with actions.
 
 # Camera and movement input
 
@@ -289,6 +289,8 @@ The HUD lives in `src/hud/`, outside the ECS, and is drawn with the same rendere
 - **UI scale is its own.** One UI pixel is one art pixel, at 6 CSS pixels rounded to whole device pixels, so the HUD stays crisp whatever the world zoom.
 
 Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), stacked **health/mana** bars just above it, the read-only six-attribute **stats** widget to its left, and the **inventory** (8 slots, numbered by the key that equips them) to its right, bottoms lined up, in the bottom-right corner. A panel is placed either against a screen corner or attached to another panel (`above`, to its `left`, or to its `right`), so a group moves together, and hiding one panel never moves the others. While proximity grants access to a container, its transient panel attaches above the vitals; world movement never changes its screen position, and it is not draggable or persisted.
+
+**Portal prompt** (`portalPrompt.ts`): while the player stands on a portal, the portal's label and "press Enter" show in the lower middle of the screen, outlined like tooltips.
 
 **Quest pointer** (`quest.ts`): an enemy whose definition says `quest` (a dungeon's boss: Malphas, the Slime King) gets a `Quest` marker when it spawns. While the nearest quest is off screen, the HUD draws a gold arrow on the screen's edge, on the line from the screen's middle toward it (so it follows the camera's rotation), beside a card with the quest's portrait (`firstFrame` of its art), its health bar and its distance in tiles. It hides while the quest is in view, and is always on. Choosing the quest (`currentQuest`) and placing the pointer (`questPointer`) are pure; drawing reads the world and the frame's view, under the HUD panels.
 

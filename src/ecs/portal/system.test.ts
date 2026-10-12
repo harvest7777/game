@@ -6,7 +6,7 @@ import { createTiles, setGround } from "../tiles";
 import { createWorld } from "../world";
 import type { PortalDef } from "./definitions";
 import { spawnPortal } from "./spawn";
-import { deathPortalSystem, portalSystem } from "./system";
+import { deathPortalSystem, NEXUS, portalSystem } from "./system";
 
 const HOME: PortalDef = {
   label: "Home",
@@ -51,6 +51,17 @@ describe("portalSystem", () => {
     spawnPortal(world, { ...HOME, to: "abyss" }, { x: 6, y: 5 });
     enter();
     expect(world.outbox).toMatchObject([{ to: "nexus" }]);
+  });
+});
+
+describe("portalSystem going home", () => {
+  it("asks to travel to the nexus from anywhere", () => {
+    const { world, hero } = setup({ x: 1.5, y: 1.5 });
+    world.input.commands = [{ kind: "returnToNexus" }];
+
+    portalSystem(world, 0.05);
+
+    expect(world.outbox).toEqual([{ kind: "travel", entity: hero, to: NEXUS }]);
   });
 });
 

@@ -1,16 +1,7 @@
-import {
-  dungeonIds,
-  dungeonRegistries,
-  dungeons,
-  type DungeonId,
-} from "../content/dungeons";
 import { enemies, enemyIds, type EnemyId } from "../content/enemies";
-import { levels } from "../content/levels";
 import { itemIds, items, type ItemId } from "../content/items";
 import { spawnCrowd, spawnEnemy } from "../ecs/enemy/spawn";
 import type { Command } from "../ecs/input/commands";
-import type { LevelDef } from "../ecs/level/definitions";
-import { dungeonLevel } from "../ecs/level/dungeon";
 import type { Entity, World } from "../ecs/world";
 import { createRenderDebug, type RenderDebug } from "../render/debug";
 
@@ -31,15 +22,13 @@ export type DebugPanel = {
 };
 
 // Wires up the overlay's debug controls: render toggles, invulnerability,
-// max stats, pickers that give items and spawn enemies, and a way into any
-// dungeon by seed and back to the nexus. `world` and `player` are whatever is
-// current right now; `commands` is the queue the next tick reads; `enter`
-// swaps to a fresh world for a level.
+// max stats, and pickers that give items and spawn enemies. `world` and
+// `player` are whatever is current right now; `commands` is the queue the
+// next tick reads.
 export function installDebugPanel(
   world: () => World,
   commands: Command[],
   player: () => Entity,
-  enter: (level: LevelDef) => void,
 ): DebugPanel {
   const renderDebug = createRenderDebug();
   checkbox("debugHitboxes", (on) => (renderDebug.hitboxes = on));
@@ -82,26 +71,6 @@ export function installDebugPanel(
     if (count === 1) spawnEnemy(world(), def, center);
     else spawnCrowd(world(), def, center, count);
   });
-
-  // Builds the picked dungeon from the typed seed, or a random one, which
-  // then shows as the seed box's hint so it can be built again.
-  const dungeonPicker = element<HTMLSelectElement>("debugDungeon");
-  const seedInput = element<HTMLInputElement>("debugSeed");
-  for (const id of dungeonIds) {
-    dungeonPicker.add(new Option(dungeons[id]!.name, id));
-  }
-  button("debugEnter", () => {
-    const typed = Math.floor(Number(seedInput.value));
-    const seed =
-      seedInput.value && Number.isFinite(typed)
-        ? typed
-        : Math.floor(Math.random() * 2 ** 31);
-    seedInput.placeholder = String(seed);
-    const def = dungeons[dungeonPicker.value as DungeonId];
-    if (!def) return;
-    enter(dungeonLevel(def, seed, dungeonRegistries));
-  });
-  button("debugNexus", () => enter(levels.nexus));
 
   return {
     renderDebug,

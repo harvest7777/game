@@ -20,7 +20,9 @@ export type Command =
   // Debug: add an item to the inventory.
   | { kind: "give"; item: ItemDef }
   // Go through the portal the player is standing on, if any.
-  | { kind: "enterPortal" };
+  | { kind: "enterPortal" }
+  // Head straight back to the nexus, from anywhere.
+  | { kind: "returnToNexus" };
 
 // Number keys equip the matching inventory slot, in every layout.
 export const slotHotkeys: Record<string, Command> = Object.fromEntries(
