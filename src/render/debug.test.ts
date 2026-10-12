@@ -4,9 +4,21 @@ import { createCamera } from "../ecs/camera/resource";
 import type { SpriteLayer } from "../ecs/sprite/components";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
+import type { Art } from "./art";
 import { HITBOX_COLORS, pushDebug } from "./debug";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { createView, TILE_PIXELS, worldToScreen } from "./view";
+
+const NO_ART: Art = {
+  manifest: {
+    sprites: {},
+    ground: {},
+    walls: { top: "top", side: "side" },
+    fonts: { bold: {}, regular: {} },
+  },
+  regions: new Map(),
+  glyphs: new Map(),
+};
 
 const SIZE = 400;
 const CENTER = { x: 10, y: 10 };
@@ -26,7 +38,7 @@ function addBody(world: World, x: number, y: number, layer?: SpriteLayer) {
 
 function rings(world: World, view = setup().view, alpha = 1, on = true) {
   const out = new QuadBuffer();
-  pushDebug(out, world, view, alpha, { hitboxes: on });
+  pushDebug(out, world, view, NO_ART, alpha, { hitboxes: on, font: false });
   return readQuads(out);
 }
 
@@ -104,5 +116,45 @@ describe("pushDebug", () => {
     const { world, view } = setup();
     addBody(world, 40, 10, "enemy");
     expect(rings(world, view)).toHaveLength(0);
+  });
+});
+
+describe("font sheet", () => {
+  it("draws every glyph of both fonts in the top-right corner when on", () => {
+    const { world, view } = setup();
+    const art: Art = {
+      ...NO_ART,
+      manifest: {
+        ...NO_ART.manifest,
+        fonts: { bold: { "1": "b1" }, regular: { A: "rA" } },
+      },
+      regions: new Map([
+        ["b1", { x: 0, y: 0, w: 8, h: 8 }],
+        ["rA", { x: 10, y: 0, w: 8, h: 8 }],
+      ]),
+      glyphs: new Map([
+        ["b1", { left: 0, width: 4 }],
+        ["rA", { left: 0, width: 4 }],
+      ]),
+    };
+    const out = new QuadBuffer();
+
+    pushDebug(out, world, view, art, 1, { hitboxes: false, font: true });
+
+    const quads = readQuads(out);
+    // Only the glyphs these fonts have: "A" in the capitals line and "1" in
+    // the bold line.
+    expect(quads).toHaveLength(2);
+    for (const q of quads) {
+      expect(q.corners[1].x).toBeLessThanOrEqual(SIZE);
+      expect(q.corners[0].y).toBeLessThan(SIZE / 2);
+    }
+  });
+
+  it("draws nothing when off", () => {
+    const { world, view } = setup();
+    const out = new QuadBuffer();
+    pushDebug(out, world, view, NO_ART, 1, { hitboxes: false, font: false });
+    expect(out.count).toBe(0);
   });
 });

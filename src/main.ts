@@ -106,6 +106,8 @@ const art = await buildAtlas(
       canvas: atlasCanvas,
       drawImage: (image: ImageBitmap, x: number, y: number) =>
         context.drawImage(image, x, y),
+      pixels: (x: number, y: number, width: number, height: number) =>
+        context.getImageData(x, y, width, height).data,
     };
   },
 );
@@ -116,6 +118,11 @@ const renderDebug = createRenderDebug();
 const hitboxToggle = document.getElementById(
   "debugHitboxes",
 ) as HTMLInputElement;
+const fontToggle = document.getElementById("debugFont") as HTMLInputElement;
+fontToggle.addEventListener("change", () => {
+  renderDebug.font = fontToggle.checked;
+  fontToggle.blur();
+});
 hitboxToggle.addEventListener("change", () => {
   renderDebug.hitboxes = hitboxToggle.checked;
   // Don't keep focus, or movement keys like space would toggle it again.
@@ -259,7 +266,7 @@ function render(time: number) {
     quads,
     world,
     view,
-    { manifest, regions: art.regions },
+    { manifest, regions: art.regions, glyphs: art.glyphs },
     alpha,
     time,
     renderDebug,

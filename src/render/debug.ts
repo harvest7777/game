@@ -1,4 +1,6 @@
 import type { Color, SpriteLayer } from "../ecs/sprite/components";
+import type { Art } from "./art";
+import { GLYPH_CELL, layoutText, pushText } from "./textLayout";
 import type { World } from "../ecs/world";
 import type { QuadBuffer } from "./quads";
 import { interpolatedPosition } from "./sprites";
@@ -9,10 +11,12 @@ import { worldToScreen, type View } from "./view";
 export type RenderDebug = {
   // A circle outline around every entity's hitbox.
   hitboxes: boolean;
+  // Every glyph of both fonts, in the top-right corner.
+  font: boolean;
 };
 
 export function createRenderDebug(): RenderDebug {
-  return { hitboxes: false };
+  return { hitboxes: false, font: false };
 }
 
 export const HITBOX_COLORS: Record<SpriteLayer | "other", Color> = {
@@ -30,9 +34,11 @@ export function pushDebug(
   out: QuadBuffer,
   world: World,
   view: View,
+  art: Art,
   alpha: number,
   debug: RenderDebug,
 ): void {
+  if (debug.font) pushFontSheet(out, view, art);
   if (!debug.hitboxes) return;
 
   for (const [entity, hitbox] of world.components.hitbox) {
@@ -68,4 +74,32 @@ export function pushDebug(
       },
     );
   }
+}
+
+const FONT_SHEET = [
+  { font: "regular", text: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
+  { font: "regular", text: "abcdefghijklmnopqrstuvwxyz" },
+  { font: "regular", text: "0123456789 .,:;!?'\"-+/()%" },
+  { font: "regular", text: "The quick brown fox jumps over the lazy dog." },
+  { font: "bold", text: "0123456789" },
+] as const;
+const SHEET_PIXEL = 3;
+const SHEET_MARGIN = 16;
+
+// Every glyph, right-aligned in the top-right corner, for checking the font.
+function pushFontSheet(out: QuadBuffer, view: View, art: Art): void {
+  const lineHeight = (GLYPH_CELL + 3) * SHEET_PIXEL;
+  FONT_SHEET.forEach(({ font, text }, line) => {
+    const style = {
+      font,
+      pixel: SHEET_PIXEL,
+      tint: [1, 1, 1, 1] as Color,
+      outline: { color: [0, 0, 0, 1] as Color },
+    };
+    const width =
+      layoutText(text, art.manifest.fonts[font], art.glyphs).width *
+      SHEET_PIXEL;
+    const x = view.width - SHEET_MARGIN - width;
+    pushText(out, art, text, x, SHEET_MARGIN + line * lineHeight, style);
+  });
 }

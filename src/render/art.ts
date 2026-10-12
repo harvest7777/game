@@ -1,11 +1,13 @@
 import type { PackedRect } from "./atlas";
 import type { Manifest, SpriteFile } from "./assets";
+import type { GlyphMetrics } from "./loader";
 
 // The loaded art a frame is built from: what each sprite name and tile type
-// uses, and where each file sits in the atlas.
+// uses, where each file sits in the atlas, and how wide each glyph's ink is.
 export type Art = {
   manifest: Manifest;
   regions: Map<SpriteFile, PackedRect>;
+  glyphs: Map<SpriteFile, GlyphMetrics>;
 };
 
 export function regionOf(art: Art, file: SpriteFile): PackedRect {

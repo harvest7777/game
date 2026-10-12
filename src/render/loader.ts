@@ -8,10 +8,21 @@ const MAX_ATLAS_WIDTH = 2048;
 
 export type LoadedImage = { width: number; height: number };
 
-// The canvas the atlas is drawn into; only needs drawImage.
+// The canvas the atlas is drawn into. `pixels` reads back RGBA bytes for a
+// rectangle, row by row, for measuring glyphs.
 export type AtlasCanvas<Image> = {
   drawImage(image: Image, x: number, y: number): void;
+  pixels(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): ArrayLike<number>;
 };
+
+// Where a glyph's ink sits in its cell, in font pixels: the first inked
+// column, and how many columns wide the ink is.
+export type GlyphMetrics = { left: number; width: number };
 
 export type Atlas<Canvas> = {
   canvas: Canvas;
@@ -19,6 +30,8 @@ export type Atlas<Canvas> = {
   height: number;
   // Where each sprite file landed, in atlas pixels.
   regions: Map<SpriteFile, PackedRect>;
+  // Measured from the art, for every font glyph.
+  glyphs: Map<SpriteFile, GlyphMetrics>;
 };
 
 // Loads every file the manifest uses and draws them all into one canvas, so
@@ -45,5 +58,42 @@ export async function buildAtlas<Image extends LoadedImage, Canvas>(
     regions.set(file, rect);
   });
 
-  return { canvas, width: packing.width, height: packing.height, regions };
+  const glyphs = new Map<SpriteFile, GlyphMetrics>();
+  for (const font of Object.values(m.fonts)) {
+    for (const file of Object.values(font)) {
+      glyphs.set(file, measureGlyph(canvas, regions.get(file)!));
+    }
+  }
+
+  return {
+    canvas,
+    width: packing.width,
+    height: packing.height,
+    regions,
+    glyphs,
+  };
+}
+
+// Finds a glyph's inked columns, so glyphs of any width space correctly and
+// editing the art is all it takes to change how a character is spaced. An
+// empty glyph has no width.
+export function measureGlyph(
+  canvas: { pixels: AtlasCanvas<unknown>["pixels"] },
+  rect: PackedRect,
+): GlyphMetrics {
+  const data = canvas.pixels(rect.x, rect.y, rect.w, rect.h);
+  let first = -1;
+  let last = -1;
+  for (let x = 0; x < rect.w; x++) {
+    for (let y = 0; y < rect.h; y++) {
+      if (data[(y * rect.w + x) * 4 + 3] > 0) {
+        if (first === -1) first = x;
+        last = x;
+        break;
+      }
+    }
+  }
+  return first === -1
+    ? { left: 0, width: 0 }
+    : { left: first, width: last - first + 1 };
 }

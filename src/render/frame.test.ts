@@ -9,7 +9,7 @@ import { QuadBuffer, readQuads, type Quad } from "./quads";
 
 const manifest: Manifest = {
   sprites: { orb: { kind: "static", file: "orb" } },
-  font: {},
+  fonts: { bold: {}, regular: {} },
   ground: { 0: "floor" },
   walls: { top: "top", side: "side" },
 };
@@ -17,6 +17,7 @@ const files = ["floor", "top", "side", "orb"];
 const art: Art = {
   manifest,
   regions: new Map(files.map((f, i) => [f, { x: i * 10, y: 0, w: 8, h: 8 }])),
+  glyphs: new Map(),
 };
 const fileOf = (q: Quad) => files[q.region.x / 10];
 
@@ -86,6 +87,7 @@ describe("buildFrame", () => {
 
     const sections = buildFrame(out, world, view, art, 1, 0, {
       hitboxes: true,
+      font: false,
     });
 
     const quads = readQuads(out);

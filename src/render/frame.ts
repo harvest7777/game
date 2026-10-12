@@ -78,7 +78,7 @@ export function buildFrame(
   const sprites = out.count - terrain;
   pushFloatingText(out, world, view, art, alpha);
   const overlay = out.count - terrain - sprites;
-  pushDebug(out, world, view, alpha, debug);
+  pushDebug(out, world, view, art, alpha, debug);
   return {
     terrain,
     sprites,

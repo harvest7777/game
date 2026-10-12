@@ -23,8 +23,8 @@ export type StaticArt = { kind: "static"; file: SpriteFile };
 export type SpriteArt = WalkerArt | StaticArt;
 
 export type Manifest = {
-  // Keyed by character, for floating text.
-  font: Record<string, SpriteFile>;
+  // Each font maps characters to their glyph files.
+  fonts: Record<FontName, Record<string, SpriteFile>>;
   // Keyed by Sprite.name.
   sprites: Record<string, SpriteArt>;
   // Keyed by ground type id.
@@ -36,10 +36,50 @@ function walkerFrames(facing: string): SpriteFile[] {
   return [0, 1, 2].map((frame) => `player/${facing}-${frame}`);
 }
 
+// Bold: chunky digits for damage numbers. Regular: everything else.
+export type FontName = "bold" | "regular";
+
+const PUNCTUATION: Record<string, string> = {
+  ".": "period",
+  ",": "comma",
+  ":": "colon",
+  ";": "semicolon",
+  "!": "exclamation",
+  "?": "question",
+  "'": "apostrophe",
+  '"': "quote",
+  "-": "dash",
+  "+": "plus",
+  "/": "slash",
+  "(": "open-paren",
+  ")": "close-paren",
+  "%": "percent",
+};
+
+// File name for a character's glyph. Letters say their case, since some
+// file systems treat "a" and "A" as the same name. Matches glyphFile in
+// scripts/generate-sprites.mjs.
+export function glyphFile(char: string): string {
+  if (/[A-Z]/.test(char)) return `upper-${char.toLowerCase()}`;
+  if (/[a-z]/.test(char)) return `lower-${char}`;
+  return PUNCTUATION[char] ?? char;
+}
+
+function fontFiles(font: FontName, chars: string): Record<string, SpriteFile> {
+  return Object.fromEntries(
+    [...chars].map((char) => [char, `font/${font}/${glyphFile(char)}`]),
+  );
+}
+
 export const manifest: Manifest = {
-  font: Object.fromEntries(
-    [..."0123456789"].map((digit) => [digit, `font/${digit}`]),
-  ),
+  fonts: {
+    bold: fontFiles("bold", "0123456789"),
+    regular: fontFiles(
+      "regular",
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" +
+        ".,:;!?'\"-+/()%",
+    ),
+  },
   sprites: {
     player: {
       kind: "walker",
@@ -85,7 +125,9 @@ export function manifestFiles(m: Manifest): SpriteFile[] {
     }
   }
   Object.values(m.ground).forEach((f) => files.add(f));
-  Object.values(m.font).forEach((f) => files.add(f));
+  for (const font of Object.values(m.fonts)) {
+    Object.values(font).forEach((f) => files.add(f));
+  }
   files.add(m.walls.top);
   files.add(m.walls.side);
   return [...files];

@@ -162,15 +162,25 @@ Walkers with `attack` art thrust their weapon for the first half of each shot in
 
 Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: green, yellow below half, red below a quarter. Bars are solid quads (`fill`), so they need no art. They're drawn at the start of the sprite section, so every sprite (enemies, projectiles, the player) covers them, and at their owner's depth, so a wall that hides an entity hides its bar too.
 
+## Fonts and text
+
+There are two fonts, both white glyphs in 8×8 cells in the atlas like any other art, tinted when drawn:
+
+- `regular`: 1-pixel strokes, with letters, digits and common punctuation, for labels and tooltips. Capitals and digits are 7 rows tall, and the bottom row is for descenders.
+- `bold`: chunky 2-pixel digits for damage numbers.
+
+Glyph files are named so case can't collide on any file system (`upper-a`, `lower-a`, `7`, `question`; see `glyphFile`). **Spacing comes from the art**: when the atlas loads, each glyph's inked columns are measured, so narrow letters take less room, and editing a PNG is all it takes to change a character's spacing. `layoutText` places glyphs by those widths with 1 font pixel between letters and 3 for a space. `pushText` draws laid-out text in screen space, left-aligned or centered, with an optional outline. The font debug render shows every glyph.
+
 ## Floating text
 
-Damage numbers are drawn from the digit font (`font/0`…`font/9`, bold 6×7 white glyphs in 8×8 cells, in the atlas like any art) at 0.48 of a tile tall, 7 font pixels apart, centered over what they follow. They're tinted their color (the quad `tint` multiplies the art), outlined in black, rise 0.95 tiles up the screen easing out (so a stream of numbers separates), and fade over the last third of their life. Their age is interpolated between ticks like positions. They're in the overlay, after sprites and without depth testing, so they show over walls.
+Damage numbers are drawn in the bold font at 0.48 of a tile tall, centered over what they follow. They're tinted their color (the quad `tint` multiplies the art), outlined in black, rise 0.95 tiles up the screen easing out (so a stream of numbers separates), and fade over the last third of their life. Their age is interpolated between ticks like positions. They're in the overlay, after sprites and without depth testing, so they show over walls.
 
 ## Debug renders
 
 `RenderDebug` holds overlays you can turn on from the stats panel. They're drawn last with depth testing off, so they show over everything, walls included.
 
-- **hitboxes**: a circle outline around every entity's hitbox at its interpolated position. Player is green, enemies red, projectiles yellow, anything without a sprite white.
+- **hitboxes**: a circle outline around every entity's hitbox at its interpolated position.
+- **font**: every glyph of both fonts in the top-right corner. Player is green, enemies red, projectiles yellow, anything without a sprite white.
 
 Rings are drawn by the shader (a quad with `ring > 0`), so they need no art.
 

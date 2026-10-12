@@ -38,7 +38,7 @@ const manifest: Manifest = {
     },
     orb: { kind: "static", file: "orb" },
   },
-  font: {},
+  fonts: { bold: {}, regular: {} },
   ground: {},
   walls: { top: "top", side: "side" },
 };
@@ -57,6 +57,7 @@ const files = [
 const art: Art = {
   manifest,
   regions: new Map(files.map((f, i) => [f, { x: i * 10, y: 0, w: 8, h: 8 }])),
+  glyphs: new Map(),
 };
 const fileOf = (q: Quad) => files[q.region.x / 10];
 

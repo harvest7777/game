@@ -11,7 +11,7 @@ import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 const LAVA = 3;
 const manifest: Manifest = {
   sprites: {},
-  font: {},
+  fonts: { bold: {}, regular: {} },
   ground: { 0: "floor", [LAVA]: "lava" },
   walls: { top: "top", side: "side" },
 };
@@ -20,6 +20,7 @@ const files = ["floor", "lava", "top", "side"];
 const art: Art = {
   manifest,
   regions: new Map(files.map((f, i) => [f, { x: i * 10, y: 0, w: 8, h: 8 }])),
+  glyphs: new Map(),
 };
 const fileOf = (q: Quad) => files[q.region.x / 10];
 

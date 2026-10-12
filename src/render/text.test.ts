@@ -6,7 +6,8 @@ import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
 import type { Art } from "./art";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
-import { GLYPH, TEXT_ADVANCE, TEXT_SCALE, pushFloatingText } from "./text";
+import { TEXT_SCALE, pushFloatingText } from "./text";
+import { LETTER_SPACING } from "./textLayout";
 import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 
 const digits = [..."0123456789"];
@@ -16,10 +17,17 @@ const art: Art = {
     sprites: {},
     ground: {},
     walls: { top: "top", side: "side" },
-    font: Object.fromEntries(digits.map((d) => [d, `font/${d}`])),
+    fonts: {
+      bold: Object.fromEntries(digits.map((d) => [d, `font/${d}`])),
+      regular: {},
+    },
   },
   regions: new Map(
     digits.map((d, i) => [`font/${d}`, { x: i * 10, y: 0, w: 8, h: 8 }]),
+  ),
+  // Bold digits are 6 wide from the left of their cell, except a narrow 1.
+  glyphs: new Map(
+    digits.map((d) => [`font/${d}`, { left: 0, width: d === "1" ? 4 : 6 }]),
   ),
 };
 const digitOf = (q: Quad) => digits[q.region.x / 10];
@@ -65,26 +73,28 @@ describe("pushFloatingText", () => {
     expect(draw(world, view).map(digitOf)).toEqual(["3", "0", "5"]);
   });
 
-  it("centers the visible digits on where it started", () => {
+  it("centers the digits' ink on what it floats over", () => {
     const { world, view } = setup();
     addText(world, { text: "27" });
 
     const quads = draw(world, view);
 
-    // Visible ink runs from the first glyph's left edge to the last glyph's
-    // right edge; each quad starts an outline's width before its cell.
-    const firstInk = quads[0].corners[0].x + (0.2 + GLYPH.left) * FONT;
-    const lastInk =
-      quads[1].corners[0].x + (0.2 + GLYPH.left + GLYPH.width) * FONT;
+    // Ink runs from the first cell's left edge (past its outline pad) to 6
+    // font pixels into the last cell.
+    const firstInk = quads[0].corners[0].x + 0.2 * FONT;
+    const lastInk = quads[1].corners[0].x + (0.2 + 6) * FONT;
     const at = worldToScreen(view, CENTER);
     expect((firstInk + lastInk) / 2).toBeCloseTo(at.x, 3);
   });
 
-  it("spaces characters a fixed advance apart", () => {
+  it("spaces digits by their own widths, so a 1 takes less room", () => {
     const { world, view } = setup();
     addText(world, { text: "11" });
-    const [a, b] = draw(world, view);
-    expect(b.corners[0].x - a.corners[0].x).toBeCloseTo(TEXT_ADVANCE * FONT, 3);
+    addText(world, { text: "22", lift: 2 });
+    const [one, oneAgain, two, twoAgain] = draw(world, view);
+    const gap = (a: Quad, b: Quad) => b.corners[0].x - a.corners[0].x;
+    expect(gap(one, oneAgain)).toBeCloseTo((4 + LETTER_SPACING) * FONT, 3);
+    expect(gap(two, twoAgain)).toBeCloseTo((6 + LETTER_SPACING) * FONT, 3);
   });
 
   it("starts just above where a sprite's top would be", () => {

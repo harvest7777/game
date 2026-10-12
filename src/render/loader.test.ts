@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { enemyDef, enemyIds } from "../ecs/enemy/definitions";
 import { itemDef, itemIds } from "../ecs/inventory/items";
 import { projectileDef, projectileIds } from "../ecs/projectile/definitions";
-import { manifest, manifestFiles, type Manifest } from "./assets";
-import { buildAtlas } from "./loader";
+import { glyphFile, manifest, manifestFiles, type Manifest } from "./assets";
+import { buildAtlas, measureGlyph } from "./loader";
 
 type FakeImage = { file: string; width: number; height: number };
 
@@ -20,7 +20,19 @@ function fakeCanvas(width: number, height: number) {
     drawImage(image: FakeImage, x: number, y: number) {
       draws.push({ file: image.file, x, y });
     },
+    // Fully transparent: every glyph measures empty.
+    pixels: (_x: number, _y: number, w: number, h: number) =>
+      new Uint8ClampedArray(w * h * 4),
   };
+}
+
+// RGBA bytes for a w-wide image where `inked` columns are opaque.
+function columns(w: number, h: number, inked: number[]): Uint8ClampedArray {
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (const x of inked) data[(y * w + x) * 4 + 3] = 255;
+  }
+  return data;
 }
 
 const small: Manifest = {
@@ -29,7 +41,7 @@ const small: Manifest = {
     rock: { kind: "static", file: "c" },
   },
   ground: { 0: "floor", 1: "floor" },
-  font: { "1": "one" },
+  fonts: { bold: { "1": "one" }, regular: {} },
   walls: { top: "top", side: "side" },
 };
 
@@ -64,6 +76,44 @@ describe("buildAtlas", () => {
   });
 });
 
+describe("measureGlyph", () => {
+  const rect = { x: 0, y: 0, w: 8, h: 8 };
+
+  it("finds the first inked column and the ink's width", () => {
+    const canvas = { pixels: () => columns(8, 8, [1, 2, 3, 4, 5, 6]) };
+    expect(measureGlyph(canvas, rect)).toEqual({ left: 1, width: 6 });
+  });
+
+  it("counts gaps inside a glyph as part of its width", () => {
+    const canvas = { pixels: () => columns(8, 8, [0, 4]) };
+    expect(measureGlyph(canvas, rect)).toEqual({ left: 0, width: 5 });
+  });
+
+  it("gives an empty glyph no width", () => {
+    const canvas = { pixels: () => columns(8, 8, []) };
+    expect(measureGlyph(canvas, rect)).toEqual({ left: 0, width: 0 });
+  });
+
+  it("reads the glyph's own rectangle of the atlas", () => {
+    const asked: number[][] = [];
+    const canvas = {
+      pixels: (x: number, y: number, w: number, h: number) => {
+        asked.push([x, y, w, h]);
+        return columns(w, h, [2]);
+      },
+    };
+    measureGlyph(canvas, { x: 17, y: 9, w: 8, h: 8 });
+    expect(asked).toEqual([[17, 9, 8, 8]]);
+  });
+});
+
+describe("buildAtlas glyphs", () => {
+  it("measures every font glyph", async () => {
+    const atlas = await buildAtlas(small, fakeLoad, fakeCanvas);
+    expect([...atlas.glyphs.keys()]).toEqual(["one"]);
+  });
+});
+
 describe("the real manifest", () => {
   it("only references sprite files that exist", () => {
     const onDisk = new Set(
@@ -91,10 +141,25 @@ describe("the real manifest", () => {
     }
   });
 
-  it("has a glyph for every digit", () => {
+  it("has a bold glyph for every digit", () => {
     for (const digit of "0123456789") {
-      expect(manifest.font[digit], digit).toBeDefined();
+      expect(manifest.fonts.bold[digit], digit).toBeDefined();
     }
+  });
+
+  it("has a regular glyph for every letter, digit and common punctuation", () => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:!?-+/()%";
+    for (const char of chars) {
+      expect(manifest.fonts.regular[char], char).toBeDefined();
+    }
+  });
+
+  it("names letter glyphs by case so they can't collide", () => {
+    expect(glyphFile("A")).toBe("upper-a");
+    expect(glyphFile("a")).toBe("lower-a");
+    expect(glyphFile("7")).toBe("7");
+    expect(glyphFile("?")).toBe("question");
   });
 
   it("has art for every enemy", () => {
