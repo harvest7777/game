@@ -29,3 +29,10 @@ export type Sprite = {
 // The world direction the entity last moved in, as a unit vector. Kept when
 // it stops so it keeps facing the same way.
 export type Facing = Vec2;
+
+// Turns the sprite, for things like projectiles that point where they're
+// going. `angle` is a world direction in radians, measured from world +x
+// toward +y (clockwise on screen when the camera isn't rotated). Art meant to
+// be rotated points right. `previous` is the angle at the start of the last
+// tick, so the sprite turns smoothly between ticks.
+export type Rotation = { angle: number; previous: number };

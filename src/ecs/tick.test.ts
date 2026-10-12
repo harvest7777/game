@@ -15,7 +15,7 @@ const R = 0.4;
 function setup() {
   const world = createWorld(createTiles(20, 20));
   const player = spawn(world);
-  addMovable(world, player, { at: START, r: R });
+  addMovable(world, player, { at: START, hitbox: { r: R } });
   addControllable(world, player, { speed: SPEED });
   addSprite(world, player, { name: "player", layer: "player" });
   const position = () => world.components.position.get(player)!;

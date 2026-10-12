@@ -21,6 +21,7 @@ describe("QuadBuffer", () => {
       0.5,
       { color: [1, 0.5, 0.25, 1], glow: { radius: 2, pulseHz: 3 } },
       0.25,
+      0.75,
     );
 
     expect(readQuads(buffer)).toEqual([
@@ -38,11 +39,12 @@ describe("QuadBuffer", () => {
         glowRadius: 2,
         glowPulseHz: 3,
         depth: 0.25,
+        ring: 0.75,
       },
     ]);
   });
 
-  it("writes a transparent outline, no glow and the farthest depth by default", () => {
+  it("defaults to a plain textured quad at the farthest depth", () => {
     const buffer = new QuadBuffer();
     buffer.push(0, 0, 1, 0, 1, 1, 0, 1, region);
 
@@ -52,6 +54,7 @@ describe("QuadBuffer", () => {
     expect(quad.glowRadius).toBe(0);
     expect(quad.margin).toBe(0);
     expect(quad.depth).toBe(1);
+    expect(quad.ring).toBe(0);
   });
 
   it("grows past its initial capacity and keeps earlier quads", () => {

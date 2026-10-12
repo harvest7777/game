@@ -8,7 +8,7 @@ describe("addMovable", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
 
-    addMovable(world, e, { at: { x: 2, y: 3 }, r: 0.4 });
+    addMovable(world, e, { at: { x: 2, y: 3 }, hitbox: { r: 0.4 } });
 
     const { components } = world;
     expect(components.position.get(e)).toEqual({ x: 2, y: 3 });
@@ -17,12 +17,23 @@ describe("addMovable", () => {
     expect(components.wallResponse.get(e)).toBe("slide");
   });
 
+  it("doesn't share the hitbox object it was given", () => {
+    const world = createWorld(createTiles(1, 1));
+    const e = spawn(world);
+    const hitbox = { r: 0.4 };
+
+    addMovable(world, e, { at: { x: 0, y: 0 }, hitbox });
+    world.components.hitbox.get(e)!.r = 9;
+
+    expect(hitbox.r).toBe(0.4);
+  });
+
   it("doesn't share the position object it was given", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
     const at = { x: 2, y: 3 };
 
-    addMovable(world, e, { at, r: 0.4 });
+    addMovable(world, e, { at, hitbox: { r: 0.4 } });
     world.components.position.get(e)!.x = 9;
 
     expect(at.x).toBe(2);

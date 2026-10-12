@@ -6,6 +6,7 @@ import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
 import { manifest } from "./render/assets";
+import { createRenderDebug } from "./render/debug";
 import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
@@ -43,7 +44,7 @@ for (const [x, y] of [
 
 const world = createWorld(tiles);
 const player = spawn(world);
-addMovable(world, player, { at: { x: 16, y: 16 }, r: 0.4 });
+addMovable(world, player, { at: { x: 16, y: 16 }, hitbox: { r: 0.4 } });
 addControllable(world, player, { speed: 5 });
 addSprite(world, player, {
   name: "player",
@@ -71,6 +72,17 @@ const art = await buildAtlas(
   },
 );
 const renderer = createRenderer(gl, art.canvas.canvas);
+
+// Debug renders, toggled from the overlay.
+const renderDebug = createRenderDebug();
+const hitboxToggle = document.getElementById(
+  "debugHitboxes",
+) as HTMLInputElement;
+hitboxToggle.addEventListener("change", () => {
+  renderDebug.hitboxes = hitboxToggle.checked;
+  // Don't keep focus, or movement keys like space would toggle it again.
+  hitboxToggle.blur();
+});
 const quads = new QuadBuffer();
 
 let accumulator: number = 0;
@@ -133,15 +145,16 @@ function render(time: number) {
 
   const alpha = accumulator / TIME_PER_TICK_MS;
   const view = frameView(world, alpha, width, height, dpr);
-  const terrain = buildFrame(
+  const sections = buildFrame(
     quads,
     world,
     view,
     { manifest, regions: art.regions },
     alpha,
     time,
+    renderDebug,
   );
-  renderer.draw(quads, terrain, width, height, time);
+  renderer.draw(quads, sections, width, height, time);
 }
 
 requestAnimationFrame(callback);

@@ -1,3 +1,4 @@
+import type { FrameSections } from "./frame";
 import { FLOATS_PER_QUAD, QUAD_LAYOUT, type QuadBuffer } from "./quads";
 
 // Largest outline/glow reach the shader searches, in sprite pixels. Glow
@@ -12,10 +13,13 @@ in vec2 a_flipMargin;
 in vec4 a_outline;
 in vec2 a_glow;
 in float a_depth;
+in float a_ring;
 
 uniform vec2 u_screen;
 
 out vec2 v_texel;
+out vec2 v_uv;
+flat out float v_ring;
 flat out vec4 v_region;
 flat out vec2 v_flipMargin;
 flat out vec4 v_outline;
@@ -38,6 +42,8 @@ void main() {
   v_flipMargin = a_flipMargin;
   v_outline = a_outline;
   v_glow = a_glow;
+  v_uv = uv;
+  v_ring = a_ring;
 
   vec2 clip = position / u_screen * 2.0 - 1.0;
   gl_Position = vec4(clip.x, -clip.y, a_depth * 2.0 - 1.0, 1.0);
@@ -55,6 +61,8 @@ uniform sampler2D u_atlas;
 uniform float u_time;
 
 in vec2 v_texel;
+in vec2 v_uv;
+flat in float v_ring;
 flat in vec4 v_region;
 flat in vec2 v_flipMargin;
 flat in vec4 v_outline;
@@ -77,7 +85,22 @@ vec4 fetch(ivec2 t) {
   return texelFetch(u_atlas, t, 0);
 }
 
+// A thin anti-aliased circle at v_ring of the quad's half-size, for debug
+// overlays like hitboxes.
+void drawRing() {
+  float d = length(v_uv * 2.0 - 1.0);
+  float pixel = fwidth(d);
+  float line = 1.0 - smoothstep(0.75 * pixel, 1.5 * pixel, abs(d - v_ring));
+  if (line <= 0.0) discard;
+  color = vec4(v_outline.rgb, v_outline.a * line);
+}
+
 void main() {
+  if (v_ring > 0.0) {
+    drawRing();
+    return;
+  }
+
   ivec2 here = ivec2(floor(v_texel));
   float margin = v_flipMargin.y;
 
@@ -126,13 +149,13 @@ void main() {
 `;
 
 export type Renderer = {
-  // Draws a frame from one upload in two instanced calls: the first
-  // `terrain` quads write depth, the sprites after them only test against
-  // it (see buildFrame). Width/height are the canvas's pixel size; time is
-  // seconds, for glow pulsing.
+  // Draws a frame from one upload in up to three instanced calls, one per
+  // section (see buildFrame): terrain writes depth, sprites test against it,
+  // debug overlays ignore it. Width/height are the canvas's pixel size; time
+  // is seconds, for glow pulsing.
   draw(
     quads: QuadBuffer,
-    terrain: number,
+    sections: FrameSections,
     width: number,
     height: number,
     time: number,
@@ -171,6 +194,7 @@ export function createRenderer(
     ["a_outline", 4, QUAD_LAYOUT.outline],
     ["a_glow", 2, QUAD_LAYOUT.glow],
     ["a_depth", 1, QUAD_LAYOUT.depth],
+    ["a_ring", 1, QUAD_LAYOUT.ring],
   ];
   const locations = attributes.map(([name]) => {
     const location = gl.getAttribLocation(program, name);
@@ -200,7 +224,7 @@ export function createRenderer(
   gl.depthFunc(gl.LEQUAL);
 
   return {
-    draw(quads, terrain, width, height, time) {
+    draw(quads, sections, width, height, time) {
       gl.viewport(0, 0, width, height);
       gl.clearColor(0, 0, 0, 1);
       gl.depthMask(true);
@@ -222,17 +246,26 @@ export function createRenderer(
         gl.DYNAMIC_DRAW,
       );
 
+      const { terrain, sprites, debug } = sections;
+
       // Ground and walls, back to front, recording how near each pixel is.
+      gl.enable(gl.DEPTH_TEST);
       startAt(0);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, terrain);
 
       // Sprites in layer order, hidden only where a nearer wall covers them.
       // They don't write depth so they never hide each other that way.
-      const sprites = quads.count - terrain;
       if (sprites > 0) {
         gl.depthMask(false);
         startAt(terrain);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
+      }
+
+      // Debug overlays over everything.
+      if (debug > 0) {
+        gl.disable(gl.DEPTH_TEST);
+        startAt(terrain + sprites);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, debug);
       }
       gl.bindVertexArray(null);
     },

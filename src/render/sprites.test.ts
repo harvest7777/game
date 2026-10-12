@@ -154,6 +154,78 @@ describe("pushSprites", () => {
     });
   });
 
+  describe("rotation", () => {
+    // Static art 8 sprite pixels wide = one tile; corners as offsets from
+    // the sprite's center on screen.
+    function cornerOffsets(angle: number, cameraAngle = 0, previous = angle) {
+      const { world, view } = setup(cameraAngle);
+      const e = addAt(world, CENTER, { name: "orb", layer: "projectile" });
+      world.components.rotation.set(e, { angle, previous });
+      const [quad] = draw(world, view, 0.5);
+      const c = worldToScreen(view, CENTER);
+      return quad.corners.map((p) => ({ x: p.x - c.x, y: p.y - c.y }));
+    }
+
+    function expectOffsets(actual: Vec2[], expected: [number, number][]) {
+      const h = TILE_PIXELS / 2;
+      actual.forEach((p, i) => {
+        expect(p.x, `corner ${i} x`).toBeCloseTo(expected[i][0] * h, 3);
+        expect(p.y, `corner ${i} y`).toBeCloseTo(expected[i][1] * h, 3);
+      });
+    }
+
+    it("leaves art pointing right at angle 0", () => {
+      expectOffsets(cornerOffsets(0), [
+        [-1, -1],
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+      ]);
+    });
+
+    it("points the art's right side down the screen at world +y", () => {
+      // Top-left of the art swings to the top-right.
+      expectOffsets(cornerOffsets(Math.PI / 2), [
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+        [-1, -1],
+      ]);
+    });
+
+    it("turns with the camera", () => {
+      // World +y with the camera at π/2 is screen-right, so no turn on screen.
+      expectOffsets(cornerOffsets(Math.PI / 2, Math.PI / 2), [
+        [-1, -1],
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+      ]);
+    });
+
+    it("turns smoothly between ticks", () => {
+      // Halfway from 0 to π is π/2.
+      expectOffsets(cornerOffsets(Math.PI - 1e-9, 0, 0), [
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+        [-1, -1],
+      ]);
+    });
+
+    it("isn't culled while a turned corner is still on screen", () => {
+      const { world, view } = setup();
+      // Screen shows 5..15; the center is past the right edge by more than
+      // half a tile but less than half the diagonal.
+      const e = addAt(world, { x: 15.6, y: 10 }, { name: "orb" });
+      world.components.rotation.set(e, {
+        angle: Math.PI / 4,
+        previous: Math.PI / 4,
+      });
+      expect(draw(world, view)).toHaveLength(1);
+    });
+  });
+
   describe("outline", () => {
     it("grows the quad by the outline thickness and carries its color", () => {
       const { world, view } = setup();

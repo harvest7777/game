@@ -45,7 +45,7 @@ Rendering lives in `src/render/`, outside the ECS. It only reads the world; noth
 1. `alpha = accumulator / TICK_MS`: how far the leftover time reaches into the next tick.
 2. `frameView` works out where the camera looks (the followed entity's interpolated position) and builds a `View`.
 3. `buildFrame` fills a `QuadBuffer` with every quad to draw. It's pure: world + view + art in, flat quad data out. This is where all the rendering logic and its tests live.
-4. `renderer.draw` uploads that buffer once and draws it in **two instanced draw calls** (terrain, then sprites) from **one atlas texture**.
+4. `renderer.draw` uploads that buffer once and draws it in up to **three instanced draw calls** (terrain, sprites, debug renders) from **one atlas texture**.
 
 Entities are drawn at `lerp(previousPosition, position, alpha)`, so the screen runs **up to one tick behind** the game (50 ms at 20 ticks/s). In exchange, movement is smooth at any monitor refresh rate.
 
@@ -64,6 +64,14 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 
 Sprites always stay upright. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+
+## Debug renders
+
+`RenderDebug` holds overlays you can turn on from the stats panel. They're drawn last with depth testing off, so they show over everything, walls included.
+
+- **hitboxes**: a circle outline around every entity's hitbox at its interpolated position. Player is green, enemies red, projectiles yellow, anything without a sprite white.
+
+Rings are drawn by the shader (a quad with `ring > 0`), so they need no art.
 
 ## Outline and glow
 

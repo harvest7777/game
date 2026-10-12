@@ -22,7 +22,7 @@ const fileOf = (q: Quad) => files[q.region.x / 10];
 function worldWithPlayer() {
   const world = createWorld(createTiles(20, 20));
   const player = spawn(world);
-  addMovable(world, player, { at: { x: 12, y: 10 }, r: 0.4 });
+  addMovable(world, player, { at: { x: 12, y: 10 }, hitbox: { r: 0.4 } });
   addSprite(world, player, { name: "orb", layer: "player" });
   world.components.previousPosition.set(player, { x: 10, y: 10 });
   return { world, player };
@@ -76,18 +76,37 @@ describe("cameraAngle", () => {
 });
 
 describe("buildFrame", () => {
-  it("puts terrain first and returns where the sprites start", () => {
+  it("puts terrain, then sprites, then debug overlays, and counts each", () => {
     const { world } = worldWithPlayer();
     setWall(world.tiles, 11, 9);
     const view = frameView(world, 1, 400, 400, 1);
     const out = new QuadBuffer();
 
-    const terrain = buildFrame(out, world, view, art, 1, 0);
+    const sections = buildFrame(out, world, view, art, 1, 0, {
+      hitboxes: true,
+    });
 
-    const kinds = readQuads(out).map(fileOf);
-    expect(kinds.slice(terrain)).toEqual(["orb"]);
-    expect(kinds.slice(0, terrain)).not.toContain("orb");
-    expect(kinds.lastIndexOf("floor")).toBeLessThan(kinds.indexOf("top"));
+    const quads = readQuads(out);
+    const terrain = quads.slice(0, sections.terrain);
+    const sprites = quads.slice(sections.terrain, -sections.debug);
+    const debug = quads.slice(-sections.debug);
+    expect(terrain.map(fileOf)).not.toContain("orb");
+    expect(terrain.map(fileOf)).toContain("top");
+    expect(sprites.map(fileOf)).toEqual(["orb"]);
+    expect(debug).toHaveLength(1);
+    expect(debug[0].ring).toBeGreaterThan(0);
+    expect(sections.terrain + sections.sprites + sections.debug).toBe(
+      out.count,
+    );
+  });
+
+  it("has no debug overlays unless asked", () => {
+    const { world } = worldWithPlayer();
+    const view = frameView(world, 1, 400, 400, 1);
+
+    const sections = buildFrame(new QuadBuffer(), world, view, art, 1, 0);
+
+    expect(sections.debug).toBe(0);
   });
 
   describe("depth between walls and sprites", () => {

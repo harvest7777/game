@@ -10,7 +10,7 @@ import type {
 import { createCamera, type Camera } from "./camera/resource";
 import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
-import type { Facing, Sprite } from "./sprite/components";
+import type { Facing, Rotation, Sprite } from "./sprite/components";
 import type { Tiles } from "./tiles";
 
 export type Entity = number;
@@ -38,6 +38,7 @@ export type Components = {
   speed: Store<Speed>;
   sprite: Store<Sprite>;
   facing: Store<Facing>;
+  rotation: Store<Rotation>;
 };
 
 export type World = {
@@ -68,6 +69,7 @@ export function createWorld(tiles: Tiles): World {
       speed: createStore(),
       sprite: createStore(),
       facing: createStore(),
+      rotation: createStore(),
     },
   };
 }
