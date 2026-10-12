@@ -13,7 +13,7 @@ export function phaseSystem(world: World, dt: number): void {
   const { enemy, health, position, target, brain } = world.components;
 
   for (const [entity, e] of enemy) {
-    if (!e.phase) continue;
+    if (!e.phase || world.components.asleep.has(entity)) continue;
     const phase = phaseOf(e.def, e.phase.name);
     if (!phase) continue;
     e.phase.time += dt;

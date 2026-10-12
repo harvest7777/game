@@ -196,7 +196,14 @@ export type Renderer = {
     height: number,
     time: number,
   ): void;
+  // How long the GPU took to draw a recent frame, in milliseconds, or
+  // undefined where the browser can't time the GPU (or no result is in
+  // yet). Results arrive a few frames late.
+  gpuMs(): number | undefined;
 };
+
+// Timer queries in flight at once; a frame without a free one goes untimed.
+const GPU_QUERIES = 4;
 
 export function createRenderer(
   gl: WebGL2RenderingContext,
@@ -283,58 +290,99 @@ export function createRenderer(
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
 
+  // GPU timing, where the browser allows it: each frame's drawing is wrapped
+  // in a timer query, read back once its result is ready.
+  const timer = gl.getExtension("EXT_disjoint_timer_query_webgl2") as {
+    TIME_ELAPSED_EXT: number;
+    GPU_DISJOINT_EXT: number;
+  } | null;
+  const pending: WebGLQuery[] = [];
+  let gpuMs: number | undefined;
+  const readTimings = () => {
+    if (!timer) return;
+    while (pending.length) {
+      const query = pending[0];
+      if (!gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) break;
+      pending.shift();
+      // A disjoint frame's timing can't be trusted (the GPU was interrupted).
+      if (!gl.getParameter(timer.GPU_DISJOINT_EXT)) {
+        gpuMs = gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6;
+      }
+      gl.deleteQuery(query);
+    }
+  };
+
   return {
+    gpuMs: () => gpuMs,
     draw(quads, sections, width, height, time) {
-      gl.viewport(0, 0, width, height);
-      gl.clearColor(0, 0, 0, 1);
-      gl.depthMask(true);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      if (quads.count === 0) return;
-
-      gl.useProgram(program);
-      gl.uniform2f(uScreen, width, height);
-      gl.uniform1f(uTime, time);
-      gl.uniform1i(uAtlas, 0);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.uniform1i(uDistances, 1);
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, distanceTexture);
-
-      gl.bindVertexArray(vao);
-      gl.bindBuffer(gl.ARRAY_BUFFER, instances);
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        quads.data.subarray(0, quads.count * FLOATS_PER_QUAD),
-        gl.DYNAMIC_DRAW,
-      );
-
-      const { terrain, sprites, overlay, debug } = sections;
-
-      // Ground and walls, back to front, recording how near each pixel is.
-      gl.enable(gl.DEPTH_TEST);
-      startAt(0);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, terrain);
-
-      // Health bars then sprites in layer order, hidden only where a nearer
-      // wall covers them. They don't write depth so they never hide each
-      // other that way.
-      if (sprites > 0) {
-        gl.depthMask(false);
-        startAt(terrain);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
+      readTimings();
+      const query =
+        timer && pending.length < GPU_QUERIES ? gl.createQuery() : null;
+      if (query) gl.beginQuery(timer!.TIME_ELAPSED_EXT, query);
+      drawFrame(quads, sections, width, height, time);
+      if (query) {
+        gl.endQuery(timer!.TIME_ELAPSED_EXT);
+        pending.push(query);
       }
-
-      // Floating text and debug renders over everything, in one call since
-      // they follow each other in the buffer.
-      if (overlay + debug > 0) {
-        gl.disable(gl.DEPTH_TEST);
-        startAt(terrain + sprites);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, overlay + debug);
-      }
-      gl.bindVertexArray(null);
     },
   };
+
+  function drawFrame(
+    quads: QuadBuffer,
+    sections: FrameSections,
+    width: number,
+    height: number,
+    time: number,
+  ): void {
+    gl.viewport(0, 0, width, height);
+    gl.clearColor(0, 0, 0, 1);
+    gl.depthMask(true);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (quads.count === 0) return;
+
+    gl.useProgram(program);
+    gl.uniform2f(uScreen, width, height);
+    gl.uniform1f(uTime, time);
+    gl.uniform1i(uAtlas, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(uDistances, 1);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, distanceTexture);
+
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instances);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      quads.data.subarray(0, quads.count * FLOATS_PER_QUAD),
+      gl.DYNAMIC_DRAW,
+    );
+
+    const { terrain, sprites, overlay, debug } = sections;
+
+    // Ground and walls, back to front, recording how near each pixel is.
+    gl.enable(gl.DEPTH_TEST);
+    startAt(0);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, terrain);
+
+    // Health bars then sprites in layer order, hidden only where a nearer
+    // wall covers them. They don't write depth so they never hide each
+    // other that way.
+    if (sprites > 0) {
+      gl.depthMask(false);
+      startAt(terrain);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
+    }
+
+    // Floating text and debug renders over everything, in one call since
+    // they follow each other in the buffer.
+    if (overlay + debug > 0) {
+      gl.disable(gl.DEPTH_TEST);
+      startAt(terrain + sprites);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, overlay + debug);
+    }
+    gl.bindVertexArray(null);
+  }
 }
 
 function compile(

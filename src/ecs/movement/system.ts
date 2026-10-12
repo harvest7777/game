@@ -36,7 +36,7 @@ export function movementSystem(world: World, dt: number): void {
   const solids: Entity[] = [];
   const others: Entity[] = [];
   for (const [entity] of velocity) {
-    if (!position.has(entity)) continue;
+    if (!position.has(entity) || world.components.asleep.has(entity)) continue;
     (solid.has(entity) ? solids : others).push(entity);
   }
   for (const entity of solids) move(world, entity, dt);

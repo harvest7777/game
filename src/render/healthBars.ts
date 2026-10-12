@@ -4,6 +4,7 @@ import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
 import {
   interpolatedPosition,
+  farOffScreen,
   marginOf,
   SPRITE_LAYERS,
   spriteLift,
@@ -68,17 +69,18 @@ export function pushHealthBars(
     if (!position || health.max <= 0) continue;
 
     const feet = worldToScreen(view, position);
-    const center = {
-      x: feet.x,
-      y: feet.y - spriteLift(world, entity, art) * view.pixelsPerTile,
-    };
+    if (farOffScreen(view, feet)) continue;
     // Below the sprite as drawn, outline and glow included, so big or
     // glowing sprites don't cover their own bar.
     const sprite = world.components.sprite.get(entity);
     const scale = sprite?.scale ?? 1;
     const margin = sprite ? marginOf(sprite) : 0;
-    const spriteHalf =
-      (spritePixels(world, entity, art).height / 2 + margin * scale) * pixel;
+    const height = spritePixels(world, entity, art).height;
+    const center = {
+      x: feet.x,
+      y: feet.y - spriteLift(world, entity, art, height) * view.pixelsPerTile,
+    };
+    const spriteHalf = (height / 2 + margin * scale) * pixel;
     const left = center.x - (WIDTH / 2) * pixel;
     const right = center.x + (WIDTH / 2) * pixel;
     const top = center.y + spriteHalf + GAP * pixel;

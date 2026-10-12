@@ -4,11 +4,16 @@ import { IDLE_CLIP } from "../../ecs/sprite/art";
 import { weapons } from "../weapons";
 import { enemies, enemyIds } from ".";
 import { STAT } from "../../ecs/stats/components";
+import { SLEEP_DISTANCE } from "../../ecs/enemy/sleep";
 
 describe("enemy definitions", () => {
   for (const id of enemyIds) {
     describe(id, () => {
       const def: EnemyDef = enemies[id];
+
+      it("notices players from closer than enemies fall asleep", () => {
+        expect(def.detectRange).toBeLessThan(SLEEP_DISTANCE);
+      });
 
       it("starts with some health", () => {
         expect(def.stats[STAT.HEALTH].value).toBeGreaterThan(0);

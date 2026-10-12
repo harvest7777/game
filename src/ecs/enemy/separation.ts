@@ -6,6 +6,12 @@ import type { Entity, World } from "../world";
 export const SPACING = 0.5;
 // How hard the push is next to the steering, at full overlap.
 export const STRENGTH = 1.5;
+// In a packed crowd an enemy feels only this many of the neighbors crowding
+// it, and looks at only so many candidates, so a pile of thousands costs
+// each enemy the same as a loose group. The first few already push it the
+// right way: out of the crowd.
+export const MAX_NEIGHBORS = 8;
+export const MAX_CHECKS = 32;
 
 // For each enemy crowding others, which way to ease off: away from every
 // enemy closer than their hitboxes plus SPACING, harder the closer it is.
@@ -18,7 +24,12 @@ export function separation(world: World): Map<Entity, Vec2> {
   const pushes = new Map<Entity, Vec2>();
 
   const ids: Entity[] = [];
-  for (const [entity] of enemy) if (position.has(entity)) ids.push(entity);
+  // Sleepers neither move nor matter to anyone awake.
+  for (const [entity] of enemy) {
+    if (position.has(entity) && !world.components.asleep.has(entity)) {
+      ids.push(entity);
+    }
+  }
   const n = ids.length;
   if (n < 2) return pushes;
   const xs = new Float64Array(n);
@@ -64,7 +75,13 @@ export function separation(world: World): Map<Entity, Vec2> {
     const row = (cellOf[i] - column) / columns;
     let x = 0;
     let y = 0;
-    for (let r = Math.max(0, row - 1); r <= Math.min(rows - 1, row + 1); r++) {
+    let felt = 0;
+    let checked = 0;
+    search: for (
+      let r = Math.max(0, row - 1);
+      r <= Math.min(rows - 1, row + 1);
+      r++
+    ) {
       for (
         let c = Math.max(0, column - 1);
         c <= Math.min(columns - 1, column + 1);
@@ -74,6 +91,8 @@ export function separation(world: World): Map<Entity, Vec2> {
         for (let k = starts[at]; k < starts[at + 1]; k++) {
           const j = order[k];
           if (j === i) continue;
+          if (felt >= MAX_NEIGHBORS || checked >= MAX_CHECKS) break search;
+          checked++;
           const reach = rs[i] + rs[j] + SPACING;
           const ox = xs[i] - xs[j];
           const oy = ys[i] - ys[j];
@@ -81,6 +100,7 @@ export function separation(world: World): Map<Entity, Vec2> {
           // enough, and skipping their square root adds up over thousands.
           const squared = ox * ox + oy * oy;
           if (squared >= reach * reach) continue;
+          felt++;
           const distance = Math.sqrt(squared);
           const closeness = 1 - distance / reach;
           if (distance === 0) {

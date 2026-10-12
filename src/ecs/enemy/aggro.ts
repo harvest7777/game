@@ -14,6 +14,7 @@ export function aggroSystem(world: World, _dt: number): void {
   const opponentsOf = new Map<Team | undefined, Entity[]>();
 
   for (const [entity, e] of enemy) {
+    if (world.components.asleep.has(entity)) continue;
     const at = position.get(entity);
     if (!at) continue;
     const side = team.get(entity);

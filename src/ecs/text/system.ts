@@ -5,8 +5,11 @@ export const DAMAGE_COLOR: Color = [0.95, 0.15, 0.15, 1];
 export const HEAL_COLOR: Color = [0.35, 0.95, 0.4, 1];
 export const DAMAGE_TEXT = { lifetime: 0.8, rise: 0.95 };
 // Each extra number on the same target in one tick starts this many tiles
-// higher than the last.
+// higher than the last, up to MAX_STACK numbers high. Past that they share
+// the top row: every hit still gets its own number, but a crowd's worth of
+// hits in one tick can't build a tower.
 export const STACK_GAP = 0.15;
+export const MAX_STACK = 4;
 
 // A red damage number for every Damaged event, and a green number for
 // every Healed one, floating over the target. (The bold font is digits
@@ -42,7 +45,7 @@ export function damageTextSystem(world: World, _dt: number): void {
       previousAge: 0,
       lifetime: DAMAGE_TEXT.lifetime,
       rise: DAMAGE_TEXT.rise,
-      lift: stacked * STACK_GAP,
+      lift: Math.min(stacked, MAX_STACK - 1) * STACK_GAP,
       follows: target,
     });
   }

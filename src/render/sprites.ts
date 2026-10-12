@@ -76,6 +76,25 @@ export function lootBagTint(
   return [brightness, brightness, brightness, 1];
 }
 
+// No sprite, glow and lift included, reaches further than this many tiles
+// from where its entity stands.
+const SPRITE_REACH = 5;
+
+// Whether a point on screen is so far outside the view that nothing drawn
+// around it could show.
+export function farOffScreen(
+  view: View,
+  at: { x: number; y: number },
+): boolean {
+  const reach = SPRITE_REACH * view.pixelsPerTile;
+  return (
+    at.x < -reach ||
+    at.y < -reach ||
+    at.x > view.width + reach ||
+    at.y > view.height + reach
+  );
+}
+
 // Layers whose sprites are bodies standing on the ground, drawn up from
 // their feet rather than around their middle.
 const STANDING: ReadonlySet<SpriteLayer> = new Set(["enemy", "player"]);
@@ -83,13 +102,21 @@ const STANDING: ReadonlySet<SpriteLayer> = new Set(["enemy", "player"]);
 // How far, in tiles, an entity's sprite is drawn above its position: a
 // standing body's art is lifted until its bottom rests on the bottom of its
 // hitbox, so the hitbox sits at its feet however tall the art is. Anything
-// else (projectiles, bags, portals) stays centered on its position.
-export function spriteLift(world: World, entity: Entity, art?: Art): number {
+// else (projectiles, bags, portals) stays centered on its position. Pass
+// `pixelHeight` (from spritePixels) when it's already known, to skip
+// looking the art up again.
+export function spriteLift(
+  world: World,
+  entity: Entity,
+  art?: Art,
+  pixelHeight?: number,
+): number {
   const sprite = world.components.sprite.get(entity);
   const hitbox = world.components.hitbox.get(entity);
   if (!sprite || !hitbox || !STANDING.has(sprite.layer)) return 0;
   const height =
-    spritePixels(world, entity, art).height / SPRITE_PIXELS_PER_TILE;
+    (pixelHeight ?? spritePixels(world, entity, art).height) /
+    SPRITE_PIXELS_PER_TILE;
   return height / 2 - hitbox.r;
 }
 
@@ -156,6 +183,9 @@ export function pushSprites(
     const position = interpolatedPosition(world, entity, alpha);
     if (!position) continue;
     const feet = worldToScreen(view, position);
+    // Cheaply skip anything well off screen before looking at its art: no
+    // sprite reaches further than this from where it stands.
+    if (farOffScreen(view, feet)) continue;
     const lift = spriteLift(world, entity, art) * view.pixelsPerTile;
     const center = { x: feet.x, y: feet.y - lift };
     const { file, flipX } = pickFrame(world, entity, sprite, view, alpha, time);

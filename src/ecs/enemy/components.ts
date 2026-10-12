@@ -20,6 +20,10 @@ export type Enemy = {
 // Marks what the player is here to beat, for the HUD to point at.
 export type Quest = true;
 
+// An enemy far from every player, with nothing to chase, that does
+// nothing until one comes near (see sleepSystem).
+export type Asleep = true;
+
 // Which of its behaviors an enemy is running and what that behavior
 // remembers. Switching behavior starts it with a fresh memory.
 export type Brain = { mode: "idle" | "aggro"; memory: BehaviorMemory };

@@ -314,7 +314,9 @@ function frame() {
     sample(perf, "tick", performance.now() - tickStart);
     accumulator -= TIME_PER_TICK_MS;
   }
+  const soundStart = performance.now();
   takeOutbox(currentTime / 1000);
+  sample(perf, "sound", performance.now() - soundStart);
   updateHpBars(hudState, world, player, currentTime / 1000);
   respawnButton.hidden = world.components.character.has(player);
 
@@ -422,7 +424,11 @@ function render(time: number) {
   );
   sample(perf, "build", performance.now() - buildStart);
   sample(perf, "quads", quads.count);
+  const drawStart = performance.now();
   renderer.draw(quads, sections, width, height, time);
+  sample(perf, "draw", performance.now() - drawStart);
+  const gpu = renderer.gpuMs();
+  if (gpu !== undefined) sample(perf, "gpu", gpu);
 }
 
 requestAnimationFrame(callback);

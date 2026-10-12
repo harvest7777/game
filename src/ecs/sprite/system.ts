@@ -9,6 +9,7 @@ import type { World } from "../world";
 export function facingSystem(world: World, _dt: number): void {
   const { facing, velocity, shooter } = world.components;
   for (const [entity, current] of facing) {
+    if (world.components.asleep.has(entity)) continue;
     const shooting = wantsToFire(world, entity);
     const v =
       (shooting ? shooter.get(entity)?.aim : undefined) ?? velocity.get(entity);

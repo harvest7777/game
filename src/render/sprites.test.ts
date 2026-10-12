@@ -662,3 +662,28 @@ describe("standing sprites", () => {
     expect((quad.corners[0].y + quad.corners[2].y) / 2).toBeCloseTo(feet.y);
   });
 });
+
+describe("culling", () => {
+  // A sprite 12 tiles east of the camera: past the 5-tile view (400 px at
+  // 40 px a tile is 10 tiles across) plus the 5-tile reach.
+  function farSprite(zoom: number, size = SIZE) {
+    const world = createWorld(createTiles(40, 40));
+    const view = createView({ ...createCamera(), zoom }, CENTER, size, size);
+    addAt(world, { x: CENTER.x + 12, y: CENTER.y }, { art: ORB });
+    return draw(world, view);
+  }
+
+  it("skips a sprite well off screen", () => {
+    expect(farSprite(1)).toHaveLength(0);
+  });
+
+  it("draws it once zooming out brings it into view", () => {
+    // At zoom 0.25 the view is 40 tiles across.
+    expect(farSprite(0.25)).toHaveLength(1);
+  });
+
+  it("draws it on a canvas wide enough to show it", () => {
+    // 1200 px is 30 tiles across at zoom 1.
+    expect(farSprite(1, 1200)).toHaveLength(1);
+  });
+});

@@ -7,6 +7,7 @@ import {
   damageTextSystem,
   floatingTextSystem,
   HEAL_COLOR,
+  MAX_STACK,
   STACK_GAP,
 } from "./system";
 
@@ -142,5 +143,24 @@ describe("damageTextSystem healing", () => {
     const [[, text]] = [...world.components.floatingText];
     expect(text.text).toBe("100");
     expect(text.color).toEqual(HEAL_COLOR);
+  });
+});
+
+describe("damageTextSystem stacking cap", () => {
+  it("gives every hit its own number but never stacks them past MAX_STACK", () => {
+    const world = createWorld(createTiles(5, 5));
+    const target = spawn(world);
+    world.components.position.set(target, { x: 2, y: 2 });
+    const hits = 100;
+    for (let i = 0; i < hits; i++) {
+      world.events.damaged.push({ target, amount: 5 });
+    }
+
+    damageTextSystem(world, 0.05);
+
+    const texts = [...world.components.floatingText].map(([, text]) => text);
+    expect(texts).toHaveLength(hits);
+    const highest = Math.max(...texts.map((t) => t.lift));
+    expect(highest).toBeCloseTo((MAX_STACK - 1) * STACK_GAP);
   });
 });

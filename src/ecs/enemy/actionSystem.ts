@@ -11,6 +11,7 @@ import type { BossAction, BossStage } from "./sequences";
 // entry in its phase's declared rotation.
 export function bossActionSystem(world: World, dt: number): void {
   for (const [entity, action] of world.components.bossAction) {
+    if (world.components.asleep.has(entity)) continue;
     if (world.components.target.get(entity) === undefined) {
       action.active = false;
       action.time = action.previousTime = 0;

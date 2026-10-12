@@ -7,6 +7,7 @@ import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
 import { hitSystem } from "./combat/hits";
 import { aggroSystem } from "./enemy/aggro";
+import { sleepSystem } from "./enemy/sleep";
 import { brainSystem } from "./enemy/brain";
 import { phaseSystem } from "./enemy/phaseSystem";
 import { bossActionSystem } from "./enemy/actionSystem";
@@ -34,7 +35,9 @@ import { statSystem } from "./stats/system";
 // tick, and portal requests are answered from where the player stood. Bag
 // lifetime and empty cleanup follow transfers. Proximity container
 // access updates after movement and only writes access state, and hazardous
-// ground burns whoever ends the move standing on it. Enemies pick
+// ground burns whoever ends the move standing on it. Enemies far from every
+// player go to sleep, or wake, before anything else about enemies runs.
+// Enemies pick
 // targets, move through their phases, then their brains steer
 // toward or around them, before shooting aims at them. Shooting aims before
 // facing, so this tick's aim decides which way a shooter
@@ -52,6 +55,7 @@ export const tickSystems: System[] = [
   portalSystem,
   lootBagSystem,
   autoFireSystem,
+  sleepSystem,
   aggroSystem,
   phaseSystem,
   bossActionSystem,

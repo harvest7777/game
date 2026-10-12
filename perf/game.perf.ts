@@ -44,6 +44,19 @@ function crowd(count: number): { world: World; player: Entity } {
   return { world, player };
 }
 
+// An invulnerable wizard in an open field among 5,000 Malphas, a second
+// in: a few hundred of them can see the wizard, and their first casts have
+// just filled the air with thousands of shots.
+function firingCrowd(): { world: World; player: Entity } {
+  const field = createTiles(120, 120, [grounds.abyssBrick]);
+  const world = createWorld(field, seeded(1), gameLoot);
+  const player = spawnCharacter(world, characters.wizard, { x: 60, y: 60 });
+  world.components.invulnerable.set(player, true);
+  spawnCrowd(world, enemies.malphas, { x: 60, y: 60 }, 5000);
+  for (let i = 0; i < 20; i++) runTick(world, TICK);
+  return { world, player };
+}
+
 // An Abyss from a fixed seed with the wizard at its start.
 function abyss(): { world: World; player: Entity } {
   const def = dungeons.abyss!;
@@ -115,6 +128,50 @@ describe("ticks", () => {
     );
   });
 
+  it("abyss, thousands of Malphas around the player", () => {
+    const { world, player } = abyss();
+    const at = world.components.position.get(player)!;
+    spawnCrowd(world, enemies.malphas, at, 11_111);
+    for (let i = 0; i < 40; i++) runTick(world, TICK);
+    record(
+      "tick/abyss, Malphas crowd",
+      measure(() => runTick(world, TICK), 30),
+      `${world.components.enemy.size} enemies`,
+    );
+  });
+
+  it("Malphas crowd firing, over 8 seconds of bursts", () => {
+    const { world } = firingCrowd();
+    let peak = 0;
+    const stats = measure(
+      () => {
+        runTick(world, TICK);
+        peak = Math.max(peak, world.components.projectile.size);
+      },
+      160,
+      0,
+    );
+    record("tick/Malphas crowd firing", stats, `peak ${peak} shots`);
+  });
+
+  it("Malphas crowd firing, by system", () => {
+    const { world } = firingCrowd();
+    const timings: SystemTimings = {};
+    const ticks = 160;
+    for (let i = 0; i < ticks; i++) runTick(world, TICK, timings);
+    const slowest = Object.entries(timings)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8);
+    for (const [system, ms] of slowest) {
+      const mean = ms / ticks;
+      record(`tick/Malphas crowd firing/${system}`, {
+        mean,
+        p50: mean,
+        p95: mean,
+      });
+    }
+  });
+
   it("abyss, at the start", () => {
     const { world } = abyss();
     record(
@@ -148,6 +205,23 @@ describe("frames", () => {
   it(`${PROFILED_CROWD} imps`, () => {
     const { world, player } = crowd(PROFILED_CROWD);
     frame(`${PROFILED_CROWD} imps`, world, player);
+  });
+
+  it("Malphas crowd firing, mid-burst", () => {
+    const { world, player } = firingCrowd();
+    frame("Malphas crowd firing", world, player);
+  });
+
+  it("abyss, Malphas crowd", () => {
+    const { world, player } = abyss();
+    spawnCrowd(
+      world,
+      enemies.malphas,
+      world.components.position.get(player)!,
+      11_111,
+    );
+    for (let i = 0; i < 40; i++) runTick(world, TICK);
+    frame("abyss, Malphas crowd", world, player);
   });
 });
 

@@ -117,7 +117,7 @@ The Health stat works on anything, player or enemy. Each tick, after movement:
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
 2. `damageSystem` applies each hit through `applyDamage` (`shared/damage.ts`), the one place damage happens. Defense reduces damage point-for-point down to 15% of the incoming hit, armor piercing bypasses it, then vulnerability applies. It records a `damaged` event with the final whole amount, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
-3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
+3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked, at most four rows high: every hit keeps its own number, but past the fourth they share the top row, so a crowd's worth of hits in one tick can't build a tower. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal, the player included. Only `invulnerable` keeps something alive.
 5. `cleanupSystem` removes everything queued.
 
@@ -129,6 +129,8 @@ An enemy is an ordinary entity built from an `EnemyDef` (one file per kind under
 - `spawnCrowd` scatters many enemies over a disc around a point, loose enough not to start piled up and off walls, for swarms and stress tests.
 - Shooters the player doesn't control aim at their target and only fire while they have one, ready to shoot the moment they get one.
 - Enemy shots are ordinary projectiles on the `enemy` team, so the same hit, damage and death systems hurt the player.
+
+Enemies further than 30 tiles from every player, with no target, **sleep** (`sleepSystem`, before anything else about enemies): they stand still, and thinking, spacing, moving, facing, noticing, phases and boss timelines all skip them until a player comes near. Every enemy's detection range is under 30 (content tests check), so a sleeper could never have noticed anyone anyway, and a dungeon's worth of enemies costs only the few around the players.
 
 The overlay's enemy picker spawns any kind 4 tiles from the player, toward where it's aiming.
 

@@ -12,7 +12,13 @@ import type { Invulnerable, Vulnerable } from "./combat/components";
 import type { HazardExposure } from "./hazard/components";
 import type { Portal } from "./portal/components";
 import type { Character } from "./character/components";
-import type { BossAction, Brain, Enemy, Quest } from "./enemy/components";
+import type {
+  Asleep,
+  BossAction,
+  Brain,
+  Enemy,
+  Quest,
+} from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
 import type {
   Container,
@@ -80,6 +86,7 @@ export type Components = {
   hazardExposure: Store<HazardExposure>;
   portal: Store<Portal>;
   quest: Store<Quest>;
+  asleep: Store<Asleep>;
 } & Record<StatKind, Store<StatValue>>;
 
 export type World = {
@@ -158,6 +165,7 @@ export function createWorld(
       hazardExposure: createStore(),
       portal: createStore(),
       quest: createStore(),
+      asleep: createStore(),
     },
   };
 }

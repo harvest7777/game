@@ -25,6 +25,7 @@ export function brainSystem(world: World, dt: number): void {
   const fields = new Map<Entity, FlowField>();
 
   for (const [entity, e] of enemy) {
+    if (world.components.asleep.has(entity)) continue;
     const mind = brain.get(entity);
     const at = position.get(entity);
     if (!mind || !at) continue;
