@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { testItem } from "../../testing/defs";
+import { testConsumable, testItem } from "../../testing/defs";
 import type { Command } from "../input/commands";
 import { slotHotkeys } from "../input/commands";
 import { createTiles } from "../tiles";
@@ -200,5 +200,53 @@ describe("slotHotkeys", () => {
     expect(slotHotkeys.Digit1).toEqual({ kind: "equip", index: 0 });
     expect(slotHotkeys.Digit8).toEqual({ kind: "equip", index: 7 });
     expect(slotHotkeys.Digit9).toBeUndefined();
+  });
+});
+
+describe("using consumables", () => {
+  const POTION = testConsumable({
+    name: "Health Potion",
+    use: { kind: "heal", amount: 100 },
+  });
+
+  function hurt(hp: number) {
+    const world = createWorld(createTiles(5, 5));
+    const player = spawn(world);
+    world.components.playerControlled.set(player, true);
+    world.components.position.set(player, { x: 2, y: 2 });
+    world.components.health.set(player, { value: hp, max: 500 });
+    addHoldings(world, player, { carrying: [POTION] });
+    const use = () => {
+      world.input.commands = [{ kind: "equip", index: 0 }];
+      inventorySystem(world, 0.05);
+    };
+    const hpOf = () => world.components.health.get(player)!.value;
+    const slot = () => world.components.inventory.get(player)!.slots[0];
+    return { world, player, use, hpOf, slot };
+  }
+
+  it("heals, uses the potion up and makes its sound", () => {
+    const { world, player, use, hpOf, slot } = hurt(200);
+
+    use();
+
+    expect(hpOf()).toBe(300);
+    expect(slot()).toBeNull();
+    expect(world.events.healed).toEqual([{ target: player, amount: 100 }]);
+    expect(world.events.soundCues).toEqual([
+      { sound: "drink", at: { x: 2, y: 2 } },
+    ]);
+  });
+
+  it("never heals past full", () => {
+    const { use, hpOf } = hurt(450);
+    use();
+    expect(hpOf()).toBe(500);
+  });
+
+  it("isn't wasted at full health", () => {
+    const { use, slot } = hurt(500);
+    use();
+    expect(slot()).toEqual({ def: POTION });
   });
 });

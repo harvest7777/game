@@ -6,6 +6,7 @@ import {
   DAMAGE_TEXT,
   damageTextSystem,
   floatingTextSystem,
+  HEAL_COLOR,
   STACK_GAP,
 } from "./system";
 
@@ -126,5 +127,20 @@ describe("floatingTextSystem", () => {
     expect(world.events.despawns).toHaveLength(0);
     floatingTextSystem(world, 0.02);
     expect(world.events.despawns).toHaveLength(1);
+  });
+});
+
+describe("damageTextSystem healing", () => {
+  it("floats a green number over whatever was healed", () => {
+    const world = createWorld(createTiles(5, 5));
+    const target = spawn(world);
+    world.components.position.set(target, { x: 2, y: 2 });
+    world.events.healed.push({ target, amount: 100 });
+
+    damageTextSystem(world, 0.05);
+
+    const [[, text]] = [...world.components.floatingText];
+    expect(text.text).toBe("100");
+    expect(text.color).toEqual(HEAL_COLOR);
   });
 });

@@ -1,4 +1,8 @@
-import { ITEM_CATEGORIES, type ItemDef } from "../ecs/inventory/items";
+import {
+  ITEM_CATEGORIES,
+  type ConsumableEffect,
+  type ItemDef,
+} from "../ecs/inventory/items";
 import type { ProjectileDef } from "../ecs/projectile/definitions";
 import { pathOffset } from "../ecs/projectile/path";
 import type { Color } from "../ecs/sprite/components";
@@ -27,8 +31,11 @@ export function itemTooltip(item: ItemDef): TooltipLine[] {
       color: TOOLTIP_COLORS.kind,
     },
   ];
-  if (item.category === ITEM_CATEGORIES.CONSUMABLE || !item.weapon)
+  if (item.category === ITEM_CATEGORIES.CONSUMABLE) {
+    lines.push({ text: useText(item.use), color: TOOLTIP_COLORS.stat });
     return lines;
+  }
+  if (!item.weapon) return lines;
 
   const weapon = item.weapon;
   // Each kind of projectile in a shot, with how many of it.
@@ -133,4 +140,12 @@ export function placeTooltip(
     x: Math.round(Math.max(0, Math.min(x, screen.w - size.w))),
     y: Math.round(Math.max(0, Math.min(y, screen.h - size.h))),
   };
+}
+
+// What using a consumable does, in a few words.
+function useText(effect: ConsumableEffect): string {
+  switch (effect.kind) {
+    case "heal":
+      return `Restores ${effect.amount} HP`;
+  }
 }

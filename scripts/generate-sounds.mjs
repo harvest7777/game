@@ -37,84 +37,121 @@ function noise() {
   return (noiseState / 0xffffffff) * 2 - 1;
 }
 
+// A low-pass filter: keeps what's below `cutoff` Hz, three one-pole stages
+// deep so noise loses its hiss instead of just dulling a little. Each sound
+// makes its own, since it remembers its last samples.
+function lowpass(cutoff, stages = 3) {
+  const k = 1 - Math.exp((-2 * Math.PI * cutoff) / SAMPLE_RATE);
+  const last = new Array(stages).fill(0);
+  return (x) => {
+    let y = x;
+    for (let i = 0; i < stages; i++) y = last[i] += k * (y - last[i]);
+    return y;
+  };
+}
+
+// Decays from 1 toward 0, `rate` times per second.
+function decay(t, rate) {
+  return Math.exp(-t * rate);
+}
+
+// Sounds stay low, short and soft, and sound like what makes them, rather
+// than arcade bleeps: filtered noise for air, fire and impacts, and low
+// tones that barely bend in pitch.
+const air = lowpass(1300);
+const fire = lowpass(900);
+const crackle = lowpass(2200);
+const string = lowpass(900);
+const thud = lowpass(500);
+const smack = lowpass(1100);
+const fall = lowpass(700);
+const rumble = lowpass(220);
+const growl = lowpass(300);
+const whump = lowpass(400);
+const rush = lowpass(700);
+const crack = lowpass(1500);
+const swirl = lowpass(600);
+const gulp = lowpass(800);
+
 const cues = {
+  // A staff's spell leaving it: a soft breath of air with a little body.
   "projectiles/magic-fire": wav(0.12, (t, d) => {
-    const frequency = 210 - 45 * (t / d);
-    const tone = Math.tanh(2.2 * Math.sin(2 * Math.PI * frequency * t));
-    return (tone * 0.25 + noise() * 0.035) * envelope(t, d, 0.003);
+    const breath = air(noise()) * 1.4;
+    const body = Math.sin(2 * Math.PI * 150 * t) * 0.18 * decay(t, 35);
+    return (breath + body) * envelope(t, d, 0.006) * 0.45;
   }),
-  "projectiles/arrow-fire": wav(0.09, (t, d) => {
-    const body = Math.sin(2 * Math.PI * 760 * t) * 0.2;
-    return (body + noise() * 0.16) * envelope(t, d, 0.004);
+  // A bowstring let go: a low pluck and a quick click.
+  "projectiles/arrow-fire": wav(0.1, (t, d) => {
+    const pluck = Math.sin(2 * Math.PI * 115 * t) * decay(t, 45) * 0.5;
+    const click = string(noise()) * decay(t, 90) * 0.5;
+    return (pluck + click) * envelope(t, d, 0.002) * 0.5;
   }),
-  "projectiles/hit-player": wav(0.18, (t, d) => {
-    const drop = 180 - 70 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * drop * t) + noise() * 0.35) *
-      envelope(t, d, 0.003) *
-      0.38
-    );
+  // Fire thrown: a muffled whoosh with crackles in it.
+  "projectiles/fire-cast": wav(0.2, (t, d) => {
+    const whoosh = fire(noise()) * Math.sin((Math.PI * t) / d) * 1.8;
+    const pops = noise() > 0.93 ? crackle(noise()) * 1.2 : crackle(0);
+    return (whoosh + pops * 0.8) * envelope(t, d, 0.01) * 0.5;
   }),
-  "projectiles/hit-enemy": wav(0.11, (t, d) => {
-    return (
-      (Math.sin(2 * Math.PI * 260 * t) + noise() * 0.25) *
-      envelope(t, d, 0.002) *
-      0.3
-    );
+  // Something hitting the player: a dull, heavy thud.
+  "projectiles/hit-player": wav(0.13, (t, d) => {
+    const body = Math.sin(2 * Math.PI * 75 * t) * decay(t, 30) * 0.6;
+    const impact = thud(noise()) * decay(t, 40) * 0.7;
+    return (body + impact) * envelope(t, d, 0.002) * 0.6;
   }),
-  "enemies/death": wav(0.3, (t, d) => {
-    const frequency = 300 - 190 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * frequency * t) + noise() * 0.12) *
-      envelope(t, d) *
-      0.35
-    );
+  // A shot landing on an enemy: a short, soft smack.
+  "projectiles/hit-enemy": wav(0.08, (t, d) => {
+    const impact = smack(noise()) * decay(t, 60) * 1.6;
+    const body = Math.sin(2 * Math.PI * 130 * t) * decay(t, 70) * 0.25;
+    return (impact + body) * envelope(t, d, 0.002) * 0.45;
   }),
-  "enemies/boss-death": wav(0.6, (t, d) => {
-    const frequency = 220 - 150 * (t / d);
-    const tone = Math.sin(2 * Math.PI * frequency * t);
-    const low = Math.sin(2 * Math.PI * frequency * 0.5 * t);
-    return (tone * 0.6 + low * 0.4 + noise() * 0.1) * envelope(t, d) * 0.42;
+  // An enemy going down: a muffled slump.
+  "enemies/death": wav(0.28, (t, d) => {
+    const slump = fall(noise()) * decay(t, 14) * 0.6;
+    const body = Math.sin(2 * Math.PI * 70 * t) * decay(t, 12) * 0.35;
+    return (slump + body) * envelope(t, d, 0.004) * 0.5;
   }),
+  // A boss falling: a long, deep rumble.
+  "enemies/boss-death": wav(0.9, (t, d) => {
+    const ground = rumble(noise()) * 1.4;
+    const body = Math.sin(2 * Math.PI * 48 * t) * 0.4;
+    return (ground + body) * decay(t, 3.5) * envelope(t, d, 0.01) * 0.6;
+  }),
+  // A boss gathering itself: a low growl swelling up.
   "enemies/boss-windup": wav(0.42, (t, d) => {
-    const frequency = 95 + 95 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * frequency * t) * 0.55 + noise() * 0.08) *
-      envelope(t, d, 0.015) *
-      0.36
-    );
+    const swell = t / d;
+    const voice = growl(noise()) * 1.2 + Math.sin(2 * Math.PI * 62 * t) * 0.25;
+    return voice * swell * envelope(t, d, 0.02) * 0.5;
   }),
+  // A boss letting a spell go: a deep whump.
   "enemies/boss-cast": wav(0.22, (t, d) => {
-    const frequency = 330 + 210 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * frequency * t) + noise() * 0.12) *
-      envelope(t, d, 0.004) *
-      0.34
-    );
+    const body = Math.sin(2 * Math.PI * 72 * t) * decay(t, 16) * 0.6;
+    const push = whump(noise()) * decay(t, 25) * 0.7;
+    return (body + push) * envelope(t, d, 0.003) * 0.55;
   }),
-  "enemies/boss-dash": wav(0.34, (t, d) => {
-    const frequency = 130 - 70 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * frequency * t) * 0.4 + noise() * 0.5) *
-      envelope(t, d, 0.008) *
-      0.35
-    );
+  // A boss charging: rushing air.
+  "enemies/boss-dash": wav(0.32, (t, d) => {
+    const wind = rush(noise()) * Math.sin((Math.PI * t) / d) * 2;
+    return wind * envelope(t, d, 0.01) * 0.55;
   }),
-  "enemies/boss-expose": wav(0.45, (t, d) => {
-    const frequency = 180 + 420 * (t / d);
-    return (
-      (Math.sin(2 * Math.PI * frequency * t) * 0.6 +
-        Math.sin(2 * Math.PI * frequency * 0.5 * t) * 0.3) *
-      envelope(t, d, 0.01) *
-      0.38
-    );
+  // A boss's guard breaking: a dull crack.
+  "enemies/boss-expose": wav(0.3, (t, d) => {
+    const snap = crack(noise()) * decay(t, 50) * 0.8;
+    const body = Math.sin(2 * Math.PI * 95 * t) * decay(t, 14) * 0.35;
+    return (snap + body) * envelope(t, d, 0.002) * 0.55;
   }),
-  // Going through a portal: a rising, shimmering whoosh.
-  "world/travel": wav(0.6, (t, d) => {
-    const rise = 220 + 660 * (t / d) ** 2;
-    const shimmer = Math.sin(2 * Math.PI * rise * t) * 0.35;
-    const air = noise() * 0.12 * Math.sin((Math.PI * t) / d);
-    return (shimmer + air) * envelope(t, d, 0.05) * 0.4;
+  // Going through a portal: a soft swirl of air, rising and falling.
+  "world/travel": wav(0.5, (t, d) => {
+    const wind = swirl(noise()) * Math.sin((Math.PI * t) / d) ** 2 * 2;
+    return wind * envelope(t, d, 0.04) * 0.5;
+  }),
+  // Drinking a potion: two low gulps.
+  "items/drink": wav(0.3, (t, d) => {
+    const first = Math.sin(2 * Math.PI * 160 * t) * decay(t, 25);
+    const later = t - 0.14;
+    const second =
+      later > 0 ? Math.sin(2 * Math.PI * 140 * later) * decay(later, 25) : 0;
+    const liquid = gulp(noise()) * 0.2;
+    return (first * 0.4 + second * 0.4 + liquid) * envelope(t, d, 0.005) * 0.5;
   }),
 };
 

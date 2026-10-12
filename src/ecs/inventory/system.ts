@@ -1,6 +1,8 @@
 import { armWithEquippedWeapon } from "../shared/arming";
 import type { Entity, World } from "../world";
 import type { SlotRef } from "./components";
+import { isEquipmentItem } from "./items";
+import { applyEffect } from "./use";
 import {
   equipFromInventory,
   giveItem,
@@ -12,7 +14,9 @@ import {
 
 // Applies the player's item commands, in order, recording each move that
 // happened as an ItemMoved event. Commands that break the rules do nothing.
-// Afterwards the shooter matches the equipped weapon.
+// Equipping a consumable uses it instead: it takes effect, is used up and
+// makes its sound, unless it would do nothing. Afterwards the shooter
+// matches the equipped weapon.
 export function inventorySystem(world: World, _dt: number): void {
   const { commands } = world.input;
   if (commands.length === 0) return;
@@ -30,6 +34,11 @@ export function inventorySystem(world: World, _dt: number): void {
         const to = takeFromContainer(world, entity, command.from);
         if (to) moved(world, entity, to, command.from);
       } else if (command.kind === "equip") {
+        const item = h.inventory.slots[command.index];
+        if (item && !isEquipmentItem(item.def)) {
+          useFromInventory(world, entity, h, command.index);
+          continue;
+        }
         const to = equipFromInventory(h, command.index);
         if (to)
           moved(world, entity, to, { in: "inventory", index: command.index });
@@ -55,4 +64,20 @@ function holdingsOf(world: World, entity: Entity): Holdings | undefined {
 
 function moved(world: World, entity: Entity, to: SlotRef, from?: SlotRef) {
   world.events.itemsMoved.push({ entity, to, ...(from && { from }) });
+}
+
+// Uses the consumable in inventory slot `index`, emptying the slot if it
+// took effect.
+function useFromInventory(
+  world: World,
+  entity: Entity,
+  h: Holdings,
+  index: number,
+): void {
+  const item = h.inventory.slots[index];
+  if (!item || isEquipmentItem(item.def)) return;
+  if (!applyEffect(world, entity, item.def.use)) return;
+  h.inventory.slots[index] = null;
+  const at = world.components.position.get(entity);
+  if (at) world.events.soundCues.push({ sound: "drink", at: { ...at } });
 }

@@ -9,5 +9,5 @@ export const malphasFrenzy: WeaponDef = {
     ...ring(malphasCurl, 6),
     ...ring(malphasCurl, 6).map((shot) => ({ ...shot, mirror: true })),
   ],
-  sound: "magicFire",
+  sound: "fireCast",
 };

@@ -2,6 +2,7 @@
 export const sounds = {
   magicFire: "projectiles/magic-fire",
   arrowFire: "projectiles/arrow-fire",
+  fireCast: "projectiles/fire-cast",
   hitPlayer: "projectiles/hit-player",
   hitEnemy: "projectiles/hit-enemy",
   enemyDeath: "enemies/death",
@@ -11,6 +12,7 @@ export const sounds = {
   bossDash: "enemies/boss-dash",
   bossExpose: "enemies/boss-expose",
   travel: "world/travel",
+  drink: "items/drink",
 } as const;
 
 export type SoundId = keyof typeof sounds;

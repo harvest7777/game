@@ -113,6 +113,23 @@ describe("loot selection", () => {
   });
 });
 
+describe("rollLoot chance scale", () => {
+  const item = testItem();
+  const table = lootTable(drop(exactItem(item), { chance: 0.1 }));
+
+  it("multiplies each rule's chance", () => {
+    const loot = runtime([item], [table]);
+    // A roll of 0.25 misses a 10% chance but makes it at 3x (30%).
+    expect(rollLoot(loot, table, () => 0.25)).toEqual([]);
+    expect(rollLoot(loot, table, () => 0.25, 3)).toEqual([item]);
+  });
+
+  it("never makes a chance more than certain", () => {
+    const loot = runtime([item], [table]);
+    expect(rollLoot(loot, table, () => 0.999, 50)).toEqual([item]);
+  });
+});
+
 describe("loot bags", () => {
   it("lets a stat potion override the general consumable bag", () => {
     const potion: ConsumableItemDef = {
@@ -120,6 +137,7 @@ describe("loot bags", () => {
       category: ITEM_CATEGORIES.CONSUMABLE,
       icon: "test/potion",
       loot: { tags: [STAT_POTION] },
+      use: { kind: "heal", amount: 1 },
     };
     const loot = runtime([potion], []);
     expect(bagForItem(loot, potion)).toBe(statBag);

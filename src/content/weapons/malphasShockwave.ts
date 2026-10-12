@@ -5,5 +5,5 @@ import { malphasShock } from "../projectiles/malphasShock";
 export const malphasShockwave: WeaponDef = {
   rate: 1,
   fires: ring(malphasShock, 20),
-  sound: "magicFire",
+  sound: "bossCast",
 };

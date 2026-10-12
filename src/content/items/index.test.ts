@@ -7,8 +7,9 @@ import { itemIds, items } from ".";
 
 describe("item definitions", () => {
   for (const id of itemIds) {
-    it(`${id} has exactly one progression classification`, () => {
+    it(`${id}, if equipment, has exactly one progression classification`, () => {
       const def: ItemDef = items[id];
+      if (def.category !== ITEM_CATEGORIES.EQUIPMENT) return;
       expect(
         (def.loot.tier !== undefined) !== def.loot.tags.includes(SPECIAL),
       ).toBe(true);

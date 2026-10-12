@@ -115,6 +115,8 @@ function enterLevel(to: LevelDef) {
     player = travel(world, next.world, player, next.spawn);
   }
   level = to;
+  // Debug tuning carries over.
+  next.world.lootMultiplier = world.lootMultiplier;
   world = next.world;
   spawn = next.spawn;
   arrivedAt = performance.now() / 1000;

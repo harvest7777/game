@@ -1336,6 +1336,27 @@ for (const clip of MALPHAS_CLIPS) {
   }
 }
 
+// A health potion: a round red flask with a cork.
+SPRITES["items/healthPotion"] = {
+  rows: [
+    "...nn...",
+    "...gg...",
+    "..gRRg..",
+    ".gRrrRg.",
+    ".gRrWrg.",
+    ".gRrrrg.",
+    "..gRRg..",
+    "...gg...",
+  ],
+  colors: {
+    n: [139, 94, 52, 255], // cork
+    g: [210, 220, 230, 255], // glass
+    R: [150, 20, 30, 255], // potion edge
+    r: [214, 40, 50, 255], // potion
+    W: [255, 200, 200, 255], // shine
+  },
+};
+
 // The HUD's quest pointer: a gold arrowhead pointing right, turned to face
 // the quest.
 SPRITES["hud/quest-arrow"] = {

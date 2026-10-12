@@ -60,6 +60,7 @@ export function testConsumable(
     category: ITEM_CATEGORIES.CONSUMABLE,
     icon: "test/consumable",
     loot: { tags: [] },
+    use: { kind: "heal", amount: 50 },
     ...changes,
   };
 }

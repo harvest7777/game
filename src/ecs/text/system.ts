@@ -2,17 +2,32 @@ import type { Color } from "../sprite/components";
 import { spawn, type Entity, type World } from "../world";
 
 export const DAMAGE_COLOR: Color = [0.95, 0.15, 0.15, 1];
+export const HEAL_COLOR: Color = [0.35, 0.95, 0.4, 1];
 export const DAMAGE_TEXT = { lifetime: 0.8, rise: 0.95 };
 // Each extra number on the same target in one tick starts this many tiles
 // higher than the last.
 export const STACK_GAP = 0.15;
 
-// A red damage number for every Damaged event, floating over the target.
+// A red damage number for every Damaged event, and a green number for
+// every Healed one, floating over the target. (The bold font is digits
+// only, so the color is what tells them apart.)
 export function damageTextSystem(world: World, _dt: number): void {
   const { position, floatingText } = world.components;
   const counts = new Map<Entity, number>();
+  const numbers = [
+    ...world.events.damaged.map(({ target, amount }) => ({
+      target,
+      text: String(Math.round(amount)),
+      color: DAMAGE_COLOR,
+    })),
+    ...world.events.healed.map(({ target, amount }) => ({
+      target,
+      text: String(Math.round(amount)),
+      color: HEAL_COLOR,
+    })),
+  ];
 
-  for (const { target, amount } of world.events.damaged) {
+  for (const { target, text: label, color } of numbers) {
     const at = position.get(target);
     if (!at) continue;
     const stacked = counts.get(target) ?? 0;
@@ -21,8 +36,8 @@ export function damageTextSystem(world: World, _dt: number): void {
     const text = spawn(world);
     stayOver(world, text, target);
     floatingText.set(text, {
-      text: String(Math.round(amount)),
-      color: [...DAMAGE_COLOR],
+      text: label,
+      color: [...color],
       age: 0,
       previousAge: 0,
       lifetime: DAMAGE_TEXT.lifetime,

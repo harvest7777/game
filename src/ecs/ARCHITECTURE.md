@@ -62,7 +62,7 @@ Every variable piece is a table keyed by `kind` (`LOOPS`, `SHAPES`, `PLACERS`, `
 
 # Debug panel
 
-`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver, and an enemy spawner. Dungeons are entered through their portals. Every new character is handed a kit of weapons to try.
+`src/debug/panel.ts` wires up the overlay's debug controls, outside `main.ts` and the ECS: the render toggles, an invulnerable toggle (off to start, applied to whoever is being played), a max-stats command, an item giver, an enemy spawner, and a loot multiplier. Dungeons are entered through their portals. Every new character is handed a kit of weapons to try.
 
 # Characters
 
@@ -179,7 +179,7 @@ A `SlotRef` names any slot: equipment and inventory slots are local to the actin
 
 **Commands.** The player's one-off requests (`move`, `take`, `equip`, debug `give`) arrive as `world.input.commands`, so neither keys nor the HUD touch the world. `inventorySystem` applies them in order early in the tick, records an `itemsMoved` event for each move that happened, and keeps the player's `Shooter` firing the equipped weapon (keeping its cooldown, or removing it when no weapon is worn). The equipped weapon is the one source of truth; enemies still use `Shooter` directly.
 
-Number keys 1–8 equip that inventory slot in every control layout. The overlay's item picker gives any item.
+Number keys 1–8 equip that inventory slot in every control layout. Equipping a consumable uses it instead: its `use` effect (one entry in `USE_EFFECTS`; `heal` restores health up to full) takes effect, the item is used up and a drink sound plays, unless it would do nothing, like a health potion at full health, in which case it's kept. Healing floats a green number. Every ordinary enemy has a 1 in 10 chance to drop a Health Potion (100 health). The overlay's item picker gives any item.
 
 # Loot
 
@@ -187,7 +187,7 @@ An enemy definition can hold a `LootTableDef`. A table is a list of independent 
 
 At startup, `createLootRuntime` indexes the item registry by category, equipment kind, tier and typed tag. It compiles and memoizes every query used by enemy tables and bags, validates exact references and probabilities, and rejects a droppable item that matches no bag. A death therefore rolls only precompiled arrays; it never scans all content. Adding a tiered item to the item registry automatically places it in every matching tier-range pool.
 
-`lootSystem` reacts to death events before cleanup removes the enemy. Successful rolls from one death are ordered by their highest matching bag priority and partitioned into eight-item bundles. Each becomes a ground entity with generic `Container` and `ProximityContainer` components plus a `LootBag` component. A special item upgrades the bundle containing it to the white-and-blue special bag; overflow creates more bags and is resolved independently. Current ordinary gear (tiers 0–8) and consumables use the brown bag, while the lower-priority blue tiered fallback automatically catches future tier 9+ gear. Existing bags age in `lootBagSystem`; emptied bags leave immediately and all others expire after 60 seconds through the normal despawn queue.
+`lootSystem` reacts to death events before cleanup removes the enemy, every rule's chance scaled by the world's `lootMultiplier` (1 normally; the debug menu sets it to test rare drops, and travelling keeps it). Successful rolls from one death are ordered by their highest matching bag priority and partitioned into eight-item bundles. Each becomes a ground entity with generic `Container` and `ProximityContainer` components plus a `LootBag` component. A special item upgrades the bundle containing it to the white-and-blue special bag; overflow creates more bags and is resolved independently. Current ordinary gear (tiers 0–8) and consumables use the brown bag, while the lower-priority blue tiered fallback automatically catches future tier 9+ gear. Existing bags age in `lootBagSystem`; emptied bags leave immediately and all others expire after 60 seconds through the normal despawn queue.
 
 Bag appearance is data under `src/content/loot/`. A `LootBagDef` has art, shader outline, priority, capacity, lifetime, expiry flash and one or more item queries. The highest-priority bag matching any item in a bundle wins, so stat potions override brown bags and special items override everything without conditionals in the loot system. Bag PNGs contain only colored art; the normal 0.2-pixel sprite shader draws their black outline. During the final 10 seconds, rendering interpolates bag age and eases its tint to black and back with frequency accelerating from 1 Hz to 7 Hz. `Container` is deliberately independent from `LootBag`, leaving the same storage component reusable for chests, vaults and trades.
 

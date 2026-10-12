@@ -22,7 +22,8 @@ export type DebugPanel = {
 };
 
 // Wires up the overlay's debug controls: render toggles, invulnerability,
-// max stats, and pickers that give items and spawn enemies. `world` and
+// max stats, pickers that give items and spawn enemies, and a loot
+// multiplier. `world` and
 // `player` are whatever is current right now; `commands` is the queue the
 // next tick reads.
 export function installDebugPanel(
@@ -70,6 +71,15 @@ export function installDebugPanel(
     const count = Math.max(1, Math.floor(Number(enemyCount.value) || 1));
     if (count === 1) spawnEnemy(world(), def, center);
     else spawnCrowd(world(), def, center, count);
+  });
+
+  // Scales every drop chance in the current world, so rare drops can be
+  // seen without farming. Travelling keeps it.
+  const lootMultiplier = element<HTMLInputElement>("debugLootMultiplier");
+  lootMultiplier.addEventListener("change", () => {
+    const value = Number(lootMultiplier.value);
+    world().lootMultiplier = Number.isFinite(value) && value >= 0 ? value : 1;
+    lootMultiplier.blur();
   });
 
   return {

@@ -6,5 +6,5 @@ import { demonfire } from "../projectiles/demonfire";
 export const demonfireStaff: WeaponDef = {
   rate: 2.5,
   fires: [{ projectile: demonfire }, { projectile: demonfire, mirror: true }],
-  sound: "magicFire",
+  sound: "fireCast",
 };

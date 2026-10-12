@@ -32,9 +32,11 @@ describe("itemTooltip", () => {
   });
 
   it("labels a consumable without treating it as equipment", () => {
+    // The test consumable heals 50.
     expect(texts(testConsumable({ name: "Potion" }))).toEqual([
       "Potion",
       "Consumable",
+      "Restores 50 HP",
     ]);
   });
 
@@ -153,5 +155,19 @@ describe("placeTooltip", () => {
       x: 146,
       y: 14,
     });
+  });
+});
+
+describe("itemTooltip for consumables", () => {
+  it("says what using it does", () => {
+    const potion = testConsumable({
+      name: "Health Potion",
+      use: { kind: "heal", amount: 100 },
+    });
+    expect(itemTooltip(potion).map((line) => line.text)).toEqual([
+      "Health Potion",
+      "Consumable",
+      "Restores 100 HP",
+    ]);
   });
 });

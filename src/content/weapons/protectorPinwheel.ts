@@ -6,5 +6,5 @@ import { protectorFlame } from "../projectiles/protectorFlame";
 export const protectorPinwheel: WeaponDef = {
   rate: 0.9,
   fires: ring(protectorFlame, 8),
-  sound: "magicFire",
+  sound: "fireCast",
 };

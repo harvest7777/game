@@ -159,17 +159,21 @@ export function createLootRuntime(content: LootContent): LootRuntime {
   return { tables, bags };
 }
 
+// Every item a table drops this time. `chanceScale` multiplies each rule's
+// chance (capped at certain), for tuning and testing drop rates.
 export function rollLoot(
   runtime: LootRuntime,
   table: LootTableDef,
   random: () => number,
+  chanceScale = 1,
 ): ItemDef[] {
   const compiled = runtime.tables.get(table);
   if (!compiled) throw new Error("loot table was not compiled into this world");
   const items: ItemDef[] = [];
   for (const rule of compiled.rules) {
     for (let roll = 0; roll < rule.rolls; roll++) {
-      if (rule.chance < 1 && random() >= rule.chance) continue;
+      const chance = Math.min(1, rule.chance * chanceScale);
+      if (chance < 1 && random() >= chance) continue;
       items.push(choose(rule.source, random));
     }
   }

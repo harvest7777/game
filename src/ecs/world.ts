@@ -91,6 +91,8 @@ export type World = {
   events: Events;
   outbox: OutboxMessage[];
   loot: LootRuntime;
+  // Scales every drop chance: 1 normally, higher to test rare drops.
+  lootMultiplier: number;
   // Random number in [0, 1), for anything random like damage rolls. Tests
   // swap it for a predictable one.
   random: () => number;
@@ -111,6 +113,7 @@ export function createWorld(
     events: createEvents(),
     outbox: [],
     loot,
+    lootMultiplier: 1,
     random,
     components: {
       position: createStore(),

@@ -3,13 +3,19 @@ import { rollLoot } from "./runtime";
 import { spawnLootBags } from "./spawn";
 
 // Rolls an enemy's table at its death position while all of its components
-// still exist. Combat only reports the death; it never knows about loot.
+// still exist, every chance scaled by the world's loot multiplier. Combat
+// only reports the death; it never knows about loot.
 export function lootSystem(world: World, _dt: number): void {
   for (const { entity } of world.events.deaths) {
     const enemy = world.components.enemy.get(entity);
     const at = world.components.position.get(entity);
     if (!enemy?.def.loot || !at) continue;
-    const items = rollLoot(world.loot, enemy.def.loot, world.random);
+    const items = rollLoot(
+      world.loot,
+      enemy.def.loot,
+      world.random,
+      world.lootMultiplier,
+    );
     if (items.length > 0) spawnLootBags(world, items, at);
   }
 }

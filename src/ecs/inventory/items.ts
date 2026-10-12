@@ -60,8 +60,15 @@ export type EquipmentItemDef = BaseItemDef & {
   weapon?: WeaponDef;
 };
 
+// What using a consumable does. Each kind is one entry in USE_EFFECTS.
+export type ConsumableEffect =
+  // Restores `amount` health, up to its maximum.
+  { kind: "heal"; amount: number };
+
 export type ConsumableItemDef = BaseItemDef & {
   category: typeof ITEM_CATEGORIES.CONSUMABLE;
+  // Used up when the player uses it (its number key, or a double-click).
+  use: ConsumableEffect;
 };
 
 // What a kind of item is. Each item is its own file under src/content/items.

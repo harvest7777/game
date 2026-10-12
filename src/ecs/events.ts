@@ -23,6 +23,9 @@ export type Damaged = { target: Entity; amount: number; source?: Entity };
 // An item landed in `to` (from `from`, unless it was just given).
 export type ItemMoved = { entity: Entity; to: SlotRef; from?: SlotRef };
 
+// Something got health back.
+export type Healed = { target: Entity; amount: number };
+
 // Something ran out of health.
 export type Death = { entity: Entity; killer?: Entity };
 
@@ -45,6 +48,7 @@ export type SoundCue = { sound: SoundId; at: Vec2 };
 export type Events = {
   hits: Hit[];
   damaged: Damaged[];
+  healed: Healed[];
   deaths: Death[];
   shotsFired: ShotFired[];
   soundCues: SoundCue[];
@@ -58,6 +62,7 @@ export function createEvents(): Events {
   return {
     hits: [],
     damaged: [],
+    healed: [],
     deaths: [],
     shotsFired: [],
     soundCues: [],

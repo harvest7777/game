@@ -15,6 +15,7 @@ import { leafStaff } from "./leafStaff";
 import { forkStaff } from "./forkStaff";
 import { bloomStaff } from "./bloomStaff";
 import { demonfireStaff } from "./demonfireStaff";
+import { healthPotion } from "./healthPotion";
 
 // Every item, by id.
 export const items = {
@@ -34,6 +35,7 @@ export const items = {
   forkStaff,
   bloomStaff,
   demonfireStaff,
+  healthPotion,
 } satisfies Record<string, ItemDef>;
 
 export type ItemId = keyof typeof items;
