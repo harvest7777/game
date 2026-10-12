@@ -7,6 +7,7 @@ const FULL_TURN = 2 * Math.PI;
 // the view clockwise, increasing the angle. Holding both cancels out.
 export function cameraSystem(world: World, dt: number): void {
   const { camera, input } = world;
+  camera.previousAngle = camera.angle;
   let turn = 0;
   if (input.held.has(Action.RotateRight)) turn += 1;
   if (input.held.has(Action.RotateLeft)) turn -= 1;

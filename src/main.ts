@@ -11,8 +11,6 @@ import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
 import { QuadBuffer } from "./render/quads";
 
-const TEST_BUTTON = document.getElementById("test");
-
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
 const TICK_SECONDS = 1 / TICKS_PER_SECOND;
@@ -135,7 +133,7 @@ function render(time: number) {
 
   const alpha = accumulator / TIME_PER_TICK_MS;
   const view = frameView(world, alpha, width, height, dpr);
-  buildFrame(
+  const terrain = buildFrame(
     quads,
     world,
     view,
@@ -143,13 +141,7 @@ function render(time: number) {
     alpha,
     time,
   );
-  renderer.draw(quads, width, height, time);
+  renderer.draw(quads, terrain, width, height, time);
 }
-
-function TEST_FUNCTION() {
-  console.log(inputs);
-}
-
-TEST_BUTTON?.addEventListener("click", TEST_FUNCTION);
 
 requestAnimationFrame(callback);

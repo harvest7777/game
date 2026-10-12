@@ -83,3 +83,12 @@ export function visibleWorldRect(view: View): Rect {
     maxY: Math.max(...corners.map((c) => c.y)),
   };
 }
+
+// Depth for something standing at screen height `y`: lower on screen is
+// nearer the viewer, so it gets a smaller depth. Covers from 1.5 screens above
+// the top to 1.5 screens below the bottom, which includes everything drawn,
+// and clamps beyond that.
+export function depthOf(view: View, y: number): number {
+  const depth = 0.5 - (y - view.height / 2) / (4 * view.height);
+  return Math.min(1, Math.max(0, depth));
+}

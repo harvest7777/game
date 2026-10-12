@@ -4,7 +4,7 @@ import { createTiles, setWall } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
 import type { Art } from "./art";
 import type { Manifest } from "./assets";
-import { buildFrame, cameraCenter, frameView } from "./frame";
+import { buildFrame, cameraAngle, cameraCenter, frameView } from "./frame";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 
 const manifest: Manifest = {
@@ -42,24 +42,99 @@ describe("cameraCenter", () => {
   });
 });
 
+describe("cameraAngle", () => {
+  function turning(from: number, to: number) {
+    const { world } = worldWithPlayer();
+    world.camera.previousAngle = from;
+    world.camera.angle = to;
+    return world;
+  }
+
+  it("is the previous tick's angle at alpha 0 and the latest at alpha 1", () => {
+    const world = turning(1, 2);
+    expect(cameraAngle(world, 0)).toBeCloseTo(1);
+    expect(cameraAngle(world, 1)).toBeCloseTo(2);
+  });
+
+  it("turns partway between ticks", () => {
+    const world = turning(1, 2);
+    expect(cameraAngle(world, 0.25)).toBeCloseTo(1.25);
+  });
+
+  it("turns the short way across 0 instead of spinning all the way round", () => {
+    // 0.1 rad before a full turn to 0.1 rad after it: 0.2 rad clockwise.
+    const world = turning(2 * Math.PI - 0.1, 0.1);
+    const halfway = cameraAngle(world, 0.5);
+    expect(Math.cos(halfway)).toBeCloseTo(1);
+    expect(Math.sin(halfway)).toBeCloseTo(0);
+  });
+
+  it("is what the frame's view is drawn with", () => {
+    const world = turning(1, 2);
+    expect(frameView(world, 0.5, 400, 400, 1).angle).toBeCloseTo(1.5);
+  });
+});
+
 describe("buildFrame", () => {
-  it("draws ground, then walls, then sprites", () => {
+  it("puts terrain first and returns where the sprites start", () => {
     const { world } = worldWithPlayer();
     setWall(world.tiles, 11, 9);
     const view = frameView(world, 1, 400, 400, 1);
     const out = new QuadBuffer();
 
-    buildFrame(out, world, view, art, 1, 0);
+    const terrain = buildFrame(out, world, view, art, 1, 0);
 
     const kinds = readQuads(out).map(fileOf);
-    const lastGround = kinds.lastIndexOf("floor");
-    const firstWall = kinds.findIndex((k) => k === "top" || k === "side");
-    const lastWall = Math.max(
-      kinds.lastIndexOf("top"),
-      kinds.lastIndexOf("side"),
-    );
-    expect(lastGround).toBeLessThan(firstWall);
-    expect(lastWall).toBeLessThan(kinds.indexOf("orb"));
+    expect(kinds.slice(terrain)).toEqual(["orb"]);
+    expect(kinds.slice(0, terrain)).not.toContain("orb");
+    expect(kinds.lastIndexOf("floor")).toBeLessThan(kinds.indexOf("top"));
+  });
+
+  describe("depth between walls and sprites", () => {
+    // The player stands at (12, 10); look at the depth of a wall placed
+    // relative to it, and the player's own depth.
+    function depths(wallX: number, wallY: number, angle = 0) {
+      const { world } = worldWithPlayer();
+      setWall(world.tiles, wallX, wallY);
+      world.camera.angle = world.camera.previousAngle = angle;
+      const view = frameView(world, 1, 400, 400, 1);
+      const out = new QuadBuffer();
+      buildFrame(out, world, view, art, 1, 0);
+      const quads = readQuads(out);
+      const wall = quads.find((q) => fileOf(q) === "top")!;
+      const sprite = quads.find((q) => fileOf(q) === "orb")!;
+      return { wall: wall.depth, sprite: sprite.depth };
+    }
+
+    it("puts a sprite in front of a wall it stands south of", () => {
+      const { wall, sprite } = depths(12, 9);
+      expect(sprite).toBeLessThan(wall);
+    });
+
+    it("puts a sprite behind a wall it stands north of", () => {
+      const { wall, sprite } = depths(12, 11);
+      expect(sprite).toBeGreaterThan(wall);
+    });
+
+    it("flips with the camera turned around", () => {
+      const { wall, sprite } = depths(12, 9, Math.PI);
+      expect(sprite).toBeGreaterThan(wall);
+    });
+
+    it("puts a sprite in front of a wall diagonally behind it", () => {
+      // Wall center at y 9.5, player at 10: the player is lower on screen.
+      const { wall, sprite } = depths(11, 9);
+      expect(sprite).toBeLessThan(wall);
+    });
+
+    it("puts ground at the back", () => {
+      const { world } = worldWithPlayer();
+      const view = frameView(world, 1, 400, 400, 1);
+      const out = new QuadBuffer();
+      buildFrame(out, world, view, art, 1, 0);
+      const floors = readQuads(out).filter((q) => fileOf(q) === "floor");
+      expect(floors.every((q) => q.depth === 1)).toBe(true);
+    });
   });
 
   it("keeps the followed player at the focus point mid-tick", () => {

@@ -13,13 +13,15 @@ const OUT = join(dirname(fileURLToPath(import.meta.url)), "../public/sprites");
 
 const PALETTE = {
   ".": [0, 0, 0, 0],
-  h: [107, 62, 38, 255], // hair
+  P: [88, 56, 160, 255], // wizard robe and hat
+  r: [60, 36, 112, 255], // hat brim
+  W: [232, 232, 232, 255], // beard and hair
   s: [241, 194, 125, 255], // skin
   e: [32, 32, 32, 255], // eyes
-  b: [59, 111, 216, 255], // shirt
-  p: [43, 43, 80, 255], // pants
   d: [58, 42, 26, 255], // boots
-  y: [255, 204, 51, 255], // projectile glow
+  o: [139, 94, 52, 255], // staff wood
+  c: [120, 220, 255, 255], // staff gem
+  y: [255, 204, 51, 255], // hat star, projectile glow
   w: [255, 248, 224, 255], // projectile core
   g: [74, 107, 58, 255], // floor
   G: [92, 127, 72, 255], // floor highlight
@@ -30,46 +32,44 @@ const PALETTE = {
   M: [80, 80, 80, 255], // wall side mortar
 };
 
-// Rows shared by the player's facings; the last two rows are the legs and
-// change per walk frame.
+// The player is a wizard holding a staff. The first seven rows of each
+// facing stay put; the last (feet) changes per walk frame. The staff is on
+// the wizard's right hand, so it's on screen-right from the front and
+// screen-left from the back.
 const LEGS = {
-  front: [
-    ["..p..p..", "..d..d.."],
-    ["..p..d..", "..d....."],
-    ["..d..p..", ".....d.."],
-  ],
-  side: [
-    ["...pp...", "...dd..."],
-    ["..p..p..", ".d....d."],
-    ["...p.p..", "..d...d."],
-  ],
+  front: [".d...d.o", ".d.....o", ".....d.o"],
+  back: ["o.d...d.", "o.d.....", "o.....d."],
+  side: ["..d.d..o", ".d...d.o", "..dd...o"],
 };
 
 const BODY = {
   front: [
-    "..hhhh..",
-    ".hhhhhh.",
-    ".hesseh.",
-    "..ssss..",
-    ".bbbbbb.",
-    ".sbbbbs.",
+    "..PPP..c",
+    ".PPPyP.o",
+    "rrrrrrro",
+    ".seses.o",
+    ".WWWWW.o",
+    "sPWWWPso",
+    "PPPPPPPo",
   ],
   back: [
-    "..hhhh..",
-    ".hhhhhh.",
-    ".hhhhhh.",
-    "..hhhh..",
-    ".bbbbbb.",
-    ".sbbbbs.",
+    "c..PPP..",
+    "o.PPPPP.",
+    "orrrrrrr",
+    "o.WWWWW.",
+    "o.PWWWP.",
+    "osPPPPPs",
+    "oPPPPPPP",
   ],
   // Faces right; the renderer mirrors it for left.
   side: [
-    "..hhhh..",
-    ".hhhhhh.",
-    ".hhsses.",
-    "..hsss..",
-    "..bbbb..",
-    "..bsbb..",
+    "..PP...c",
+    ".PPPP..o",
+    "rrrrrr.o",
+    ".Wsse..o",
+    ".WWWW..o",
+    "..PPPsso",
+    ".PPPPP.o",
   ],
 };
 
@@ -117,9 +117,8 @@ const SPRITES = {
 };
 
 for (const facing of ["front", "back", "side"]) {
-  const legs = facing === "side" ? LEGS.side : LEGS.front;
-  legs.forEach((frameLegs, frame) => {
-    SPRITES[`player/${facing}-${frame}`] = [...BODY[facing], ...frameLegs];
+  LEGS[facing].forEach((feet, frame) => {
+    SPRITES[`player/${facing}-${frame}`] = [...BODY[facing], feet];
   });
 }
 

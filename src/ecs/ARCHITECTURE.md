@@ -45,19 +45,23 @@ Rendering lives in `src/render/`, outside the ECS. It only reads the world; noth
 1. `alpha = accumulator / TICK_MS`: how far the leftover time reaches into the next tick.
 2. `frameView` works out where the camera looks (the followed entity's interpolated position) and builds a `View`.
 3. `buildFrame` fills a `QuadBuffer` with every quad to draw. It's pure: world + view + art in, flat quad data out. This is where all the rendering logic and its tests live.
-4. `renderer.draw` uploads that buffer and draws everything in **one instanced draw call** from **one atlas texture**.
+4. `renderer.draw` uploads that buffer once and draws it in **two instanced draw calls** (terrain, then sprites) from **one atlas texture**.
 
 Entities are drawn at `lerp(previousPosition, position, alpha)`, so the screen runs **up to one tick behind** the game (50 ms at 20 ticks/s). In exchange, movement is smooth at any monitor refresh rate.
+
+The camera angle is interpolated the same way, from `camera.previousAngle` to `camera.angle`, turning the short way around. Rotation stays a tick-rate game decision, because movement direction depends on it, while the screen turns smoothly at the monitor's rate.
 
 ## Screen vs world
 
 Screen pixels are device pixels with the origin at the canvas's top-left and y down. At zoom 1, one tile is 40 CSS pixels and one sprite pixel is 5 (sprites are 8x8 = one tile). `camera.zoom` scales that with no limit, and `camera.focusOffset` moves where the followed entity sits on screen. Only tiles and entities inside the visible area are emitted, so zooming out just draws more.
 
-## Draw order (bottom to top)
+## Draw order and depth
 
-1. Ground tiles: rotate with the camera. Tiles outside the map aren't drawn.
-2. Walls: cubes one tile tall. Each wall draws the side faces that face the viewer after rotation and don't touch another wall, then its raised top. Walls are sorted back to front by screen y.
-3. Enemies, then projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
+1. Ground tiles: rotate with the camera, farthest back. Tiles outside the map aren't drawn.
+2. Walls: cubes one tile tall. Each wall draws the side faces that face the viewer after rotation and don't touch another wall in the map, then its raised top. Walls are sorted back to front by screen y.
+3. Sprites: enemies, then projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
+
+Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 
 Sprites always stay upright. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
 

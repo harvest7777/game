@@ -8,6 +8,7 @@ import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
 import {
   createView,
+  depthOf,
   screenToWorld,
   TILE_PIXELS,
   visibleWorldRect,
@@ -119,6 +120,32 @@ describe("visibleWorldRect", () => {
       expect(p.y).toBeGreaterThanOrEqual(rect.minY - 1e-9);
       expect(p.y).toBeLessThanOrEqual(rect.maxY + 1e-9);
     }
+  });
+});
+
+describe("depthOf", () => {
+  it("is nearer (smaller) lower on the screen", () => {
+    const v = view();
+    expect(depthOf(v, 400)).toBeLessThan(depthOf(v, 100));
+  });
+
+  it("stays in 0..1 and keeps order across the whole screen", () => {
+    const v = view();
+    const ys = [-HEIGHT, 0, HEIGHT / 2, HEIGHT, 2 * HEIGHT];
+    const depths = ys.map((y) => depthOf(v, y));
+    for (const d of depths) {
+      expect(d).toBeGreaterThan(0);
+      expect(d).toBeLessThan(1);
+    }
+    for (let i = 1; i < depths.length; i++) {
+      expect(depths[i]).toBeLessThan(depths[i - 1]);
+    }
+  });
+
+  it("clamps far off screen", () => {
+    const v = view();
+    expect(depthOf(v, -100 * HEIGHT)).toBe(1);
+    expect(depthOf(v, 100 * HEIGHT)).toBe(0);
   });
 });
 

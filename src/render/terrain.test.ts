@@ -171,6 +171,16 @@ describe("pushWalls", () => {
     expect(quads.map(fileOf)).toEqual(["top", "side", "top"]);
   });
 
+  it("shows faces looking out past the edge of the map", () => {
+    const tiles = createTiles(20, 20);
+    // Bottom row: its south neighbour is outside the map.
+    setWall(tiles, 10, 19);
+
+    const quads = walls(tiles, viewAt({ x: 10.5, y: 18.5 }));
+
+    expect(quads.map(fileOf)).toEqual(["side", "top"]);
+  });
+
   it("draws walls higher on screen first so nearer ones cover them", () => {
     const tiles = createTiles(20, 20);
     setWall(tiles, 9, 9);

@@ -8,6 +8,10 @@ import type { PackedRect } from "./atlas";
 //
 // `margin` is how many sprite pixels the quad extends past the texture
 // region on every side, leaving room to draw an outline and glow around it.
+//
+// `depth` is 0 (nearest the viewer) to 1 (farthest). Walls write it to the
+// depth buffer and sprites test against it, so walls only cover sprites
+// standing behind them.
 export type Quad = {
   corners: [Vec2, Vec2, Vec2, Vec2];
   region: PackedRect;
@@ -16,6 +20,7 @@ export type Quad = {
   outline: Color;
   glowRadius: number;
   glowPulseHz: number;
+  depth: number;
 };
 
 // Float layout of one quad in the instance buffer. The WebGL backend reads
@@ -27,8 +32,9 @@ export const QUAD_LAYOUT = {
   margin: 13, // 1 float: sprite pixels
   outline: 14, // 4 floats: rgba 0..1, alpha 0 means no outline
   glow: 18, // 2 floats: radius in sprite pixels, pulses per second
+  depth: 20, // 1 float: 0 nearest .. 1 farthest
 } as const;
-export const FLOATS_PER_QUAD = 20;
+export const FLOATS_PER_QUAD = 21;
 
 const NO_OUTLINE: Color = [0, 0, 0, 0];
 
@@ -59,6 +65,7 @@ export class QuadBuffer {
     flipX = false,
     margin = 0,
     outline?: Outline,
+    depth = 1,
   ): void {
     if ((this.count + 1) * FLOATS_PER_QUAD > this.data.length) {
       const grown = new Float32Array(this.data.length * 2);
@@ -88,6 +95,7 @@ export class QuadBuffer {
     d[o + 17] = color[3];
     d[o + 18] = outline?.glow?.radius ?? 0;
     d[o + 19] = outline?.glow?.pulseHz ?? 0;
+    d[o + 20] = depth;
     this.count++;
   }
 }
@@ -111,6 +119,7 @@ export function readQuads(buffer: QuadBuffer): Quad[] {
       outline: [d[o + 14], d[o + 15], d[o + 16], d[o + 17]],
       glowRadius: d[o + 18],
       glowPulseHz: d[o + 19],
+      depth: d[o + 20],
     });
   }
   return quads;

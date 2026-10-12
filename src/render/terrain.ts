@@ -2,14 +2,21 @@ import { groundAt, isWall, type Tiles } from "../ecs/tiles";
 import { regionOf, type Art } from "./art";
 import type { PackedRect } from "./atlas";
 import type { QuadBuffer } from "./quads";
-import { visibleWorldRect, worldToScreen, type Rect, type View } from "./view";
+import {
+  depthOf,
+  visibleWorldRect,
+  worldToScreen,
+  type Rect,
+  type View,
+} from "./view";
 
 // How tall walls are drawn, in tiles. Walls are cubes: the top face is the
 // tile raised this far up the screen, and side faces join it to the ground.
 export const WALL_HEIGHT = 1;
 
 // Ground tiles inside the map that are on screen. Tiles outside the map
-// aren't drawn (they still block movement). Ground rotates with the camera.
+// aren't drawn (they still block movement). Ground rotates with the camera
+// and sits at the farthest depth, under everything.
 export function pushGround(
   out: QuadBuffer,
   tiles: Tiles,
@@ -33,7 +40,8 @@ export function pushGround(
 // Raised walls on screen, drawn back to front (top of the screen first) so
 // nearer walls cover farther ones. Each wall draws its visible side faces,
 // then its top. A side face shows only if it faces the viewer after rotation
-// and isn't against another wall.
+// and isn't against another wall. Faces toward the void past the map edge
+// still show, even though that void blocks movement.
 export function pushWalls(
   out: QuadBuffer,
   tiles: Tiles,
@@ -67,9 +75,13 @@ export function pushWalls(
   const side = regionOf(art, art.manifest.walls.side);
   const top = regionOf(art, art.manifest.walls.top);
 
-  for (const { x, y } of walls) {
+  for (const wall of walls) {
+    const { x, y } = wall;
+    // The whole wall sits at its tile center's depth; a sprite standing in
+    // front of that is drawn over it, one behind is hidden by it.
+    const depth = depthOf(view, wall.depth);
     for (const edge of EDGES) {
-      if (isWall(tiles, x + edge.normal.x, y + edge.normal.y)) continue;
+      if (isWallInMap(tiles, x + edge.normal.x, y + edge.normal.y)) continue;
       // Screen-space y of the edge's outward normal: positive means it points
       // down the screen, toward the viewer.
       const facing = -edge.normal.x * basis.sin + edge.normal.y * basis.cos;
@@ -88,9 +100,13 @@ export function pushWalls(
         left.x,
         left.y,
         side,
+        false,
+        0,
+        undefined,
+        depth,
       );
     }
-    pushTile(out, basis, x, y, lift, top);
+    pushTile(out, basis, x, y, lift, top, depth);
   }
 }
 
@@ -144,6 +160,7 @@ function pushTile(
   y: number,
   lift: number,
   region: PackedRect,
+  depth = 1,
 ): void {
   const x0 = b.originX + x * b.ex.x + y * b.ey.x;
   const y0 = b.originY + x * b.ex.y + y * b.ey.y - lift;
@@ -157,7 +174,18 @@ function pushTile(
     x0 + b.ey.x,
     y0 + b.ey.y,
     region,
+    false,
+    0,
+    undefined,
+    depth,
   );
+}
+
+// Unlike isWall, the void outside the map doesn't count: it isn't drawn, so
+// a wall face looking out at it must be.
+function isWallInMap(tiles: Tiles, x: number, y: number): boolean {
+  const inMap = x >= 0 && y >= 0 && x < tiles.width && y < tiles.height;
+  return inMap && isWall(tiles, x, y);
 }
 
 function clampToMap(rect: Rect, tiles: Tiles): Rect {

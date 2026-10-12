@@ -4,7 +4,7 @@ import type { Vec2 } from "../ecs/shared/physics/math";
 import { regionOf, type Art } from "./art";
 import type { SpriteFile } from "./assets";
 import type { QuadBuffer } from "./quads";
-import { worldToScreen, type View } from "./view";
+import { depthOf, worldToScreen, type View } from "./view";
 
 // Sprite pixels per tile: an 8x8 sprite is one tile across.
 export const SPRITE_PIXELS_PER_TILE = 8;
@@ -114,6 +114,7 @@ export function pushSprites(
       p.flipX,
       marginOf(p.sprite),
       p.sprite.outline,
+      depthOf(view, p.depth),
     );
   }
 }

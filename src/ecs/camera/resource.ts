@@ -6,6 +6,8 @@ import type { Entity } from "../world";
 // - `angle` is the world direction the top of the screen faces, in radians
 //   clockwise from world up (-y): 0 means screen up is world up, π/2 means
 //   screen up is world right (+x). `turnSpeed` is radians/second.
+// - `previousAngle` is the angle at the start of the last tick, so the
+//   renderer can turn smoothly between ticks.
 // - `target` is the entity the camera follows, if any.
 // - `zoom` scales how big a tile looks; 1 is the default size, 2 is twice as
 //   big (so half as much of the world fits on screen). Not capped.
@@ -14,6 +16,7 @@ import type { Entity } from "../world";
 //   target a quarter of the screen height below center.
 export type Camera = {
   angle: number;
+  previousAngle: number;
   turnSpeed: number;
   target?: Entity;
   zoom: number;
@@ -23,6 +26,7 @@ export type Camera = {
 export function createCamera(): Camera {
   return {
     angle: 0,
+    previousAngle: 0,
     turnSpeed: Math.PI,
     zoom: 1,
     focusOffset: { x: 0, y: 0 },

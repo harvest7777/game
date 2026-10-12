@@ -11,6 +11,7 @@ in vec4 a_region;
 in vec2 a_flipMargin;
 in vec4 a_outline;
 in vec2 a_glow;
+in float a_depth;
 
 uniform vec2 u_screen;
 
@@ -39,7 +40,7 @@ void main() {
   v_glow = a_glow;
 
   vec2 clip = position / u_screen * 2.0 - 1.0;
-  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  gl_Position = vec4(clip.x, -clip.y, a_depth * 2.0 - 1.0, 1.0);
 }
 `;
 
@@ -125,9 +126,17 @@ void main() {
 `;
 
 export type Renderer = {
-  // Draws every quad in one instanced call. Width/height are the canvas's
-  // pixel size; time is seconds, for glow pulsing.
-  draw(quads: QuadBuffer, width: number, height: number, time: number): void;
+  // Draws a frame from one upload in two instanced calls: the first
+  // `terrain` quads write depth, the sprites after them only test against
+  // it (see buildFrame). Width/height are the canvas's pixel size; time is
+  // seconds, for glow pulsing.
+  draw(
+    quads: QuadBuffer,
+    terrain: number,
+    width: number,
+    height: number,
+    time: number,
+  ): void;
 };
 
 export function createRenderer(
@@ -154,28 +163,48 @@ export function createRenderer(
   gl.bindBuffer(gl.ARRAY_BUFFER, instances);
 
   const stride = FLOATS_PER_QUAD * 4;
-  const attribute = (name: string, size: number, offset: number) => {
+  const attributes: [string, number, number][] = [
+    ["a_corners01", 4, QUAD_LAYOUT.corners],
+    ["a_corners23", 4, QUAD_LAYOUT.corners + 4],
+    ["a_region", 4, QUAD_LAYOUT.region],
+    ["a_flipMargin", 2, QUAD_LAYOUT.flipX],
+    ["a_outline", 4, QUAD_LAYOUT.outline],
+    ["a_glow", 2, QUAD_LAYOUT.glow],
+    ["a_depth", 1, QUAD_LAYOUT.depth],
+  ];
+  const locations = attributes.map(([name]) => {
     const location = gl.getAttribLocation(program, name);
     gl.enableVertexAttribArray(location);
-    gl.vertexAttribPointer(location, size, gl.FLOAT, false, stride, offset * 4);
     gl.vertexAttribDivisor(location, 1);
+    return location;
+  });
+  // Points every attribute at the instance `first` in the buffer, so one
+  // upload can be drawn in several ranges.
+  const startAt = (first: number) => {
+    attributes.forEach(([, size, offset], i) => {
+      gl.vertexAttribPointer(
+        locations[i],
+        size,
+        gl.FLOAT,
+        false,
+        stride,
+        first * stride + offset * 4,
+      );
+    });
   };
-  attribute("a_corners01", 4, QUAD_LAYOUT.corners);
-  attribute("a_corners23", 4, QUAD_LAYOUT.corners + 4);
-  attribute("a_region", 4, QUAD_LAYOUT.region);
-  attribute("a_flipMargin", 2, QUAD_LAYOUT.flipX);
-  attribute("a_outline", 4, QUAD_LAYOUT.outline);
-  attribute("a_glow", 2, QUAD_LAYOUT.glow);
   gl.bindVertexArray(null);
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
 
   return {
-    draw(quads, width, height, time) {
+    draw(quads, terrain, width, height, time) {
       gl.viewport(0, 0, width, height);
       gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.depthMask(true);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       if (quads.count === 0) return;
 
       gl.useProgram(program);
@@ -192,7 +221,19 @@ export function createRenderer(
         quads.data.subarray(0, quads.count * FLOATS_PER_QUAD),
         gl.DYNAMIC_DRAW,
       );
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, quads.count);
+
+      // Ground and walls, back to front, recording how near each pixel is.
+      startAt(0);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, terrain);
+
+      // Sprites in layer order, hidden only where a nearer wall covers them.
+      // They don't write depth so they never hide each other that way.
+      const sprites = quads.count - terrain;
+      if (sprites > 0) {
+        gl.depthMask(false);
+        startAt(terrain);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
+      }
       gl.bindVertexArray(null);
     },
   };

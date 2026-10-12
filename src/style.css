@@ -14,13 +14,9 @@ body {
   display: block;
 }
 
-#performance,
-#test {
+#performance {
   position: fixed;
   z-index: 1;
-}
-
-#performance {
   top: 8px;
   left: 8px;
   color: white;
@@ -29,9 +25,4 @@ body {
 
 #performance p {
   margin: 0;
-}
-
-#test {
-  top: 8px;
-  right: 8px;
 }

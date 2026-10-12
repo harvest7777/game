@@ -43,4 +43,14 @@ describe("cameraSystem", () => {
 
     expect(world.camera.angle).toBe(0);
   });
+
+  it("remembers the angle from the start of the tick", () => {
+    const world = worldHolding(Action.RotateRight);
+    world.camera.angle = 1;
+
+    cameraSystem(world, 1);
+
+    expect(world.camera.previousAngle).toBe(1);
+    expect(world.camera.angle).toBeCloseTo(1 + Math.PI / 2);
+  });
 });
