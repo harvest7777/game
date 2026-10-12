@@ -227,6 +227,20 @@ describe("runTick", () => {
       expect(at.x).toBeGreaterThanOrEqual(START.x + 2.5 - 1e-6);
     });
 
+    it("move a boss on to its next phase as it's hurt", () => {
+      const { world } = withPlayerHealth();
+      const king = spawnEnemy(world, "slimeKing", {
+        x: START.x + 5,
+        y: START.y,
+      });
+      world.components.health.get(king)!.hp = 900;
+
+      runTick(world, DT);
+
+      expect(world.components.enemy.get(king)!.phase!.name).toBe("enraged");
+      expect(world.components.shooter.get(king)!.weapon).toBe("kingRing");
+    });
+
     it("leave the player alone out of range", () => {
       const { world, hp } = withPlayerHealth();
       spawnEnemy(world, "slime", { x: START.x + 9, y: START.y });

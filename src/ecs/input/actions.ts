@@ -28,6 +28,26 @@ export const playerKeybinds: Keybinds = {
   ShiftRight: Action.Crouch,
 };
 
+// The classic layout: WASD to move, Q/E to turn the camera.
+export const wasdKeybinds: Keybinds = {
+  KeyW: Action.Up,
+  KeyA: Action.Left,
+  KeyS: Action.Down,
+  KeyD: Action.Right,
+  KeyQ: Action.RotateLeft,
+  KeyE: Action.RotateRight,
+  ShiftLeft: Action.Crouch,
+  ShiftRight: Action.Crouch,
+};
+
+// Layouts the player can switch between.
+export const keybindPresets = {
+  default: playerKeybinds,
+  wasd: wasdKeybinds,
+} satisfies Record<string, Keybinds>;
+
+export type KeybindPreset = keyof typeof keybindPresets;
+
 // What the player is asking for this tick, as actions rather than keys.
 // `aim` is the world point under the cursor, once the cursor has been over
 // the game.

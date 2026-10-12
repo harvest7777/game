@@ -1,9 +1,10 @@
 import type { World } from "../world";
 import { freshMemory, steer } from "./behaviors";
-import { enemyDef } from "./definitions";
+import { enemyDef, phaseOf } from "./definitions";
 
 // Moves enemies by their behavior: `aggro` while they have a target, `idle`
-// otherwise. Switching starts the new behavior fresh. It only sets velocity,
+// otherwise, taken from their current phase when it sets them. Switching
+// starts the new behavior fresh. It only sets velocity,
 // the way player input does, so movement handles walls for enemies too.
 export function brainSystem(world: World, dt: number): void {
   const { enemy, brain, position, target, speed, velocity } = world.components;
@@ -25,7 +26,7 @@ export function brainSystem(world: World, dt: number): void {
 
     velocity.set(
       entity,
-      steer(def[mode], mind.memory, {
+      steer(phaseOf(def, e.phase?.name)?.[mode] ?? def[mode], mind.memory, {
         at,
         origin: e.origin,
         target: targetAt,

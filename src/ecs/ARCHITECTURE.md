@@ -30,6 +30,10 @@ World coordinates match the screen when the camera isn't rotated:
 
 Because y points down, a positive rotation by the usual formula `(x cos θ - y sin θ, x sin θ + y cos θ)` turns things **clockwise** on screen.
 
+# Controls
+
+Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
+
 # Camera and movement input
 
 `camera.angle` is the world direction the top of the screen faces, in radians clockwise from world up (-y). At 0 the screen and world line up. At π/2 the top of the screen faces world +x.
@@ -73,6 +77,10 @@ How an enemy moves is data too (`src/ecs/enemy/behaviors.ts`). Each definition h
 - `orbit`: circles its target `radius` tiles out.
 - `charge`: winds up, dashes at where the target was when the windup ended, then rests.
 - `returnHome`: walks back to its origin.
+
+## Phases
+
+A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory. The `slimeKing` boss shows all of it: it circles and sprays fans, chases and fires rings below 66%, charges with shard rings below 30%, and rests for 2.5 s every 6 s of that.
 
 Each behavior is a pure steering function from position, origin, target, speed and a small `BehaviorMemory` to a velocity. `brainSystem` picks idle or aggro, starts a fresh memory whenever that switches, and sets velocity, the way player input does. Movement then handles walls for enemies the same as for everything else.
 

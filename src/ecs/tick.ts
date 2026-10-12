@@ -4,6 +4,7 @@ import { damageSystem, deathSystem } from "./combat/damage";
 import { hitSystem } from "./combat/hits";
 import { aggroSystem } from "./enemy/aggro";
 import { brainSystem } from "./enemy/brain";
+import { phaseSystem } from "./enemy/phaseSystem";
 import { clearEvents } from "./events";
 import { playerInputSystem } from "./input/system";
 import { movementSystem } from "./movement/system";
@@ -16,8 +17,8 @@ import type { System, World } from "./world";
 // knows about all of them, so systems never need to import each other.
 // Camera turns before input so movement uses this tick's angle; input and
 // projectiles set velocity before movement applies it, and facing follows it.
-// Enemies pick targets, then their brains steer toward or around them, before
-// shooting aims at them. Shooting aims before
+// Enemies pick targets, move through their phases, then their brains steer
+// toward or around them, before shooting aims at them. Shooting aims before
 // facing, so this tick's aim decides which way a shooter
 // faces, and fires before projectiles are steered, so a new shot already
 // moves on the tick it's fired. Hits are found once everything has moved;
@@ -27,6 +28,7 @@ const systems: System[] = [
   cameraSystem,
   playerInputSystem,
   aggroSystem,
+  phaseSystem,
   brainSystem,
   shootSystem,
   facingSystem,

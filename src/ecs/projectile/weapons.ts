@@ -33,6 +33,20 @@ export const weapons = {
   // Enemy weapons.
   slimeSpit: { projectile: "slimeBall", rate: 0.8 },
   archerVolley: { projectile: "arrow", rate: 0.7, count: 3, arcGap: 0.25 },
+  // The Slime King's attacks, one per phase.
+  kingSpray: { projectile: "slimeBall", rate: 1.2, count: 5, arcGap: 0.3 },
+  kingRing: {
+    projectile: "slimeBall",
+    rate: 1,
+    count: 12,
+    arcGap: (2 * Math.PI) / 12,
+  },
+  kingFrenzy: {
+    projectile: "prejudice",
+    rate: 1.5,
+    count: 8,
+    arcGap: (2 * Math.PI) / 8,
+  },
 } satisfies Record<string, WeaponDef>;
 
 export type WeaponId = keyof typeof weapons;

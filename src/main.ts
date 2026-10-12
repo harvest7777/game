@@ -6,7 +6,11 @@ import {
   addShooter,
   addSprite,
 } from "./ecs/bundles";
-import { actionsFromKeys, playerKeybinds } from "./ecs/input/actions";
+import {
+  actionsFromKeys,
+  keybindPresets,
+  type KeybindPreset,
+} from "./ecs/input/actions";
 import { weaponIds, type WeaponId } from "./ecs/projectile/weapons";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { enemyIds, type EnemyId } from "./ecs/enemy/definitions";
@@ -133,6 +137,32 @@ document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
   (event.currentTarget as HTMLButtonElement).blur();
 });
 
+// Controls picker, remembered between visits.
+const controlsPicker = document.getElementById(
+  "settingsControls",
+) as HTMLSelectElement;
+let keybinds = keybindPresets.default;
+try {
+  const saved = localStorage.getItem("controls");
+  if (saved && saved in keybindPresets) {
+    controlsPicker.value = saved;
+    keybinds = keybindPresets[saved as KeybindPreset];
+  }
+} catch {
+  // Storage can be unavailable (private windows); the default still works.
+}
+controlsPicker.addEventListener("change", () => {
+  const preset = controlsPicker.value as KeybindPreset;
+  keybinds = keybindPresets[preset];
+  inputs.clear();
+  try {
+    localStorage.setItem("controls", preset);
+  } catch {
+    // Not remembered, but still switched.
+  }
+  controlsPicker.blur();
+});
+
 const quads = new QuadBuffer();
 
 let accumulator: number = 0;
@@ -185,7 +215,7 @@ function callback() {
   // TICKS_PER_SECOND regardless of frame timing.
   accumulator += deltaTime;
   while (accumulator >= TIME_PER_TICK_MS) {
-    world.input.held = actionsFromKeys(inputs, playerKeybinds);
+    world.input.held = actionsFromKeys(inputs, keybinds);
     world.input.aim = cursorInWorld();
     runTick(world, TICK_SECONDS);
     accumulator -= TIME_PER_TICK_MS;

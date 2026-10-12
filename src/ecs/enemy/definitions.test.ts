@@ -10,6 +10,15 @@ describe("enemy definitions", () => {
         expect(def.health).toBeGreaterThan(0);
       });
 
+      it("only moves to phases it has", () => {
+        if (!def.phases) return;
+        const names = Object.keys(def.phases.list);
+        expect(names).toContain(def.phases.start);
+        for (const phase of Object.values(def.phases.list)) {
+          for (const { to } of phase.next ?? []) expect(names).toContain(to);
+        }
+      });
+
       it("has a hitbox, a speed and a detection range", () => {
         expect(def.hitbox.r).toBeGreaterThan(0);
         expect(def.speed).toBeGreaterThanOrEqual(0);

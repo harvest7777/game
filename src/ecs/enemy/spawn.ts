@@ -2,7 +2,7 @@ import { addMovable, addShooter, addSprite } from "../bundles";
 import type { Vec2 } from "../shared/physics/math";
 import { spawn, type Entity, type World } from "../world";
 import { freshMemory } from "./behaviors";
-import { enemyDef, type EnemyId } from "./definitions";
+import { enemyDef, phaseOf, type EnemyId } from "./definitions";
 
 // Creates an enemy from its definition at `at`, which becomes its origin.
 // Everything taken from the definition is copied, so enemies never share
@@ -24,9 +24,29 @@ export function spawnEnemy(world: World, id: EnemyId, at: Vec2): Entity {
   components.health.set(entity, { hp: def.health, max: def.health });
   components.team.set(entity, "enemy");
   components.speed.set(entity, def.speed);
-  components.enemy.set(entity, { def: id, origin: { x: at.x, y: at.y } });
+  components.enemy.set(entity, {
+    def: id,
+    origin: { x: at.x, y: at.y },
+    ...(def.phases && { phase: { name: def.phases.start, time: 0 } }),
+  });
   components.brain.set(entity, { mode: "idle", memory: freshMemory() });
-  if (def.weapon)
-    addShooter(world, entity, { weapon: def.weapon, team: "enemy" });
+  armForPhase(world, entity);
   return entity;
+}
+
+// Gives an enemy the weapon its current phase calls for (or its own if the
+// phase doesn't say), or takes its weapon away for a phase that holds fire.
+// Keeps the cooldown when it already had one, so switching weapons doesn't
+// let it fire early.
+export function armForPhase(world: World, entity: Entity): void {
+  const enemy = world.components.enemy.get(entity);
+  if (!enemy) return;
+  const def = enemyDef(enemy.def);
+  const phaseWeapon = phaseOf(def, enemy.phase?.name)?.weapon;
+  const weapon = phaseWeapon === undefined ? def.weapon : phaseWeapon;
+
+  const shooter = world.components.shooter.get(entity);
+  if (!weapon) world.components.shooter.delete(entity);
+  else if (shooter) shooter.weapon = weapon;
+  else addShooter(world, entity, { weapon, team: "enemy" });
 }
