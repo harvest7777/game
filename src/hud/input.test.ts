@@ -22,7 +22,7 @@ function setup() {
   const world = createWorld(createTiles(1, 1));
   const player = spawn(world);
   addHoldings(world, player, {
-    weapon: testItem({ name: "Staff" }),
+    equipment: { weapon: testItem({ name: "Staff" }) },
     carrying: [testItem({ name: "Lance" }), testItem({ name: "Comet" })],
   });
   const state = createHudState();

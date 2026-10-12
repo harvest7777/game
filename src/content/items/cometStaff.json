@@ -1,0 +1,9 @@
+{
+  "name": "Comet Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/cometStaff",
+  "loot": { "tier": 5, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleAccelerating"
+}

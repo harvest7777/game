@@ -12,6 +12,8 @@ import {
 import { HURT_FADE, HURT_SHOWN } from "../ecs/combat/hurt";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
+import { testItem } from "../testing/defs";
+import { addHoldings } from "../ecs/inventory/bundle";
 
 const SIZE = 400;
 const CENTER = { x: 10, y: 10 };
@@ -138,6 +140,21 @@ describe("pushHealthBars", () => {
     expect(widthOf(fill)).toBeCloseTo(0.4 * fullWidth, 3);
     expect(widthOf(background)).toBeCloseTo(fullWidth + 2, 3);
     expect(fill.corners[0].x).toBeCloseTo(background.corners[0].x + 1, 3);
+  });
+
+  it("fills against equipment-raised Health capacity", () => {
+    const { world, view } = setup();
+    const entity = addHurt(world, 100);
+    const ring = testItem({
+      kind: "ring",
+      weapon: undefined,
+      bonuses: { health: 50 },
+    });
+    addHoldings(world, entity, { equipment: { ring } });
+
+    const [, fill] = bars(world, view);
+
+    expect(widthOf(fill)).toBeCloseTo((2 / 3) * 7 * PIXEL, 3);
   });
 
   it("draws only the background at 0 health", () => {

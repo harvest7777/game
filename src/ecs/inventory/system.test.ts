@@ -18,7 +18,7 @@ function setup() {
   world.components.playerControlled.set(player, true);
   world.components.team.set(player, "player");
   addHoldings(world, player, {
-    weapon: STAFF,
+    equipment: { weapon: STAFF },
     carrying: [LANCE, COMET],
   });
   const c = world.components;
@@ -121,6 +121,26 @@ describe("inventorySystem", () => {
         to: { in: "inventory", index: 2 },
       },
     ]);
+  });
+
+  it("clamps Health and Mana when capacity gear comes off", () => {
+    const world = createWorld(createTiles(1, 1));
+    const player = spawn(world);
+    world.components.playerControlled.set(player, true);
+    world.components.health.set(player, { value: 140, max: 100 });
+    world.components.mana.set(player, { value: 90, max: 80 });
+    const ring = testItem({
+      kind: "ring",
+      weapon: undefined,
+      bonuses: { health: 50, mana: 20 },
+    });
+    addHoldings(world, player, { equipment: { ring } });
+    world.input.commands = [{ kind: "unequip", slot: "ring" }];
+
+    inventorySystem(world, 0.05);
+
+    expect(world.components.health.get(player)!.value).toBe(100);
+    expect(world.components.mana.get(player)!.value).toBe(80);
   });
 
   it("gives items into the first empty slot", () => {
@@ -242,6 +262,27 @@ describe("using consumables", () => {
     const { use, hpOf } = hurt(450);
     use();
     expect(hpOf()).toBe(500);
+  });
+
+  it("heals into capacity from equipment", () => {
+    const world = createWorld(createTiles(1, 1));
+    const player = spawn(world);
+    world.components.playerControlled.set(player, true);
+    world.components.health.set(player, { value: 100, max: 100 });
+    const ring = testItem({
+      kind: "ring",
+      weapon: undefined,
+      bonuses: { health: 50 },
+    });
+    addHoldings(world, player, {
+      equipment: { ring },
+      carrying: [POTION],
+    });
+    world.input.commands = [{ kind: "equip", index: 0 }];
+
+    inventorySystem(world, 0.05);
+
+    expect(world.components.health.get(player)!.value).toBe(150);
   });
 
   it("isn't wasted at full health", () => {

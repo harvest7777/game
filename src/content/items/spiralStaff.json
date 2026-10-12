@@ -1,0 +1,9 @@
+{
+  "name": "Spiral Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/spiralStaff",
+  "loot": { "tier": 7, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleSpiral"
+}

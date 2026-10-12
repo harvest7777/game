@@ -1,0 +1,8 @@
+{
+  "name": "Golden Ring",
+  "category": "equipment",
+  "kind": "ring",
+  "icon": "items/goldenRing",
+  "loot": { "tier": 1, "tags": [] },
+  "bonuses": { "health": 40, "attack": 2, "vitality": 3 }
+}

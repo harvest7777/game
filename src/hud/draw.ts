@@ -1,5 +1,7 @@
 import type { Color } from "../ecs/sprite/components";
 import type { Entity, World } from "../ecs/world";
+import { effectiveStatOf } from "../ecs/stats/runtime";
+import { STAT } from "../ecs/stats/components";
 import { regionOf, type Art } from "../render/art";
 import type { QuadBuffer } from "../render/quads";
 import { OUTLINE_THICKNESS } from "../render/sprites";
@@ -46,13 +48,13 @@ export function layoutHud(
   const layouts: Partial<Record<DockedPanelId, PanelLayout>> = {};
   const equipment = equipmentView(world, player);
   if (equipment) layouts.equipment = equipmentPanel(equipment);
-  const health = world.components.health.get(player);
+  const health = effectiveStatOf(world, player, STAT.HEALTH);
   const bar = state.hpBars[PLAYER_BAR];
   if (health && layouts.equipment) {
     const chunk = bar && chunkTop(bar, time);
     layouts.health = vitalsPanel(
       health,
-      world.components.mana.get(player),
+      effectiveStatOf(world, player, STAT.MANA),
       chunk,
       layouts.equipment.w,
     );

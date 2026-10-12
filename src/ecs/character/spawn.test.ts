@@ -33,11 +33,27 @@ describe("spawnCharacter", () => {
     });
   });
 
-  it("wears its starting weapon, armed to fire it", () => {
+  it("wears its starting equipment, armed to fire its weapon", () => {
     const staff = testItem({ name: "Staff" });
-    const { entity, c } = setup({ startingWeapon: staff });
+    const robe = testItem({ name: "Robe", kind: "armor" });
+    const { entity, c } = setup({
+      startingEquipment: { weapon: staff, armor: robe },
+    });
     expect(c.equipment.get(entity)!.weapon).toEqual({ def: staff });
+    expect(c.equipment.get(entity)!.armor).toEqual({ def: robe });
     expect(c.shooter.get(entity)!.weapon).toBe(staff.weapon);
+  });
+
+  it("starts full including Health and Mana from starting equipment", () => {
+    const ring = testItem({
+      kind: "ring",
+      weapon: undefined,
+      bonuses: { health: 40, mana: 25 },
+    });
+    const { entity, c } = setup({ startingEquipment: { ring } });
+
+    expect(c.health.get(entity)).toEqual({ value: 540, max: 500 });
+    expect(c.mana.get(entity)).toEqual({ value: 125, max: 100 });
   });
 
   it("doesn't share the definition's objects", () => {

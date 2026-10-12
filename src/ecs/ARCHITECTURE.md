@@ -17,7 +17,7 @@ A system is a series of pure helper functions that update the world state for so
 
 Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies`, `characters`, reusable loot definitions and `dungeons/`. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`, `LootTableDef`, `LootBagDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
 
-- **Definitions refer to each other directly**, by importing them: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so a typo or a missing definition doesn't compile, and nothing is looked up by id at runtime. Dungeons are the first exception: they're JSON for a future asset maker, naming things by id, checked as they load (see Dungeons). New content formats head that way.
+- **Runtime definitions refer to each other directly**: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, and an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so nothing is looked up by id during play. Items and dungeons are authored as JSON: their indexes validate named ids and resolve them to those direct references once as content loads.
 - **Each folder's `index.ts` lists everything in it**, keyed by id, for debug pickers and for the content tests, which check every definition makes sense and that whatever it refers to is listed too.
 - **Art lives with what uses it** (see Art), so there are no sprite names to keep in sync.
 - **Engine tests don't use content.** They build what they need from the fixtures in `src/testing/defs.ts` (`testProjectile`, `testWeapon`, `testItem`, `testEnemy`, `testBoss`, `testCharacter`), passing only the fields the test is about, so retuning or removing content never breaks them.
@@ -66,13 +66,13 @@ Every variable piece is a table keyed by `kind` (`LOOPS`, `SHAPES`, `PLACERS`, `
 
 # Characters
 
-The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, all eight starting stats and caps, and a starting weapon. `spawnCharacter` makes it player-controlled on the `player` team at full health and mana, wearing its starting weapon, with a `Character` component recording its class.
+The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, all eight starting stats and caps, and starting equipment by slot. `spawnCharacter` makes it player-controlled on the `player` team at full effective health and mana, wearing that loadout, with a `Character` component recording its class.
 
 Characters die like anything else. `gravestoneSystem` leaves the class's `gravestone` art where one died, on the `ground` sprite layer under everything, for good, and moves a camera that was following the character onto it. The overlay's respawn button, shown while there's no character, spawns a fresh one at the level's spawn.
 
 # Stats
 
-The eight typed stat kinds are Health, Mana, Attack, Defense, Speed, Dexterity, Vitality and Wisdom. Each is a sparse ECS component holding `{ value, max }`, selected through the `STAT` constants rather than authored string ids. For Health and Mana, `value` is the resource left and `max` its capacity; for the six attributes, they are the base rating and class cap. A character definition supplies all eight. Enemy definitions require Health and opt into only the other stats they use, so thousands of ordinary enemies do not carry six empty values.
+The eight typed stat kinds are Health, Mana, Attack, Defense, Speed, Dexterity, Vitality and Wisdom. Each is a sparse ECS component holding `{ value, max }`, selected through the `STAT` constants rather than authored string ids. For Health and Mana, `value` is the resource left and `max` its base capacity; for the six attributes, they are the base rating and class cap. Equipment bonuses are derived from the worn items without changing either base field: Health and Mana add to effective capacity, while the other six add to effective value and may take it past the class cap. Equipping capacity does not fill it; taking it off clamps the resource to its new effective maximum. A newly spawned character starts full including its loadout. A character definition supplies all eight base stats. Enemy definitions require Health and opt into only the other stats they use, so thousands of ordinary enemies do not carry six empty values.
 
 Pure helpers turn attributes into behavior: Attack scales projectile damage, Dexterity scales an authored weapon rate, Speed becomes tiles per second, Defense subtracts incoming damage with a 15% floor, and Vitality/Wisdom become health/mana regeneration. Missing attributes are neutral, preserving existing enemy tuning. Projectiles snapshot Attack when fired, so an owner disappearing or changing stats cannot alter a shot already in flight. The stat system only applies the `maxStats` command and regeneration; movement, shooting and damage read the shared helpers without calling it.
 
@@ -170,11 +170,11 @@ A boss phase can instead declare a deterministic `rotation` of named sequences. 
 
 # Items and inventory
 
-Items are data, one file each under `src/content/items/`. Every item has a name, icon and loot profile. Equipment also has a `kind` (one of `ITEM_KINDS`: `weapon`, `ability`, `armor` or `ring`), while consumables are a separate category that can sit in general storage but never in an equipment slot. A loot profile has either a validated numeric tier or typed tag-definition references such as `SPECIAL`; definitions refer to those tags directly, never by string id.
+Items are JSON, one file each under `src/content/items/`, checked and resolved by the folder's index. Every item has a name, icon and loot profile. Equipment also has a `kind` (one of `ITEM_KINDS`: `weapon`, `ability`, `armor` or `ring`) and bonuses for any of the eight stats, while consumables are a separate category that can sit in general storage but never in an equipment slot. JSON names weapons and loot tags by id; the loader rejects unknown ids, stats and fields, then stores direct definition references in the runtime `ItemDef`.
 
 What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
 
-- `Equipment`: one slot per kind in `ITEM_KINDS`. Only weapons exist so far, so the other three stay empty.
+- `Equipment`: one slot per kind in `ITEM_KINDS`. The starting wizard wears a weapon, armor and ring; ability remains empty.
 - `Inventory`: 8 slots that take anything.
 
 A `SlotRef` names any slot: equipment and inventory slots are local to the acting entity, while `{ in: "container", entity, index }` identifies a world container explicitly. The rules are pure functions in `slots.ts`: moving onto an occupied slot swaps, an equipment slot only takes its own kind, and a swap only happens if _both_ items fit where they land. Any move involving a world container is accepted only when that player has current `ContainerAccess` to that exact entity, so stale UI commands cannot loot at a distance.

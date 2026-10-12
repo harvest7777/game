@@ -1,4 +1,5 @@
 import { armWithEquippedWeapon } from "../shared/arming";
+import { clampResources } from "../stats/runtime";
 import type { Entity, World } from "../world";
 import type { SlotRef } from "./components";
 import { isEquipmentItem } from "./items";
@@ -16,7 +17,8 @@ import {
 // happened as an ItemMoved event. Commands that break the rules do nothing.
 // Equipping a consumable uses it instead: it takes effect, is used up and
 // makes its sound, unless it would do nothing. Afterwards the shooter
-// matches the equipped weapon.
+// matches the equipped weapon, and resources are clamped if taking gear off
+// lowered their effective capacity.
 export function inventorySystem(world: World, _dt: number): void {
   const { commands } = world.input;
   if (commands.length === 0) return;
@@ -53,6 +55,7 @@ export function inventorySystem(world: World, _dt: number): void {
       }
     }
     armWithEquippedWeapon(world, entity);
+    clampResources(world, entity);
   }
 }
 

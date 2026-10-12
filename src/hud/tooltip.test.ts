@@ -40,6 +40,22 @@ describe("itemTooltip", () => {
     ]);
   });
 
+  it("lists equipment bonuses before weapon details", () => {
+    const ring = testItem({
+      name: "Ring",
+      kind: "ring",
+      weapon: undefined,
+      bonuses: { health: 40, attack: 2, vitality: 3 },
+    });
+    expect(texts(ring)).toEqual([
+      "Ring",
+      "Ring",
+      "+40 Max HP",
+      "+2 Attack",
+      "+3 Vitality",
+    ]);
+  });
+
   it("gives a weapon's damage, rate and range from its definitions", () => {
     const staff = testItem({
       name: "Staff",

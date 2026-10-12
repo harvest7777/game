@@ -181,7 +181,7 @@ describe("runTick", () => {
       world.components.team.set(player, "player");
       const lance = testItem({ name: "Lance" });
       addHoldings(world, player, {
-        weapon: testItem({ name: "Staff" }),
+        equipment: { weapon: testItem({ name: "Staff" }) },
         carrying: [lance],
       });
       world.input.aim = { x: START.x + 5, y: START.y };

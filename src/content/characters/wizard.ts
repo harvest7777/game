@@ -1,6 +1,6 @@
 import type { CharacterDef } from "../../ecs/character/definitions";
 import type { SpriteFile, WalkerArt } from "../../ecs/sprite/art";
-import { apprenticeStaff } from "../items/apprenticeStaff";
+import { items } from "../items";
 import { STAT, stat } from "../../ecs/stats/components";
 import { BLACK_OUTLINE } from "../../ecs/sprite/components";
 
@@ -36,6 +36,10 @@ export const wizard: CharacterDef = {
     [STAT.VITALITY]: stat(10, 75),
     [STAT.WISDOM]: stat(25, 75),
   },
-  startingWeapon: apprenticeStaff,
+  startingEquipment: {
+    weapon: items.apprenticeStaff,
+    armor: items.apprenticeRobe,
+    ring: items.goldenRing,
+  },
   gravestone: { kind: "static", file: "characters/gravestone" },
 };

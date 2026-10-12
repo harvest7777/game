@@ -8,12 +8,11 @@ import {
   lootTable,
 } from "../../ecs/loot/definitions";
 import { SPECIAL } from "../items/loot";
-import { demonfireStaff } from "../items/demonfireStaff";
-import { healthPotion } from "../items/healthPotion";
+import { items } from "../items";
 
 // Every ordinary enemy's chance to drop a health potion.
 const POTION_CHANCE = 0.1;
-const potion = drop(exactItem(healthPotion), { chance: POTION_CHANCE });
+const potion = drop(exactItem(items.healthPotion), { chance: POTION_CHANCE });
 
 export const slimeLoot = lootTable(
   drop(anyTieredEquipment(itemTier(1), itemTier(2)), { chance: 0.25 }),
@@ -60,5 +59,5 @@ export const protectorLoot = lootTable(
 export const malphasLoot = lootTable(
   drop(anyTieredEquipment(itemTier(7), itemTier(8))),
   drop(anyTieredEquipment(itemTier(6), itemTier(8)), { chance: 0.5 }),
-  drop(exactItem(demonfireStaff), { chance: 0.25 }),
+  drop(exactItem(items.demonfireStaff), { chance: 0.25 }),
 );

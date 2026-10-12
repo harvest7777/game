@@ -1,0 +1,9 @@
+{
+  "name": "Serpent Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/serpentStaff",
+  "loot": { "tier": 3, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleWavy"
+}

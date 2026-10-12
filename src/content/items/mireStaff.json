@@ -1,0 +1,9 @@
+{
+  "name": "Mire Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/mireStaff",
+  "loot": { "tier": 6, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleSlowing"
+}

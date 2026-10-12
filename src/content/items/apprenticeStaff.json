@@ -1,0 +1,9 @@
+{
+  "name": "Apprentice Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/apprenticeStaff",
+  "loot": { "tier": 1, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleBolt"
+}

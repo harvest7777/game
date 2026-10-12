@@ -47,6 +47,7 @@ export function testItem(
     kind: ITEM_KIND.WEAPON,
     icon: "test/staff",
     loot: { tier: itemTier(1), tags: [] },
+    bonuses: {},
     weapon: testWeapon(),
     ...changes,
   };

@@ -30,7 +30,7 @@ describe("equipmentView", () => {
   it("shows what's worn in each slot by name and icon", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: LANCE });
+    addHoldings(world, player, { equipment: { weapon: LANCE } });
 
     expect(equipmentView(world, player)).toEqual({ ...empty, weapon: lance });
   });

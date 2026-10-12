@@ -1,0 +1,9 @@
+{
+  "name": "Staff of Currents",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/currentStaff",
+  "loot": { "tier": 4, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleTightWave"
+}

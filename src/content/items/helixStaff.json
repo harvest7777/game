@@ -1,0 +1,9 @@
+{
+  "name": "Staff of the Double Helix",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/helixStaff",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "twinHelix"
+}

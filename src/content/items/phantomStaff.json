@@ -1,0 +1,9 @@
+{
+  "name": "Phantom Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/phantomStaff",
+  "loot": { "tier": 8, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleGhost"
+}

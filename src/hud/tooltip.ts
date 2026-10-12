@@ -8,6 +8,7 @@ import { pathOffset } from "../ecs/projectile/path";
 import type { Color } from "../ecs/sprite/components";
 import { HUD_COLORS, type HudElement, type PanelLayout } from "./elements";
 import { KIND_LABELS } from "./items";
+import { STAT, STAT_KINDS, type StatKind } from "../ecs/stats/components";
 
 export type TooltipLine = { text: string; color: Color };
 
@@ -34,6 +35,15 @@ export function itemTooltip(item: ItemDef): TooltipLine[] {
   if (item.category === ITEM_CATEGORIES.CONSUMABLE) {
     lines.push({ text: useText(item.use), color: TOOLTIP_COLORS.stat });
     return lines;
+  }
+  for (const kind of STAT_KINDS) {
+    const amount = item.bonuses[kind];
+    if (amount) {
+      lines.push({
+        text: `+${round(amount)} ${STAT_LABELS[kind]}`,
+        color: TOOLTIP_COLORS.stat,
+      });
+    }
   }
   if (!item.weapon) return lines;
 
@@ -63,6 +73,17 @@ export function itemTooltip(item: ItemDef): TooltipLine[] {
   }
   return lines;
 }
+
+const STAT_LABELS: Record<StatKind, string> = {
+  [STAT.HEALTH]: "Max HP",
+  [STAT.MANA]: "Max MP",
+  [STAT.ATTACK]: "Attack",
+  [STAT.DEFENSE]: "Defense",
+  [STAT.SPEED]: "Speed",
+  [STAT.DEXTERITY]: "Dexterity",
+  [STAT.VITALITY]: "Vitality",
+  [STAT.WISDOM]: "Wisdom",
+};
 
 // How far from where it was fired a projectile gets, following its actual
 // path (so boomerangs, spirals and slowing shots are measured right).

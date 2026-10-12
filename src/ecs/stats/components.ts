@@ -33,7 +33,12 @@ export const ATTRIBUTE_STATS = [
   STAT.WISDOM,
 ] as const;
 
-// For Health and Mana, value is the resource left and max is its capacity.
+export const RESOURCE_STATS = [STAT.HEALTH, STAT.MANA] as const;
+export type ResourceStatKind = (typeof RESOURCE_STATS)[number];
+
+// For Health and Mana, value is the resource left and max is its base
+// capacity. Equipment can let value rise above max by increasing effective
+// capacity.
 // For attributes, value is the base rating and max is the class cap.
 export type StatValue = { value: number; max: number };
 

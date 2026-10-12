@@ -1,5 +1,7 @@
 import type { Entity, World } from "../world";
 import { damageAfterDefense } from "../stats/formulas";
+import { STAT } from "../stats/components";
+import { effectiveStatNumber } from "../stats/runtime";
 
 // Takes `amount` off the target's health. The one place damage is applied,
 // including defense, armor piercing and vulnerability. Records what was
@@ -15,7 +17,7 @@ export function applyDamage(
 ): void {
   const health = world.components.health.get(target);
   if (!health || health.value <= 0 || amount <= 0) return;
-  const defense = world.components.defense.get(target)?.value ?? 0;
+  const defense = effectiveStatNumber(world, target, STAT.DEFENSE) ?? 0;
   const afterDefense = armorPiercing
     ? amount
     : damageAfterDefense(amount, defense);

@@ -1,5 +1,6 @@
 import type { Entity, World } from "../ecs/world";
 import { ATTRIBUTE_STATS, STAT, type StatValue } from "../ecs/stats/components";
+import { effectiveStatOf } from "../ecs/stats/runtime";
 import type { Color } from "../ecs/sprite/components";
 import { HUD_COLORS, type HudElement, type PanelLayout } from "./elements";
 
@@ -38,7 +39,7 @@ export type StatsView = { kind: AttributeStatKind; value: StatValue }[];
 
 export function statsView(world: World, entity: Entity): StatsView | undefined {
   const view = ATTRIBUTE_STATS.flatMap((kind) => {
-    const value = world.components[kind].get(entity);
+    const value = effectiveStatOf(world, entity, kind);
     return value ? [{ kind, value }] : [];
   });
   return view.length === ATTRIBUTE_STATS.length ? view : undefined;

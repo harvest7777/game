@@ -1,0 +1,9 @@
+{
+  "name": "Piercing Lance",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/lance",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "singleLance"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Staff of Haste",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/hasteStaff",
+  "loot": { "tier": 2, "tags": [] },
+  "bonuses": {},
+  "weapon": "singleFastBolt"
+}

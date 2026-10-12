@@ -3,6 +3,8 @@ import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { applyDamage } from "../shared/damage";
 import { damageSystem, deathSystem } from "./damage";
+import { testItem } from "../../testing/defs";
+import { addHoldings } from "../inventory/bundle";
 
 function setup(hp = 50) {
   const world = createWorld(createTiles(1, 1));
@@ -64,6 +66,21 @@ describe("applyDamage", () => {
     applyDamage(world, target, 100);
 
     expect(hpOf()).toBe(85);
+  });
+
+  it("includes equipped Defense", () => {
+    const { world, target, hpOf } = setup(100);
+    world.components.defense.set(target, { value: 5, max: 25 });
+    const armor = testItem({
+      kind: "armor",
+      weapon: undefined,
+      bonuses: { defense: 10 },
+    });
+    addHoldings(world, target, { equipment: { armor } });
+
+    applyDamage(world, target, 40);
+
+    expect(hpOf()).toBe(75);
   });
 
   it("lets armor-piercing damage bypass defense", () => {

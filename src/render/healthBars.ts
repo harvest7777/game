@@ -1,6 +1,8 @@
 import type { Color, SpriteLayer } from "../ecs/sprite/components";
 import { HURT_FADE, HURT_SHOWN } from "../ecs/combat/hurt";
 import type { Entity, World } from "../ecs/world";
+import { effectiveResourceMax } from "../ecs/stats/runtime";
+import { STAT } from "../ecs/stats/components";
 import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
 import {
@@ -71,7 +73,8 @@ export function pushHealthBars(
       world.components.sprite.get(entity)?.layer ?? SPRITE_LAYERS[0];
     if (only !== undefined && layer !== only) continue;
     const position = interpolatedPosition(world, entity, alpha);
-    if (!position || health.max <= 0) continue;
+    const max = effectiveResourceMax(world, entity, STAT.HEALTH);
+    if (!position || max === undefined || max <= 0) continue;
 
     const feet = worldToScreen(view, position);
     if (farOffScreen(view, feet)) continue;
@@ -98,7 +101,7 @@ export function pushHealthBars(
       top - BORDER > view.height;
     if (offScreen) continue;
 
-    const fraction = Math.max(0, Math.min(1, health.value / health.max));
+    const fraction = Math.max(0, Math.min(1, health.value / max));
     const depth = depthOf(view, feet.y);
     pushRect(
       out,

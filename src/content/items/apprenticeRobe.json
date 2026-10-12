@@ -1,0 +1,8 @@
+{
+  "name": "Apprentice Robe",
+  "category": "equipment",
+  "kind": "armor",
+  "icon": "items/apprenticeRobe",
+  "loot": { "tier": 1, "tags": [] },
+  "bonuses": { "mana": 25, "defense": 3, "wisdom": 5 }
+}

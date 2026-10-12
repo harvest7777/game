@@ -151,7 +151,7 @@ describe("layoutHud", () => {
   function playerWith(hp?: number) {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: LANCE });
+    addHoldings(world, player, { equipment: { weapon: LANCE } });
     if (hp !== undefined) {
       world.components.health.set(player, { value: hp, max: 500 });
     }
@@ -187,6 +187,23 @@ describe("layoutHud", () => {
     expect(equipment.y - (health.y + health.layout.h)).toBe(2);
     const text = health.layout.elements.find((e) => e.kind === "text");
     expect(text).toMatchObject({ text: "450/500" });
+  });
+
+  it("shows equipment-raised Health capacity", () => {
+    const { world, player } = playerWith(500);
+    world.components.equipment.get(player)!.ring = {
+      def: testItem({
+        kind: "ring",
+        weapon: undefined,
+        bonuses: { health: 40 },
+      }),
+    };
+
+    const { health } = byId(
+      layoutHud(world, player, createHudState(), SCREEN, 0),
+    );
+    const text = health.layout.elements.find((e) => e.kind === "text");
+    expect(text).toMatchObject({ text: "500/540" });
   });
 
   it("shows the damage chunk the health bar remembers", () => {
@@ -245,7 +262,7 @@ describe("drawHud", () => {
   it("lays the HUD out in UI pixels on the device-pixel canvas", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: LANCE });
+    addHoldings(world, player, { equipment: { weapon: LANCE } });
     const out = new QuadBuffer();
 
     drawHud(out, art, world, player, createHudState(), 1200, 800, 4, 0);

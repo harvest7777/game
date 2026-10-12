@@ -1,4 +1,4 @@
-import type { EquipmentItemDef } from "../inventory/items";
+import type { EquipmentItemDef, ItemKind } from "../inventory/items";
 import type { Hitbox } from "../movement/components";
 import type { SpriteArt } from "../sprite/art";
 import type { Sprite } from "../sprite/components";
@@ -13,8 +13,8 @@ export type CharacterDef = {
   hitbox: Hitbox;
   // Starting resources, attributes and class caps.
   stats: CompleteStatBlock;
-  // Worn from the start.
-  startingWeapon?: EquipmentItemDef;
+  // Worn from the start, by equipment slot.
+  startingEquipment?: Partial<Record<ItemKind, EquipmentItemDef>>;
   // Left where it dies.
   gravestone: SpriteArt;
 };

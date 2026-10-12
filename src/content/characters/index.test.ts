@@ -16,10 +16,14 @@ describe("character definitions", () => {
         expect(def.stats[STAT.SPEED].value).toBeGreaterThan(0);
       });
 
-      it("starts with a listed weapon", () => {
-        if (!def.startingWeapon) return;
-        expect(Object.values(items)).toContain(def.startingWeapon);
-        expect(def.startingWeapon.kind).toBe(ITEM_KIND.WEAPON);
+      it("starts with listed equipment in matching slots", () => {
+        for (const [slot, item] of Object.entries(
+          def.startingEquipment ?? {},
+        )) {
+          expect(Object.values(items)).toContain(item);
+          expect(item.kind).toBe(slot);
+        }
+        expect(def.startingEquipment?.weapon?.kind).toBe(ITEM_KIND.WEAPON);
       });
     });
   }

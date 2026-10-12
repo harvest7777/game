@@ -1,0 +1,9 @@
+{
+  "name": "Leafblade Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/leafStaff",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "leafVolley"
+}

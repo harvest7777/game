@@ -1,0 +1,9 @@
+{
+  "name": "Staff of Extreme Prejudice",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/prejudiceStaff",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "extremePrejudice"
+}

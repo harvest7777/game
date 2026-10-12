@@ -5,6 +5,8 @@ import type { Entity, World } from "../ecs/world";
 import { regionOf, type Art } from "../render/art";
 import { QUEST_ARROW } from "../render/assets";
 import { healthColor } from "../render/healthBars";
+import { effectiveStatOf } from "../ecs/stats/runtime";
+import { STAT } from "../ecs/stats/components";
 import type { QuadBuffer } from "../render/quads";
 import { interpolatedPosition, OUTLINE_THICKNESS } from "../render/sprites";
 import { pushText } from "../render/textLayout";
@@ -113,7 +115,7 @@ export function pushQuestPointer(
   );
 
   const portrait = firstFrame(world.components.sprite.get(quest)!.art);
-  const health = world.components.health.get(quest);
+  const health = effectiveStatOf(world, quest, STAT.HEALTH);
   const fraction = health ? health.value / health.max : 1;
   const elements: HudElement[] = [
     {

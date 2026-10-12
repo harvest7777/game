@@ -1,0 +1,9 @@
+{
+  "name": "Wanderer's Boomerang",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/boomerang",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "singleBoomerang"
+}

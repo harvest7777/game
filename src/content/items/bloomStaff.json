@@ -1,0 +1,9 @@
+{
+  "name": "Bloom Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/bloomStaff",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "bloom"
+}

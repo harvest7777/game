@@ -1,0 +1,9 @@
+{
+  "name": "Demonfire Staff",
+  "category": "equipment",
+  "kind": "weapon",
+  "icon": "items/demonfireStaff",
+  "loot": { "tags": ["special"] },
+  "bonuses": {},
+  "weapon": "demonfireStaff"
+}
