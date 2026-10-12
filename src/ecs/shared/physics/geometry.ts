@@ -1,5 +1,9 @@
 import type { Circle, Vec2, Rect } from "./math";
 
+// How far a mover overlaps a blocker. `normal` is the unit direction to push
+// the mover to separate them; `depth` is how far.
+export type Penetration = { depth: number; normal: Vec2 };
+
 // Earliest t >= 0 at which a ray origin + dir * t enters a circle at the
 // origin of the given radius. 0 if already inside, Infinity if never.
 function rayCircle(origin: Vec2, dir: Vec2, radius: number): number {
@@ -14,6 +18,57 @@ function rayCircle(origin: Vec2, dir: Vec2, radius: number): number {
   if (disc < 0) return Infinity;
 
   return (-b - Math.sqrt(disc)) / a;
+}
+
+// Overlap between mover circle A and blocker circle B, or null if they don't
+// touch. Concentric circles are pushed apart along +x.
+export function penetrationCircleCircle(
+  circleA: Circle,
+  positionA: Vec2,
+  circleB: Circle,
+  positionB: Vec2,
+): Penetration | null {
+  const dx = positionA.x - positionB.x;
+  const dy = positionA.y - positionB.y;
+  const dist = Math.hypot(dx, dy);
+  const depth = circleA.r + circleB.r - dist;
+  if (depth < 0) return null;
+  if (dist === 0) return { depth, normal: { x: 1, y: 0 } };
+  return { depth, normal: { x: dx / dist, y: dy / dist } };
+}
+
+// Overlap between a mover circle and a blocker rect (positioned by its
+// center), or null if they don't touch. A circle whose center is inside the
+// rect is pushed out through the nearest face.
+export function penetrationRectCircle(
+  rect: Rect,
+  positionRect: Vec2,
+  circle: Circle,
+  positionCircle: Vec2,
+): Penetration | null {
+  const px = positionCircle.x - positionRect.x;
+  const py = positionCircle.y - positionRect.y;
+  const hw = rect.w / 2;
+  const hh = rect.h / 2;
+
+  const insideX = hw - Math.abs(px);
+  const insideY = hh - Math.abs(py);
+  if (insideX >= 0 && insideY >= 0) {
+    if (insideX <= insideY) {
+      return {
+        depth: insideX + circle.r,
+        normal: { x: px < 0 ? -1 : 1, y: 0 },
+      };
+    }
+    return { depth: insideY + circle.r, normal: { x: 0, y: py < 0 ? -1 : 1 } };
+  }
+
+  const dx = px - Math.max(-hw, Math.min(hw, px));
+  const dy = py - Math.max(-hh, Math.min(hh, py));
+  const dist = Math.hypot(dx, dy);
+  const depth = circle.r - dist;
+  if (depth < 0) return null;
+  return { depth, normal: { x: dx / dist, y: dy / dist } };
 }
 
 // Time of first contact between two moving circles, in the same time unit as
