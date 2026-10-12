@@ -38,6 +38,7 @@ const manifest: Manifest = {
     },
     orb: { kind: "static", file: "orb" },
   },
+  font: {},
   ground: {},
   walls: { top: "top", side: "side" },
 };

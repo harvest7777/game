@@ -100,10 +100,7 @@ export function pushWalls(
         left.x,
         left.y,
         side,
-        false,
-        0,
-        undefined,
-        depth,
+        { depth },
       );
     }
     pushTile(out, basis, x, y, lift, top, depth);
@@ -174,10 +171,8 @@ function pushTile(
     x0 + b.ey.x,
     y0 + b.ey.y,
     region,
-    false,
-    0,
-    undefined,
-    depth,
+    // Ground passes no options, so drawing many tiles allocates nothing.
+    depth === 1 ? undefined : { depth },
   );
 }
 

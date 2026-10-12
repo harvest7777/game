@@ -5,6 +5,7 @@ import type { Art } from "./art";
 import { createRenderDebug, pushDebug, type RenderDebug } from "./debug";
 import { pushHealthBars } from "./healthBars";
 import type { QuadBuffer } from "./quads";
+import { pushFloatingText } from "./text";
 import { interpolatedPosition, pushSprites } from "./sprites";
 import { pushGround, pushWalls } from "./terrain";
 import { createView, type View } from "./view";
@@ -41,16 +42,22 @@ export function frameView(
 
 // How many quads of a frame are in each section, in buffer order. Each
 // section is drawn with different depth rules.
-export type FrameSections = { terrain: number; sprites: number; debug: number };
+export type FrameSections = {
+  terrain: number;
+  sprites: number;
+  overlay: number;
+  debug: number;
+};
 
 // Every quad for one frame: ground and walls, then the sprite section
 // (health bars first so every sprite covers them, then enemies, projectiles
-// and the player, in that order), then debug overlays.
+// and the player, in that order), then the overlay (floating text), then
+// debug renders.
 //
 // Terrain writes depth and the sprite section only tests against it, so a
 // wall hides the part of a sprite or bar behind it but never one in front,
-// while sprites still stack by layer among themselves. Debug overlays ignore
-// depth and go over everything. Only reads the world. `alpha` is how far
+// while sprites still stack by layer among themselves. The overlay and debug
+// renders ignore depth and go over everything, walls included. Only reads the world. `alpha` is how far
 // between the previous tick and the latest one to draw things; `time` is in
 // seconds and drives animation.
 export function buildFrame(
@@ -69,6 +76,13 @@ export function buildFrame(
   pushHealthBars(out, world, view, alpha);
   pushSprites(out, world, view, art, alpha, time);
   const sprites = out.count - terrain;
+  pushFloatingText(out, world, view, art, alpha);
+  const overlay = out.count - terrain - sprites;
   pushDebug(out, world, view, alpha, debug);
-  return { terrain, sprites, debug: out.count - terrain - sprites };
+  return {
+    terrain,
+    sprites,
+    overlay,
+    debug: out.count - terrain - sprites - overlay,
+  };
 }

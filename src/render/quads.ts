@@ -9,6 +9,9 @@ import type { PackedRect } from "./atlas";
 // `margin` is how many sprite pixels the quad extends past the texture
 // region on every side, leaving room to draw an outline and glow around it.
 //
+// `tint` multiplies the art's color, and its alpha fades the outline and
+// glow too. White by default.
+//
 // `fill` makes this a solid quad in the outline color (health bars).
 //
 // `ring`, when above 0, makes this a debug ring instead of a textured quad:
@@ -29,6 +32,7 @@ export type Quad = {
   depth: number;
   ring: number;
   fill: boolean;
+  tint: Color;
 };
 
 // Float layout of one quad in the instance buffer. The WebGL backend reads
@@ -43,10 +47,23 @@ export const QUAD_LAYOUT = {
   depth: 20, // 1 float: 0 nearest .. 1 farthest
   ring: 21, // 1 float: 0 for textured, else ring radius / half-size
   fill: 22, // 1 float: 1 for a solid quad in the outline color
+  tint: 23, // 4 floats: rgba multiplier, white by default
 } as const;
-export const FLOATS_PER_QUAD = 23;
+export const FLOATS_PER_QUAD = 27;
 
 const NO_OUTLINE: Color = [0, 0, 0, 0];
+const WHITE: Color = [1, 1, 1, 1];
+
+// Everything about a quad past its corners and art, all optional.
+export type QuadOptions = {
+  flipX?: boolean;
+  margin?: number;
+  outline?: Outline;
+  depth?: number;
+  ring?: number;
+  fill?: boolean;
+  tint?: Color;
+};
 
 // Growable flat buffer of quads, reused across frames so building a frame
 // doesn't allocate per quad.
@@ -72,12 +89,7 @@ export class QuadBuffer {
     x3: number,
     y3: number,
     region: PackedRect,
-    flipX = false,
-    margin = 0,
-    outline?: Outline,
-    depth = 1,
-    ring = 0,
-    fill = false,
+    options?: QuadOptions,
   ): void {
     if ((this.count + 1) * FLOATS_PER_QUAD > this.data.length) {
       const grown = new Float32Array(this.data.length * 2);
@@ -98,8 +110,9 @@ export class QuadBuffer {
     d[o + 9] = region.y;
     d[o + 10] = region.w;
     d[o + 11] = region.h;
-    d[o + 12] = flipX ? 1 : 0;
-    d[o + 13] = margin;
+    const outline = options?.outline;
+    d[o + 12] = options?.flipX ? 1 : 0;
+    d[o + 13] = options?.margin ?? 0;
     const color = outline?.color ?? NO_OUTLINE;
     d[o + 14] = color[0];
     d[o + 15] = color[1];
@@ -107,9 +120,14 @@ export class QuadBuffer {
     d[o + 17] = color[3];
     d[o + 18] = outline?.glow?.radius ?? 0;
     d[o + 19] = outline?.glow?.pulseHz ?? 0;
-    d[o + 20] = depth;
-    d[o + 21] = ring;
-    d[o + 22] = fill ? 1 : 0;
+    d[o + 20] = options?.depth ?? 1;
+    d[o + 21] = options?.ring ?? 0;
+    d[o + 22] = options?.fill ? 1 : 0;
+    const tint = options?.tint ?? WHITE;
+    d[o + 23] = tint[0];
+    d[o + 24] = tint[1];
+    d[o + 25] = tint[2];
+    d[o + 26] = tint[3];
     this.count++;
   }
 }
@@ -136,6 +154,7 @@ export function readQuads(buffer: QuadBuffer): Quad[] {
       depth: d[o + 20],
       ring: d[o + 21],
       fill: d[o + 22] === 1,
+      tint: [d[o + 23], d[o + 24], d[o + 25], d[o + 26]],
     });
   }
   return quads;

@@ -22,6 +22,8 @@ export type StaticArt = { kind: "static"; file: SpriteFile };
 export type SpriteArt = WalkerArt | StaticArt;
 
 export type Manifest = {
+  // Keyed by character, for floating text.
+  font: Record<string, SpriteFile>;
   // Keyed by Sprite.name.
   sprites: Record<string, SpriteArt>;
   // Keyed by ground type id.
@@ -34,6 +36,9 @@ function walkerFrames(facing: string): SpriteFile[] {
 }
 
 export const manifest: Manifest = {
+  font: Object.fromEntries(
+    [..."0123456789"].map((digit) => [digit, `font/${digit}`]),
+  ),
   sprites: {
     player: {
       kind: "walker",
@@ -72,6 +77,7 @@ export function manifestFiles(m: Manifest): SpriteFile[] {
     }
   }
   Object.values(m.ground).forEach((f) => files.add(f));
+  Object.values(m.font).forEach((f) => files.add(f));
   files.add(m.walls.top);
   files.add(m.walls.side);
   return [...files];

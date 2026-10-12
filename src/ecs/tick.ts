@@ -5,6 +5,7 @@ import { hitSystem } from "./combat/hits";
 import { aggroSystem } from "./enemy/aggro";
 import { brainSystem } from "./enemy/brain";
 import { phaseSystem } from "./enemy/phaseSystem";
+import { damageTextSystem, floatingTextSystem } from "./text/system";
 import { clearEvents } from "./events";
 import { playerInputSystem } from "./input/system";
 import { movementSystem } from "./movement/system";
@@ -23,7 +24,8 @@ import type { System, World } from "./world";
 // faces, and fires before projectiles are steered, so a new shot already
 // moves on the tick it's fired. Hits are found once everything has moved;
 // each step of hit, damage, death and removal reads the events the step
-// before it recorded.
+// before it recorded. Floating text ages before new damage numbers are
+// spawned, so a new number starts at age 0.
 const systems: System[] = [
   cameraSystem,
   playerInputSystem,
@@ -36,6 +38,8 @@ const systems: System[] = [
   movementSystem,
   hitSystem,
   damageSystem,
+  floatingTextSystem,
+  damageTextSystem,
   deathSystem,
   cleanupSystem,
 ];

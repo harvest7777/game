@@ -28,13 +28,14 @@ const small: Manifest = {
     rock: { kind: "static", file: "c" },
   },
   ground: { 0: "floor", 1: "floor" },
+  font: { "1": "one" },
   walls: { top: "top", side: "side" },
 };
 
 describe("manifestFiles", () => {
   it("lists each file the manifest uses once", () => {
     expect(manifestFiles(small).sort()).toEqual(
-      ["a", "b", "c", "floor", "side", "top"].sort(),
+      ["a", "b", "c", "floor", "one", "side", "top"].sort(),
     );
   });
 });
@@ -43,7 +44,7 @@ describe("buildAtlas", () => {
   it("draws every file into one canvas at its region", async () => {
     const atlas = await buildAtlas(small, fakeLoad, fakeCanvas);
 
-    expect(atlas.canvas.draws).toHaveLength(6);
+    expect(atlas.canvas.draws).toHaveLength(7);
     for (const draw of atlas.canvas.draws) {
       const region = atlas.regions.get(draw.file)!;
       expect({ x: draw.x, y: draw.y }).toEqual({ x: region.x, y: region.y });
@@ -79,6 +80,12 @@ describe("the real manifest", () => {
     for (const id of projectileIds) {
       const { name } = projectileDef(id).sprite;
       expect(manifest.sprites[name], `${id} uses "${name}"`).toBeDefined();
+    }
+  });
+
+  it("has a glyph for every digit", () => {
+    for (const digit of "0123456789") {
+      expect(manifest.font[digit], digit).toBeDefined();
     }
   });
 

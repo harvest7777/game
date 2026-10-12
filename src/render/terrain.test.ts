@@ -11,6 +11,7 @@ import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 const LAVA = 3;
 const manifest: Manifest = {
   sprites: {},
+  font: {},
   ground: { 0: "floor", [LAVA]: "lava" },
   walls: { top: "top", side: "side" },
 };

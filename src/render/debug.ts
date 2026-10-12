@@ -61,11 +61,11 @@ export function pushDebug(
       center.x - half,
       center.y + half,
       NO_REGION,
-      false,
-      0,
-      { color: HITBOX_COLORS[layer] },
-      0,
-      radius / half,
+      {
+        outline: { color: HITBOX_COLORS[layer] },
+        depth: 0,
+        ring: radius / half,
+      },
     );
   }
 }

@@ -7,23 +7,15 @@ describe("QuadBuffer", () => {
   it("round-trips a quad through the flat buffer", () => {
     const buffer = new QuadBuffer();
 
-    buffer.push(
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      region,
-      true,
-      0.5,
-      { color: [1, 0.5, 0.25, 1], glow: { radius: 2, pulseHz: 3 } },
-      0.25,
-      0.75,
-      true,
-    );
+    buffer.push(0, 1, 2, 3, 4, 5, 6, 7, region, {
+      flipX: true,
+      margin: 0.5,
+      outline: { color: [1, 0.5, 0.25, 1], glow: { radius: 2, pulseHz: 3 } },
+      depth: 0.25,
+      ring: 0.75,
+      fill: true,
+      tint: [1, 0, 0, 0.5],
+    });
 
     expect(readQuads(buffer)).toEqual([
       {
@@ -42,6 +34,7 @@ describe("QuadBuffer", () => {
         depth: 0.25,
         ring: 0.75,
         fill: true,
+        tint: [1, 0, 0, 0.5],
       },
     ]);
   });
@@ -58,6 +51,7 @@ describe("QuadBuffer", () => {
     expect(quad.depth).toBe(1);
     expect(quad.ring).toBe(0);
     expect(quad.fill).toBe(false);
+    expect(quad.tint).toEqual([1, 1, 1, 1]);
   });
 
   it("grows past its initial capacity and keeps earlier quads", () => {

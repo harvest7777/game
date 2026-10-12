@@ -1,7 +1,11 @@
 import type { Color } from "../ecs/sprite/components";
 import type { World } from "../ecs/world";
 import type { QuadBuffer } from "./quads";
-import { interpolatedPosition, SPRITE_PIXELS_PER_TILE } from "./sprites";
+import {
+  interpolatedPosition,
+  marginOf,
+  SPRITE_PIXELS_PER_TILE,
+} from "./sprites";
 import { depthOf, worldToScreen, type View } from "./view";
 
 // Bar size in sprite pixels: 7 wide (just inside the sprite) and 1 tall,
@@ -45,7 +49,12 @@ export function pushHealthBars(
     if (!position || health.max <= 0) continue;
 
     const center = worldToScreen(view, position);
-    const spriteHalf = (SPRITE_PIXELS_PER_TILE / 2) * pixel;
+    // Below the sprite as drawn, outline and glow included, so big or
+    // glowing sprites don't cover their own bar.
+    const sprite = world.components.sprite.get(entity);
+    const scale = sprite?.scale ?? 1;
+    const margin = sprite ? marginOf(sprite) : 0;
+    const spriteHalf = (SPRITE_PIXELS_PER_TILE / 2 + margin) * pixel * scale;
     const left = center.x - (WIDTH / 2) * pixel;
     const right = center.x + (WIDTH / 2) * pixel;
     const top = center.y + spriteHalf + GAP * pixel;
@@ -85,21 +94,9 @@ function pushRect(
   color: Color,
   depth: number,
 ): void {
-  out.push(
-    left,
-    top,
-    right,
-    top,
-    right,
-    bottom,
-    left,
-    bottom,
-    NO_REGION,
-    false,
-    0,
-    { color },
+  out.push(left, top, right, top, right, bottom, left, bottom, NO_REGION, {
+    outline: { color },
     depth,
-    0,
-    true,
-  );
+    fill: true,
+  });
 }

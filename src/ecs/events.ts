@@ -11,6 +11,10 @@ export type Hit = {
   armorPiercing: boolean;
 };
 
+// Something took damage, after defense (once there is any). Shows the full
+// amount even when that's more than it had left, like RotMG.
+export type Damaged = { target: Entity; amount: number; source?: Entity };
+
 // Something ran out of health.
 export type Death = { entity: Entity; killer?: Entity };
 
@@ -21,6 +25,7 @@ export type Death = { entity: Entity; killer?: Entity };
 // order in tick.ts runs producers before consumers.
 export type Events = {
   hits: Hit[];
+  damaged: Damaged[];
   deaths: Death[];
   // Entities to remove at the end of the tick, so nothing is removed while
   // another system is still looking at it.
@@ -28,11 +33,12 @@ export type Events = {
 };
 
 export function createEvents(): Events {
-  return { hits: [], deaths: [], despawns: [] };
+  return { hits: [], damaged: [], deaths: [], despawns: [] };
 }
 
 export function clearEvents(events: Events): void {
   events.hits.length = 0;
+  events.damaged.length = 0;
   events.deaths.length = 0;
   events.despawns.length = 0;
 }

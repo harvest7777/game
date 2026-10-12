@@ -38,6 +38,7 @@ const PALETTE = {
   u: [140, 90, 60, 255], // boar hide
   U: [100, 60, 40, 255], // boar shadow
   i: [245, 240, 225, 255], // boar tusk
+  F: [255, 255, 255, 255], // font, pure white so it can be tinted any color
   k: [230, 60, 220, 255], // prejudice shard
   K: [255, 190, 250, 255], // prejudice core
   g: [74, 107, 58, 255], // floor
@@ -247,6 +248,25 @@ const SPRITES = {
     "mmmMmmmm",
   ],
 };
+
+// Digits for floating text: bold 6x7 glyphs with 2-pixel strokes, one blank
+// column to their left in the 8x8 canvas. White so the renderer can tint
+// them.
+const DIGITS = {
+  0: [".FFFF.", "FF..FF", "FF..FF", "FF..FF", "FF..FF", "FF..FF", ".FFFF."],
+  1: ["..FF..", ".FFF..", "..FF..", "..FF..", "..FF..", "..FF..", ".FFFF."],
+  2: [".FFFF.", "FF..FF", "....FF", "...FF.", "..FF..", ".FF...", "FFFFFF"],
+  3: ["FFFFF.", "....FF", "....FF", ".FFFF.", "....FF", "....FF", "FFFFF."],
+  4: ["FF..FF", "FF..FF", "FF..FF", "FFFFFF", "....FF", "....FF", "....FF"],
+  5: ["FFFFFF", "FF....", "FFFFF.", "....FF", "....FF", "FF..FF", ".FFFF."],
+  6: [".FFFF.", "FF....", "FF....", "FFFFF.", "FF..FF", "FF..FF", ".FFFF."],
+  7: ["FFFFFF", "....FF", "...FF.", "..FF..", "..FF..", "..FF..", "..FF.."],
+  8: [".FFFF.", "FF..FF", "FF..FF", ".FFFF.", "FF..FF", "FF..FF", ".FFFF."],
+  9: [".FFFF.", "FF..FF", "FF..FF", ".FFFFF", "....FF", "....FF", ".FFFF."],
+};
+for (const [digit, rows] of Object.entries(DIGITS)) {
+  SPRITES[`font/${digit}`] = [...rows.map((row) => `.${row}.`), "........"];
+}
 
 for (const facing of ["front", "back", "side"]) {
   LEGS[facing].forEach((feet, frame) => {

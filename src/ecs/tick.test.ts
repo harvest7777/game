@@ -196,6 +196,28 @@ describe("runTick", () => {
     expect(world.components.position.has(dummy)).toBe(false);
   });
 
+  it("shows damage numbers that float away and disappear", () => {
+    const { world } = setup();
+    const player = [...world.components.playerControlled][0][0];
+    addShooter(world, player, { weapon: "bolt", team: "player" });
+    const dummy = spawnEnemy(world, "dummy", { x: START.x + 2, y: START.y });
+    world.input.aim = { x: START.x + 2, y: START.y };
+
+    let ticks = 0;
+    while (world.components.floatingText.size === 0 && ticks++ < 20) {
+      runTick(world, DT);
+    }
+    const [[text, number]] = [...world.components.floatingText];
+    const hurt = 300 - world.components.health.get(dummy)!.hp;
+    expect(Number(number.text)).toBe(hurt);
+    // A new number starts fresh on the tick it appears.
+    expect(number.age).toBe(0);
+
+    world.components.shooter.delete(player);
+    for (let i = 0; i < 10; i++) runTick(world, DT);
+    expect(world.components.floatingText.has(text)).toBe(false);
+  });
+
   describe("enemies", () => {
     function withPlayerHealth() {
       const result = setup();

@@ -15,6 +15,7 @@ import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
 import type { Projectile, Shooter, Team } from "./projectile/components";
 import type { Facing, Rotation, Sprite } from "./sprite/components";
+import type { FloatingText } from "./text/components";
 import type { Tiles } from "./tiles";
 
 export type Entity = number;
@@ -51,6 +52,7 @@ export type Components = {
   brain: Store<Brain>;
   // Who this entity is after, e.g. what an enemy aims at.
   target: Store<Entity>;
+  floatingText: Store<FloatingText>;
 };
 
 export type World = {
@@ -98,6 +100,7 @@ export function createWorld(
       enemy: createStore(),
       brain: createStore(),
       target: createStore(),
+      floatingText: createStore(),
     },
   };
 }

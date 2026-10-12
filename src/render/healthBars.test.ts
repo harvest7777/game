@@ -60,6 +60,35 @@ describe("pushHealthBars", () => {
     expect(fill.corners[0].y).toBeLessThan(at.y + TILE_PIXELS / 2 + PIXEL);
   });
 
+  it("sits below a scaled-up sprite instead of under it", () => {
+    const { world, view } = setup();
+    const e = addHurt(world, 100);
+    const scale = 1.8;
+    world.components.sprite.set(e, { name: "any", layer: "enemy", scale });
+
+    const [background] = bars(world, view);
+
+    const at = worldToScreen(view, CENTER);
+    const spriteBottom = at.y + (TILE_PIXELS / 2) * scale;
+    expect(background.corners[0].y).toBeGreaterThan(spriteBottom - 1);
+  });
+
+  it("sits below a sprite's glow", () => {
+    const { world, view } = setup();
+    const e = addHurt(world, 100);
+    world.components.sprite.set(e, {
+      name: "any",
+      layer: "enemy",
+      outline: { color: [1, 1, 0, 1], glow: { radius: 2, pulseHz: 0 } },
+    });
+
+    const [background] = bars(world, view);
+
+    // 4 sprite pixels of art plus 2 of glow below the center.
+    const glowBottom = worldToScreen(view, CENTER).y + 6 * PIXEL;
+    expect(background.corners[0].y).toBeGreaterThan(glowBottom - 1);
+  });
+
   it("fills in proportion to remaining health, from the left", () => {
     const { world, view } = setup();
     addHurt(world, 40);

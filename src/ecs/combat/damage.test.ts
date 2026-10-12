@@ -19,6 +19,27 @@ describe("applyDamage", () => {
     expect(hpOf()).toBe(30);
   });
 
+  it("records the damage dealt, by whom", () => {
+    const { world, target, attacker } = setup(50);
+    applyDamage(world, target, 20, attacker);
+    expect(world.events.damaged).toEqual([
+      { target, amount: 20, source: attacker },
+    ]);
+  });
+
+  it("records the full amount even past 0", () => {
+    const { world, target } = setup(10);
+    applyDamage(world, target, 25);
+    expect(world.events.damaged[0].amount).toBe(25);
+  });
+
+  it("records nothing once it's at 0", () => {
+    const { world, target } = setup(10);
+    applyDamage(world, target, 25);
+    applyDamage(world, target, 25);
+    expect(world.events.damaged).toHaveLength(1);
+  });
+
   it("stops at 0 and records the death with its killer", () => {
     const { world, target, attacker, hpOf } = setup(10);
     applyDamage(world, target, 25, attacker);

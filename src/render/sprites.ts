@@ -130,16 +130,18 @@ export function pushSprites(
       x - ax + bx,
       y - ay + by,
       regionOf(art, p.file),
-      p.flipX,
-      marginOf(p.sprite),
-      p.sprite.outline,
-      depthOf(view, p.depth),
+      {
+        flipX: p.flipX,
+        margin: marginOf(p.sprite),
+        outline: p.sprite.outline,
+        depth: depthOf(view, p.depth),
+      },
     );
   }
 }
 
 // Sprite pixels the quad needs past the art for its outline or glow.
-function marginOf(sprite: Sprite): number {
+export function marginOf(sprite: Sprite): number {
   if (!sprite.outline) return 0;
   return Math.max(OUTLINE_THICKNESS, sprite.outline.glow?.radius ?? 0);
 }

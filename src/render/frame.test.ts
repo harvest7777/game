@@ -9,6 +9,7 @@ import { QuadBuffer, readQuads, type Quad } from "./quads";
 
 const manifest: Manifest = {
   sprites: { orb: { kind: "static", file: "orb" } },
+  font: {},
   ground: { 0: "floor" },
   walls: { top: "top", side: "side" },
 };
@@ -92,6 +93,7 @@ describe("buildFrame", () => {
     const take = (n: number) => quads.slice(at, (at += n));
     const terrain = take(sections.terrain);
     const sprites = take(sections.sprites);
+    const overlay = take(sections.overlay);
     const debug = take(sections.debug);
     expect(at).toBe(out.count);
     expect(terrain.map(fileOf)).toContain("top");
@@ -99,6 +101,7 @@ describe("buildFrame", () => {
     // it.
     expect(sprites.map((q) => q.fill)).toEqual([true, true, false]);
     expect(fileOf(sprites[2])).toBe("orb");
+    expect(overlay).toHaveLength(0);
     expect(debug).toHaveLength(1);
     expect(debug[0].ring).toBeGreaterThan(0);
   });
