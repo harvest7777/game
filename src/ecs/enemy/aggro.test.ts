@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { testEnemy } from "../../testing/defs";
 import type { Team } from "../projectile/components";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type World } from "../world";
 import { aggroSystem } from "./aggro";
-import { enemies } from "./definitions";
 import { spawnEnemy } from "./spawn";
 
-// The slime notices things within 7 tiles.
-const RANGE = enemies.slime.detectRange;
+const SLIME = testEnemy();
+const RANGE = SLIME.detectRange;
 const SLIME_AT = { x: 10, y: 10 };
 
 function setup() {
   const world = createWorld(createTiles(40, 40));
-  const slime = spawnEnemy(world, "slime", SLIME_AT);
+  const slime = spawnEnemy(world, SLIME, SLIME_AT);
   return { world, slime, targetOf: () => world.components.target.get(slime) };
 }
 

@@ -1,91 +1,20 @@
-import type { WeaponId } from "../projectile/weapons";
+import type { WeaponDef } from "../projectile/weapons";
+import type { SpriteFile } from "../sprite/art";
+
+// Every kind of item, in the order their equipment slots are shown. Each
+// kind has one equipment slot.
+export const ITEM_KINDS = ["weapon", "ability", "armor", "ring"] as const;
 
 // Which equipment slot an item goes in.
-export type ItemKind = "weapon" | "ability" | "armor" | "ring";
+export type ItemKind = (typeof ITEM_KINDS)[number];
 
-// What a kind of item is. Like weapons and enemies, it's data: add an entry
-// to add an item. `sprite` is its icon in the renderer's manifest.
+// What a kind of item is. Each item is its own file under
+// src/content/items.
 export type ItemDef = {
   name: string;
   kind: ItemKind;
-  sprite: string;
+  // The art the HUD shows it with.
+  icon: SpriteFile;
   // For weapons: what it fires.
-  weapon?: WeaponId;
+  weapon?: WeaponDef;
 };
-
-export const items = {
-  apprenticeStaff: {
-    name: "Apprentice Staff",
-    kind: "weapon",
-    sprite: "item.apprenticeStaff",
-    weapon: "bolt",
-  },
-  hasteStaff: {
-    name: "Staff of Haste",
-    kind: "weapon",
-    sprite: "item.hasteStaff",
-    weapon: "fastBolt",
-  },
-  serpentStaff: {
-    name: "Serpent Staff",
-    kind: "weapon",
-    sprite: "item.serpentStaff",
-    weapon: "wavy",
-  },
-  currentStaff: {
-    name: "Staff of Currents",
-    kind: "weapon",
-    sprite: "item.currentStaff",
-    weapon: "tightWave",
-  },
-  cometStaff: {
-    name: "Comet Staff",
-    kind: "weapon",
-    sprite: "item.cometStaff",
-    weapon: "accelerating",
-  },
-  mireStaff: {
-    name: "Mire Staff",
-    kind: "weapon",
-    sprite: "item.mireStaff",
-    weapon: "slowing",
-  },
-  spiralStaff: {
-    name: "Spiral Staff",
-    kind: "weapon",
-    sprite: "item.spiralStaff",
-    weapon: "spiral",
-  },
-  phantomStaff: {
-    name: "Phantom Staff",
-    kind: "weapon",
-    sprite: "item.phantomStaff",
-    weapon: "ghost",
-  },
-  prejudiceStaff: {
-    name: "Staff of Extreme Prejudice",
-    kind: "weapon",
-    sprite: "item.prejudiceStaff",
-    weapon: "extremePrejudice",
-  },
-  boomerang: {
-    name: "Wanderer's Boomerang",
-    kind: "weapon",
-    sprite: "item.boomerang",
-    weapon: "boomerang",
-  },
-  lance: {
-    name: "Piercing Lance",
-    kind: "weapon",
-    sprite: "item.lance",
-    weapon: "lance",
-  },
-} satisfies Record<string, ItemDef>;
-
-export type ItemId = keyof typeof items;
-
-export const itemIds = Object.keys(items) as ItemId[];
-
-export function itemDef(id: ItemId): ItemDef {
-  return items[id];
-}

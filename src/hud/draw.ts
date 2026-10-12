@@ -5,7 +5,7 @@ import type { QuadBuffer } from "../render/quads";
 import { OUTLINE_THICKNESS } from "../render/sprites";
 import { layoutText, pushText } from "../render/textLayout";
 import type { SlotRef } from "../ecs/inventory/components";
-import type { ItemId } from "../ecs/inventory/items";
+import type { ItemDef } from "../ecs/inventory/items";
 import { itemAt, sameSlot } from "../ecs/inventory/slots";
 import {
   DRAGGED_FROM_ALPHA,
@@ -99,7 +99,7 @@ export function drawHud(
       pushElements(
         out,
         art,
-        [{ kind: "icon", rect, sprite: icon.sprite }],
+        [{ kind: "icon", rect, file: icon.file }],
         state.pointer.x,
         state.pointer.y,
         pixel,
@@ -138,7 +138,7 @@ function hoveredItem(
   player: Entity,
   state: HudState,
   time: number,
-): ItemId | undefined {
+): ItemDef | undefined {
   if (!state.hover || state.press?.dragging) return undefined;
   if (
     state.hoverSince === undefined ||
@@ -208,8 +208,6 @@ export function pushElements(
       const top = (y + rect.y) * pixel - pad;
       const right = (x + rect.x + rect.w) * pixel + pad;
       const bottom = (y + rect.y + rect.h) * pixel + pad;
-      const file = art.manifest.sprites[element.sprite];
-      if (!file || file.kind !== "static") continue;
       const faded =
         element.ref && look.dragged && sameSlot(element.ref, look.dragged);
       out.push(
@@ -221,7 +219,7 @@ export function pushElements(
         bottom,
         left,
         bottom,
-        regionOf(art, file.file),
+        regionOf(art, element.file),
         {
           margin: OUTLINE_THICKNESS,
           outline: ICON_OUTLINE,

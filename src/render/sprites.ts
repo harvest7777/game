@@ -1,11 +1,10 @@
-import { weaponDef } from "../ecs/projectile/weapons";
 import { MAX_REACH } from "./distance";
 import type { Entity, World } from "../ecs/world";
 import type { Sprite, SpriteLayer } from "../ecs/sprite/components";
 import type { Vec2 } from "../ecs/shared/physics/math";
 import { lerpAngle } from "./angle";
 import { regionOf, type Art } from "./art";
-import type { SpriteFile } from "./assets";
+import { IDLE_CLIP, type SpriteFile } from "../ecs/sprite/art";
 import type { QuadBuffer } from "./quads";
 import { depthOf, worldToScreen, type View } from "./view";
 
@@ -55,14 +54,13 @@ export function spritePixels(
     height: SPRITE_PIXELS_PER_TILE * scale,
   };
   if (!sprite || !art) return fallback;
-  const spriteArt = art.manifest.sprites[sprite.name];
-  if (!spriteArt) return fallback;
+  const spriteArt = sprite.art;
   const file =
     spriteArt.kind === "static"
       ? spriteArt.file
       : spriteArt.kind === "animated"
         ? spriteArt.clips[
-            world.components.animation.get(entity)?.clip ?? "idle"
+            world.components.animation.get(entity)?.clip ?? IDLE_CLIP
           ]?.[0]
         : spriteArt.front[0];
   if (!file) return fallback;
@@ -103,15 +101,7 @@ export function pushSprites(
     const position = interpolatedPosition(world, entity, alpha);
     if (!position) continue;
     const center = worldToScreen(view, position);
-    const { file, flipX } = pickFrame(
-      world,
-      entity,
-      sprite,
-      art,
-      view,
-      alpha,
-      time,
-    );
+    const { file, flipX } = pickFrame(world, entity, sprite, view, alpha, time);
     const region = regionOf(art, file);
     const margin = marginOf(sprite);
     const pixel = basePixel * (sprite.scale ?? 1);
@@ -195,20 +185,17 @@ function pickFrame(
   world: World,
   entity: Entity,
   sprite: Sprite,
-  art: Art,
   view: View,
   alpha: number,
   time: number,
 ): { file: SpriteFile; flipX: boolean } {
-  const spriteArt = art.manifest.sprites[sprite.name];
-  if (!spriteArt) throw new Error(`no art for sprite "${sprite.name}"`);
+  const spriteArt = sprite.art;
   if (spriteArt.kind === "static")
     return { file: spriteArt.file, flipX: false };
   if (spriteArt.kind === "animated") {
     const animation = world.components.animation.get(entity);
-    const clip = spriteArt.clips[animation?.clip ?? "idle"];
-    if (!clip)
-      throw new Error(`no clip "${animation?.clip}" for "${sprite.name}"`);
+    const clip = spriteArt.clips[animation?.clip ?? IDLE_CLIP];
+    if (!clip) throw new Error(`no clip "${animation?.clip}" in its art`);
     const elapsed = animation
       ? animation.previousTime +
         (animation.time - animation.previousTime) * alpha
@@ -254,6 +241,6 @@ function pickFrame(
 function isThrusting(world: World, entity: Entity): boolean {
   const shooter = world.components.shooter.get(entity);
   if (!shooter) return false;
-  const interval = 1 / weaponDef(shooter.weapon).rate;
+  const interval = 1 / shooter.weapon.rate;
   return shooter.cooldown > interval / 2;
 }

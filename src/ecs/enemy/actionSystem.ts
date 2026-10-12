@@ -1,47 +1,10 @@
 import type { Vec2 } from "../shared/physics/math";
+import { IDLE_CLIP } from "../sprite/art";
 import type { Entity, World } from "../world";
-import { fireWeapon } from "../projectile/shoot";
-import { enemyDef, phaseOf } from "./definitions";
+import { playCue } from "./cues";
+import { stageFor } from "../shared/bossActions";
+import { phaseOf } from "./definitions";
 import type { BossAction, BossStage } from "./sequences";
-
-const IDLE_CLIP = "idle";
-
-// Creates or restarts the current phase's deterministic sequence rotation.
-// A health-phase switch calls this before the next action tick.
-export function resetBossAction(world: World, entity: Entity): void {
-  const enemy = world.components.enemy.get(entity);
-  if (!enemy) return;
-  const def = enemyDef(enemy.def);
-  const rotation = phaseOf(def, enemy.phase?.name)?.rotation;
-  if (!rotation?.length || !def.sequences) {
-    world.components.bossAction.delete(entity);
-    world.components.animation.delete(entity);
-    world.components.vulnerable.delete(entity);
-    return;
-  }
-  world.components.bossAction.set(entity, {
-    sequence: rotation[0],
-    rotationIndex: 0,
-    stageIndex: 0,
-    time: 0,
-    previousTime: 0,
-    active: false,
-  });
-  world.components.animation.set(entity, {
-    clip: IDLE_CLIP,
-    time: 0,
-    previousTime: 0,
-    duration: 1,
-  });
-  world.components.vulnerable.delete(entity);
-}
-
-// The live stage, used by the brain to apply an action's movement override.
-export function bossStage(world: World, entity: Entity): BossStage | undefined {
-  const action = world.components.bossAction.get(entity);
-  if (!action?.active) return undefined;
-  return stageFor(world, entity, action);
-}
 
 // Advances authored timelines. Cues fire exactly when their timestamp is
 // crossed, regardless of tick length; a completed sequence takes the next
@@ -82,11 +45,9 @@ export function bossActionSystem(world: World, dt: number): void {
 }
 
 function advanceStage(world: World, entity: Entity, action: BossAction): void {
-  const def = definitionFor(world, entity);
-  const sequence = def?.sequences?.[action.sequence];
-  const rotation =
-    def &&
-    phaseOf(def, world.components.enemy.get(entity)?.phase?.name)?.rotation;
+  const enemy = world.components.enemy.get(entity);
+  const sequence = enemy?.def.sequences?.[action.sequence];
+  const rotation = enemy && phaseOf(enemy.def, enemy.phase?.name)?.rotation;
   if (!sequence || !rotation?.length) return;
   action.stageIndex++;
   if (action.stageIndex >= sequence.stages.length) {
@@ -121,36 +82,11 @@ function fireCrossedCues(
 ): void {
   const at = world.components.position.get(entity);
   if (!at) return;
+  const aim = () => action.heading ?? aimAtTarget(world, entity);
   for (const { at: cueAt, cue } of stage.cues ?? []) {
     const crossed = entering ? cueAt === 0 : cueAt > from && cueAt <= to;
-    if (!crossed) continue;
-    if (cue.kind === "sound") {
-      world.events.soundCues.push({ sound: cue.sound, at: { ...at } });
-    } else {
-      fireWeapon(world, {
-        entity,
-        weapon: cue.weapon,
-        at,
-        aim: action.heading ?? aimAtTarget(world, entity),
-        offset: cue.offset,
-      });
-    }
+    if (crossed) playCue(world, cue, { entity, at, aim });
   }
-}
-
-function stageFor(
-  world: World,
-  entity: Entity,
-  action: BossAction,
-): BossStage | undefined {
-  return definitionFor(world, entity)?.sequences?.[action.sequence]?.stages[
-    action.stageIndex
-  ];
-}
-
-function definitionFor(world: World, entity: Entity) {
-  const enemy = world.components.enemy.get(entity);
-  return enemy ? enemyDef(enemy.def) : undefined;
 }
 
 function aimAtTarget(world: World, entity: Entity): Vec2 {

@@ -14,7 +14,7 @@ const digits = [..."0123456789"];
 // Each digit gets its own x so a quad's region says which digit it is.
 const art: Art = {
   manifest: {
-    sprites: { boss: { kind: "static", file: "boss" } },
+    sprites: [],
     ground: {},
     walls: { top: "top", side: "side" },
     fonts: {
@@ -114,7 +114,7 @@ describe("pushFloatingText", () => {
     const boss = spawn(world);
     world.components.position.set(boss, { ...CENTER });
     world.components.sprite.set(boss, {
-      name: "boss",
+      art: { kind: "static", file: "boss" },
       layer: "enemy",
       scale: 1.8,
     });

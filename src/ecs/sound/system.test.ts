@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testEnemy, testProjectile, testWeapon } from "../../testing/defs";
 import { spawnEnemy } from "../enemy/spawn";
 import { fireProjectile } from "../projectile/spawn";
 import { createTiles } from "../tiles";
@@ -8,9 +9,8 @@ import { soundSystem } from "./system";
 describe("soundSystem", () => {
   it("turns one volley into one firing sound", () => {
     const world = createWorld(createTiles(10, 10));
-    world.components.playerControlled.set(3, true);
     world.events.shotsFired.push({
-      projectile: "bolt",
+      weapon: testWeapon({ count: 5, sound: "magicFire" }),
       owner: 3,
       at: { x: 2, y: 4 },
     });
@@ -26,7 +26,7 @@ describe("soundSystem", () => {
     const world = createWorld(createTiles(10, 10));
     const owner = spawn(world);
     const shot = fireProjectile(world, {
-      def: "bolt",
+      def: testProjectile(),
       owner,
       team: "player",
       at: { x: 1, y: 1 },
@@ -62,13 +62,15 @@ describe("soundSystem", () => {
     ]);
   });
 
-  it("keeps ordinary enemy shots quiet but plays boss shots", () => {
-    const world = createWorld(createTiles(10, 10), () => 0.5);
-    const slime = spawnEnemy(world, "slime", { x: 2, y: 2 });
-    const boss = spawnEnemy(world, "slimeKing", { x: 6, y: 6 });
+  it("keeps a weapon with no firing sound quiet", () => {
+    const world = createWorld(createTiles(10, 10));
     world.events.shotsFired.push(
-      { projectile: "slimeBall", owner: slime, at: { x: 2, y: 2 } },
-      { projectile: "slimeBall", owner: boss, at: { x: 6, y: 6 } },
+      { weapon: testWeapon(), owner: 1, at: { x: 2, y: 2 } },
+      {
+        weapon: testWeapon({ sound: "magicFire" }),
+        owner: 2,
+        at: { x: 6, y: 6 },
+      },
     );
 
     soundSystem(world, 0.05);
@@ -80,7 +82,10 @@ describe("soundSystem", () => {
 
   it("plays an enemy's authored death sound", () => {
     const world = createWorld(createTiles(10, 10), () => 0.5);
-    const enemy = spawnEnemy(world, "slimeKing", { x: 4, y: 6 });
+    const enemy = spawnEnemy(world, testEnemy({ deathSound: "bossDeath" }), {
+      x: 4,
+      y: 6,
+    });
     world.events.deaths.push({ entity: enemy });
 
     soundSystem(world, 0.05);

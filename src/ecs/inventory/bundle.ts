@@ -1,13 +1,13 @@
 import type { Entity, World } from "../world";
-import { INVENTORY_SIZE, type Equipment } from "./components";
-import type { ItemId } from "./items";
-import { armWithEquippedWeapon } from "./system";
+import { emptyEquipment, INVENTORY_SIZE } from "./components";
+import type { ItemDef } from "./items";
+import { armWithEquippedWeapon } from "../shared/arming";
 
 type HoldingsOptions = {
   // The weapon to wear, if any. Other equipment slots start empty.
-  weapon?: ItemId;
+  weapon?: ItemDef;
   // Fills the inventory from the first slot; the rest stay empty.
-  carrying?: ItemId[];
+  carrying?: ItemDef[];
 };
 
 // Gives an entity equipment and an inventory, and arms it with its weapon.
@@ -16,12 +16,8 @@ export function addHoldings(
   entity: Entity,
   { weapon, carrying = [] }: HoldingsOptions,
 ): void {
-  const equipment: Equipment = {
-    weapon: weapon ? { def: weapon } : null,
-    ability: null,
-    armor: null,
-    ring: null,
-  };
+  const equipment = emptyEquipment();
+  if (weapon) equipment.weapon = { def: weapon };
   const slots = Array.from({ length: INVENTORY_SIZE }, (_, i) =>
     carrying[i] ? { def: carrying[i] } : null,
   );

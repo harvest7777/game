@@ -1,8 +1,9 @@
 import type { World } from "../world";
 import { freshMemory, steer } from "./behaviors";
-import { enemyDef, phaseOf } from "./definitions";
+import { phaseOf } from "./definitions";
 import { separation, withSeparation } from "./separation";
-import { bossStage } from "./actionSystem";
+import { stageVelocity } from "./stageMovement";
+import { bossStage } from "../shared/bossActions";
 
 // Moves enemies by their behavior: `aggro` while they have a target, `idle`
 // otherwise, taken from their current phase when it sets them. Switching
@@ -17,7 +18,7 @@ export function brainSystem(world: World, dt: number): void {
     const mind = brain.get(entity);
     const at = position.get(entity);
     if (!mind || !at) continue;
-    const def = enemyDef(e.def);
+    const { def } = e;
     const actionStage = bossStage(world, entity);
 
     const targetEntity = target.get(entity);
@@ -31,17 +32,14 @@ export function brainSystem(world: World, dt: number): void {
 
     const behavior = phaseOf(def, e.phase?.name)?.[mode] ?? def[mode];
     const moveSpeed = speed.get(entity) ?? def.speed;
-    if (actionStage?.movement === "stationary") {
-      velocity.set(entity, { x: 0, y: 0 });
-      continue;
-    }
-    if (typeof actionStage?.movement === "object") {
-      const heading = world.components.bossAction.get(entity)?.heading;
-      const direction = heading ?? { x: 1, y: 0 };
-      velocity.set(entity, {
-        x: direction.x * moveSpeed * actionStage.movement.speedScale,
-        y: direction.y * moveSpeed * actionStage.movement.speedScale,
+    const stageMove =
+      actionStage &&
+      stageVelocity(actionStage.movement, {
+        speed: moveSpeed,
+        heading: world.components.bossAction.get(entity)?.heading,
       });
+    if (stageMove) {
+      velocity.set(entity, stageMove);
       continue;
     }
     const steering = steer(behavior, mind.memory, {

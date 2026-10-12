@@ -1,9 +1,9 @@
 import type { World } from "../world";
 import { freshMemory } from "./behaviors";
-import { enemyDef, phaseOf } from "./definitions";
+import { phaseOf } from "./definitions";
 import { nextPhase } from "./phases";
-import { armForPhase } from "./spawn";
-import { resetBossAction } from "./actionSystem";
+import { armForPhase } from "../shared/arming";
+import { resetBossAction } from "../shared/bossActions";
 
 // Moves enemies through their phases. Times the current phase, and when one
 // of its transitions holds, switches: the new phase starts its clock at 0,
@@ -14,7 +14,7 @@ export function phaseSystem(world: World, dt: number): void {
 
   for (const [entity, e] of enemy) {
     if (!e.phase) continue;
-    const phase = phaseOf(enemyDef(e.def), e.phase.name);
+    const phase = phaseOf(e.def, e.phase.name);
     if (!phase) continue;
     e.phase.time += dt;
 

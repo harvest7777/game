@@ -10,9 +10,10 @@ import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
 const SIZE = 400;
 const CENTER = { x: 10, y: 10 };
 const PIXEL = TILE_PIXELS / 8;
+const ANY = { kind: "static", file: "any" } as const;
 const tallArt: Art = {
   manifest: {
-    sprites: { boss: { kind: "static", file: "boss" } },
+    sprites: [],
     fonts: { bold: {}, regular: {} },
     ground: {},
     walls: { top: "top", side: "side" },
@@ -79,7 +80,7 @@ describe("pushHealthBars", () => {
     const { world, view } = setup();
     const e = addHurt(world, 100);
     const scale = 1.8;
-    world.components.sprite.set(e, { name: "any", layer: "enemy", scale });
+    world.components.sprite.set(e, { art: ANY, layer: "enemy", scale });
 
     const [background] = bars(world, view);
 
@@ -92,7 +93,7 @@ describe("pushHealthBars", () => {
     const { world, view } = setup();
     const e = addHurt(world, 100);
     world.components.sprite.set(e, {
-      name: "boss",
+      art: { kind: "static", file: "boss" },
       layer: "enemy",
       scale: 1.8,
     });
@@ -108,7 +109,7 @@ describe("pushHealthBars", () => {
     const { world, view } = setup();
     const e = addHurt(world, 100);
     world.components.sprite.set(e, {
-      name: "any",
+      art: ANY,
       layer: "enemy",
       outline: { color: [1, 1, 0, 1], glow: { radius: 2, pulseHz: 0 } },
     });

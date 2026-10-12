@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testWeapon } from "../testing/defs";
 import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
 import { createTiles } from "./tiles";
 import { createWorld, spawn } from "./world";
@@ -70,7 +71,10 @@ describe("addSprite", () => {
   it("adds the sprite facing toward the viewer", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
-    const sprite = { name: "player", layer: "player" } as const;
+    const sprite = {
+      art: { kind: "static", file: "player" },
+      layer: "player",
+    } as const;
 
     addSprite(world, e, sprite);
 
@@ -80,16 +84,16 @@ describe("addSprite", () => {
 });
 
 describe("addShooter", () => {
-  it("adds a shooter ready to fire, on its team", () => {
+  it("adds a shooter ready to fire", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
 
-    addShooter(world, e, { weapon: "wavy", team: "player" });
+    const weapon = testWeapon();
+    addShooter(world, e, { weapon });
 
     expect(world.components.shooter.get(e)).toEqual({
-      weapon: "wavy",
+      weapon,
       cooldown: 0,
     });
-    expect(world.components.team.get(e)).toBe("player");
   });
 });

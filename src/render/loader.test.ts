@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { enemyDef, enemyIds } from "../ecs/enemy/definitions";
-import { itemDef, itemIds } from "../ecs/inventory/items";
-import { projectileDef, projectileIds } from "../ecs/projectile/definitions";
-import { glyphFile, manifest, manifestFiles, type Manifest } from "./assets";
+import { contentArt } from "../content/art";
+import { characterIds, characters } from "../content/characters";
+import { enemies, enemyIds } from "../content/enemies";
+import { itemIds, items } from "../content/items";
+import { projectileIds, projectiles } from "../content/projectiles";
+import {
+  createManifest,
+  glyphFile,
+  manifestFiles,
+  type Manifest,
+} from "./assets";
 import { buildAtlas, measureGlyph } from "./loader";
 
 type FakeImage = { file: string; width: number; height: number };
@@ -36,10 +43,10 @@ function columns(w: number, h: number, inked: number[]): Uint8ClampedArray {
 }
 
 const small: Manifest = {
-  sprites: {
-    hero: { kind: "walker", front: ["a", "b"], back: ["a"], side: ["c"] },
-    rock: { kind: "static", file: "c" },
-  },
+  sprites: [
+    { kind: "walker", front: ["a", "b"], back: ["a"], side: ["c"] },
+    { kind: "static", file: "c" },
+  ],
   ground: { 0: "floor", 1: "floor" },
   fonts: { bold: { "1": "one" }, regular: {} },
   walls: { top: "top", side: "side" },
@@ -115,6 +122,8 @@ describe("buildAtlas glyphs", () => {
 });
 
 describe("the real manifest", () => {
+  const manifest = createManifest(contentArt());
+
   it("only references sprite files that exist", () => {
     const onDisk = new Set(
       Object.keys(import.meta.glob("../../public/sprites/**/*.png")).map(
@@ -129,16 +138,13 @@ describe("the real manifest", () => {
 
   it("has art for every projectile", () => {
     for (const id of projectileIds) {
-      const { name } = projectileDef(id).sprite;
-      expect(manifest.sprites[name], `${id} uses "${name}"`).toBeDefined();
+      expect(manifest.sprites, id).toContain(projectiles[id].sprite.art);
     }
   });
 
   it("has an icon for every item", () => {
-    for (const id of itemIds) {
-      const { sprite } = itemDef(id);
-      expect(manifest.sprites[sprite], `${id} uses "${sprite}"`).toBeDefined();
-    }
+    const files = manifestFiles(manifest);
+    for (const id of itemIds) expect(files, id).toContain(items[id].icon);
   });
 
   it("has a bold glyph for every digit", () => {
@@ -162,15 +168,20 @@ describe("the real manifest", () => {
     expect(glyphFile("?")).toBe("question");
   });
 
+  it("has art for every character", () => {
+    for (const id of characterIds) {
+      expect(manifest.sprites, id).toContain(characters[id].sprite.art);
+    }
+  });
+
   it("has art for every enemy", () => {
     for (const id of enemyIds) {
-      const { name } = enemyDef(id).sprite;
-      expect(manifest.sprites[name], `${id} uses "${name}"`).toBeDefined();
+      expect(manifest.sprites, id).toContain(enemies[id].sprite.art);
     }
   });
 
   it("gives every walker three frames per facing, attacks included", () => {
-    for (const art of Object.values(manifest.sprites)) {
+    for (const art of manifest.sprites) {
       if (art.kind !== "walker") continue;
       for (const set of [art, art.attack]) {
         if (!set) continue;

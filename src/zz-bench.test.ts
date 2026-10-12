@@ -1,8 +1,10 @@
 // @ts-nocheck
 import { it } from "vitest";
 import { addControllable, addMovable } from "./ecs/bundles";
+import { enemies } from "./content/enemies";
 import { spawnEnemy } from "./ecs/enemy/spawn";
 import { addHoldings } from "./ecs/inventory/bundle";
+import { items } from "./content/items";
 import { runTick } from "./ecs/tick";
 import { createTiles } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
@@ -17,13 +19,13 @@ it("bench", { timeout: 300000 }, async () => {
   world.components.team.set(player, "player");
   world.components.health.set(player, { hp: 500, max: 500 });
   world.components.invulnerable.set(player, true);
-  addHoldings(world, player, { weapon: "apprenticeStaff" });
+  addHoldings(world, player, { weapon: items.apprenticeStaff });
   const n = Number(process.env.N ?? 10000);
   const kinds = ["archer"] as const;
   for (let i = 0; i < n; i++) {
     const a = random() * Math.PI * 2,
       r = 2 + Math.sqrt(random()) * 50;
-    spawnEnemy(world, kinds[0], {
+    spawnEnemy(world, enemies[kinds[0]], {
       x: 64 + Math.cos(a) * r,
       y: 64 + Math.sin(a) * r,
     });

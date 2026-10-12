@@ -47,7 +47,7 @@ describe("layoutText", () => {
 describe("pushText", () => {
   const art: Art = {
     manifest: {
-      sprites: {},
+      sprites: [],
       ground: {},
       walls: { top: "top", side: "side" },
       fonts: { regular: font, bold: {} },

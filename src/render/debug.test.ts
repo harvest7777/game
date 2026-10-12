@@ -11,7 +11,7 @@ import { createView, TILE_PIXELS, worldToScreen } from "./view";
 
 const NO_ART: Art = {
   manifest: {
-    sprites: {},
+    sprites: [],
     ground: {},
     walls: { top: "top", side: "side" },
     fonts: { bold: {}, regular: {} },
@@ -32,7 +32,8 @@ function setup() {
 function addBody(world: World, x: number, y: number, layer?: SpriteLayer) {
   const e = spawn(world);
   addMovable(world, e, { at: { x, y }, hitbox: { r: 0.4 } });
-  if (layer) addSprite(world, e, { name: "any", layer });
+  if (layer)
+    addSprite(world, e, { art: { kind: "static", file: "any" }, layer });
   return e;
 }
 

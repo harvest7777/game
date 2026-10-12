@@ -1,7 +1,7 @@
-import type { ItemKind } from "../ecs/inventory/items";
+import { ITEM_KINDS, type ItemKind } from "../ecs/inventory/items";
 import type { Entity, World } from "../ecs/world";
 import type { PanelLayout } from "./elements";
-import { itemView, type ItemView } from "./items";
+import { itemView, KIND_LABELS, type ItemView } from "./items";
 import { slotPanel } from "./layout";
 
 export type { ItemView };
@@ -16,33 +16,20 @@ export function equipmentView(
 ): EquipmentView | undefined {
   const equipment = world.components.equipment.get(entity);
   if (!equipment) return undefined;
-  return {
-    weapon: itemView(equipment.weapon),
-    ability: itemView(equipment.ability),
-    armor: itemView(equipment.armor),
-    ring: itemView(equipment.ring),
-  };
+  return Object.fromEntries(
+    ITEM_KINDS.map((kind) => [kind, itemView(equipment[kind])]),
+  ) as EquipmentView;
 }
 
-// Left to right in the panel.
-export const SLOT_ORDER: ItemKind[] = ["weapon", "ability", "armor", "ring"];
-// Shown dimly in an empty slot.
-export const SLOT_LABELS: Record<ItemKind, string> = {
-  weapon: "W",
-  ability: "S",
-  armor: "A",
-  ring: "R",
-};
-
-// The four equipment slots in a row: weapon, ability, armor, ring. Each
-// shows its item's icon, or a dim letter for its kind when empty.
+// The equipment slots in a row, in ITEM_KINDS order. Each shows its item's
+// icon, or a dim letter for its kind when empty.
 export function equipmentPanel(view: EquipmentView): PanelLayout {
   return slotPanel(
-    SLOT_ORDER.map((kind) => ({
+    ITEM_KINDS.map((kind) => ({
       ref: { in: "equipment", slot: kind },
       item: view[kind],
-      emptyLabel: SLOT_LABELS[kind],
+      emptyLabel: KIND_LABELS[kind].letter,
     })),
-    SLOT_ORDER.length,
+    ITEM_KINDS.length,
   );
 }

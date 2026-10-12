@@ -47,7 +47,7 @@ export function slotPanel(slots: SlotContent[], columns: number): PanelLayout {
       elements.push({
         kind: "icon",
         rect: { x: rect.x + INSET, y: rect.y + INSET, w: 8, h: 8 },
-        sprite: item.sprite,
+        file: item.icon,
         ref,
       });
     } else if (emptyLabel) {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testWeapon } from "../../testing/defs";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
@@ -43,7 +44,7 @@ describe("facingSystem", () => {
     const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
     const [[entity]] = [...world.components.facing];
     world.components.shooter.set(entity, {
-      weapon: "bolt",
+      weapon: testWeapon(),
       cooldown: 0,
       aim: { x: 0, y: -1 },
     });
@@ -56,7 +57,7 @@ describe("facingSystem", () => {
   it("faces its movement while a shooter hasn't aimed yet", () => {
     const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
     const [[entity]] = [...world.components.facing];
-    world.components.shooter.set(entity, { weapon: "bolt", cooldown: 0 });
+    world.components.shooter.set(entity, { weapon: testWeapon(), cooldown: 0 });
 
     facingSystem(world, 1);
 
@@ -69,7 +70,7 @@ describe("facingSystem", () => {
     world.components.playerControlled.set(entity, true);
     world.components.autoFire.set(entity, false);
     world.components.shooter.set(entity, {
-      weapon: "bolt",
+      weapon: testWeapon(),
       cooldown: 0,
       aim: { x: 0, y: -1 },
     });

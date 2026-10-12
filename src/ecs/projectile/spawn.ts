@@ -2,14 +2,10 @@ import { addMovable, addSprite } from "../bundles";
 import type { Vec2 } from "../shared/physics/math";
 import { spawn, type Entity, type World } from "../world";
 import type { Team } from "./components";
-import {
-  DEFAULT_PROJECTILE_SCALE,
-  projectileDef,
-  type ProjectileId,
-} from "./definitions";
+import { DEFAULT_PROJECTILE_SCALE, type ProjectileDef } from "./definitions";
 
 export type FireOptions = {
-  def: ProjectileId;
+  def: ProjectileDef;
   owner: Entity;
   team: Team;
   at: Vec2;
@@ -21,7 +17,7 @@ export type FireOptions = {
 // definition is copied, so projectiles never share objects with it or with
 // each other.
 export function fireProjectile(world: World, options: FireOptions): Entity {
-  const def = projectileDef(options.def);
+  const { def } = options;
   const length = Math.hypot(options.toward.x, options.toward.y);
   const direction =
     length === 0
@@ -35,7 +31,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
     response: def.walls ?? "stop",
   });
   addSprite(world, entity, {
-    name: def.sprite.name,
+    art: def.sprite.art,
     layer: "projectile",
     scale: def.sprite.scale ?? DEFAULT_PROJECTILE_SCALE,
     ...(def.sprite.outline && {
@@ -44,7 +40,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
   });
 
   world.components.projectile.set(entity, {
-    def: options.def,
+    def,
     owner: options.owner,
     team: options.team,
     origin: { x: options.at.x, y: options.at.y },

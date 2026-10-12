@@ -8,7 +8,7 @@ import { buildFrame, cameraAngle, cameraCenter, frameView } from "./frame";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 
 const manifest: Manifest = {
-  sprites: { orb: { kind: "static", file: "orb" } },
+  sprites: [],
   fonts: { bold: {}, regular: {} },
   ground: { 0: "floor" },
   walls: { top: "top", side: "side" },
@@ -25,7 +25,10 @@ function worldWithPlayer() {
   const world = createWorld(createTiles(20, 20));
   const player = spawn(world);
   addMovable(world, player, { at: { x: 12, y: 10 }, hitbox: { r: 0.4 } });
-  addSprite(world, player, { name: "orb", layer: "player" });
+  addSprite(world, player, {
+    art: { kind: "static", file: "orb" },
+    layer: "player",
+  });
   world.components.previousPosition.set(player, { x: 10, y: 10 });
   return { world, player };
 }

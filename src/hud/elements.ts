@@ -1,4 +1,5 @@
 import type { SlotRef } from "../ecs/inventory/components";
+import type { SpriteFile } from "../ecs/sprite/art";
 import type { Color } from "../ecs/sprite/components";
 import type { FontName } from "../render/assets";
 import type { Rect } from "./state";
@@ -9,9 +10,9 @@ import type { Rect } from "./state";
 export type HudElement =
   // A filled box with a 1-pixel border; `ref` if it's an item slot's box.
   | { kind: "box"; rect: Rect; fill: Color; border: Color; ref?: SlotRef }
-  // A sprite from the manifest, drawn 1 UI pixel per art pixel, outlined.
-  // `ref` says which slot's item it is, so it can be dragged.
-  | { kind: "icon"; rect: Rect; sprite: string; ref?: SlotRef }
+  // A sprite file, drawn 1 UI pixel per art pixel, outlined. `ref` says
+  // which slot's item it is, so it can be dragged.
+  | { kind: "icon"; rect: Rect; file: SpriteFile; ref?: SlotRef }
   // Text with its glyph cells' top at `y`, centered on `x` if asked.
   | {
       kind: "text";

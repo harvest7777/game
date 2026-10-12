@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { projectileDef } from "../ecs/projectile/definitions";
+import type { ItemDef } from "../ecs/inventory/items";
+import type { ProjectileDef } from "../ecs/projectile/definitions";
+import { testItem, testProjectile, testWeapon } from "../testing/defs";
 import {
   itemTooltip,
   placeTooltip,
@@ -8,23 +10,34 @@ import {
   TOOLTIP_COLORS,
 } from "./tooltip";
 
-const texts = (id: Parameters<typeof itemTooltip>[0]) =>
-  itemTooltip(id).map((l) => l.text);
+const texts = (item: ItemDef) => itemTooltip(item).map((l) => l.text);
+
+// A staff whose shot has `shot`'s traits.
+const firing = (shot: Partial<ProjectileDef>) =>
+  testItem({ weapon: testWeapon({ projectile: testProjectile(shot) }) });
 
 describe("itemTooltip", () => {
   it("names the item and its kind first", () => {
-    const [name, kind] = itemTooltip("apprenticeStaff");
-    expect(name).toEqual({
-      text: "Apprentice Staff",
-      color: TOOLTIP_COLORS.name,
-    });
+    const [name, kind] = itemTooltip(testItem({ name: "Staff" }));
+    expect(name).toEqual({ text: "Staff", color: TOOLTIP_COLORS.name });
     expect(kind.text).toBe("Weapon");
   });
 
   it("gives a weapon's damage, rate and range from its definitions", () => {
-    // Bolt: 20-30 damage, 4 shots a second, 12 tiles/s for 0.6 s.
-    expect(texts("apprenticeStaff")).toEqual([
-      "Apprentice Staff",
+    const staff = testItem({
+      name: "Staff",
+      weapon: testWeapon({
+        rate: 4,
+        projectile: testProjectile({
+          damage: [20, 30],
+          speed: 12,
+          lifetime: 0.6,
+        }),
+      }),
+    });
+    // 12 tiles/s for 0.6 s.
+    expect(texts(staff)).toEqual([
+      "Staff",
       "Weapon",
       "Damage: 20-30",
       "Rate: 4/s",
@@ -33,32 +46,42 @@ describe("itemTooltip", () => {
   });
 
   it("counts the shots in a volley", () => {
-    expect(texts("prejudiceStaff")).toContain("Damage: 25-40 x10");
+    const ring = testItem({
+      weapon: testWeapon({
+        count: 10,
+        projectile: testProjectile({ damage: [25, 40] }),
+      }),
+    });
+    expect(texts(ring)).toContain("Damage: 25-40 x10");
   });
 
   it("lists what's special about its shots", () => {
-    expect(texts("lance")).toContain("Pierces enemies");
-    expect(texts("phantomStaff")).toContain("Passes through walls");
-    expect(texts("boomerang")).toContain("Returns");
-    expect(texts("serpentStaff")).toContain("Weaves");
-    expect(texts("cometStaff")).toContain("Speeds up");
-    expect(texts("mireStaff")).toContain("Slows down");
+    expect(texts(firing({ pierces: true }))).toContain("Pierces enemies");
+    expect(texts(firing({ walls: "pass" }))).toContain("Passes through walls");
+    expect(texts(firing({ boomerang: true }))).toContain("Returns");
+    expect(texts(firing({ wave: { amplitude: 1, frequency: 1 } }))).toContain(
+      "Weaves",
+    );
+    expect(texts(firing({ acceleration: 5 }))).toContain("Speeds up");
+    expect(texts(firing({ acceleration: -5 }))).toContain("Slows down");
   });
 });
 
 describe("range", () => {
   it("is speed times lifetime for a straight shot", () => {
-    expect(range(projectileDef("bolt"))).toBeCloseTo(12 * 0.6, 1);
+    const shot = testProjectile({ speed: 12, lifetime: 0.6 });
+    expect(range(shot)).toBeCloseTo(12 * 0.6, 1);
   });
 
   it("is the turnaround point for a boomerang, not where it ends", () => {
+    const shot = testProjectile({ speed: 10, lifetime: 1.2, boomerang: true });
     // 10 tiles/s out for half of 1.2 s.
-    expect(range(projectileDef("boomerang"))).toBeCloseTo(6, 1);
+    expect(range(shot)).toBeCloseTo(6, 1);
   });
 
   it("follows a curving path", () => {
     // A spiral never gets farther than the circle it traces: 2 radii.
-    const spiral = projectileDef("spiral");
+    const spiral = testProjectile({ speed: 6, turnRate: Math.PI });
     const radius = spiral.speed / spiral.turnRate!;
     expect(range(spiral)).toBeLessThanOrEqual(2 * radius + 1e-6);
   });

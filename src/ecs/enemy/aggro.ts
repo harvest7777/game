@@ -1,7 +1,6 @@
-import { opponents, targetsByTeam } from "../combat/teams";
+import { opponents, targetsByTeam } from "../shared/teams";
 import type { Team } from "../projectile/components";
 import type { Entity, World } from "../world";
-import { enemyDef } from "./definitions";
 
 // Picks each enemy's target: the nearest living thing on another team within
 // its detection range. With nothing in range it has no target, so it stops
@@ -15,7 +14,7 @@ export function aggroSystem(world: World, _dt: number): void {
     const at = position.get(entity);
     if (!at) continue;
     const side = team.get(entity);
-    const range = enemyDef(e.def).detectRange;
+    const range = e.def.detectRange;
 
     let nearest: Entity | undefined;
     let nearestDistance = Infinity;

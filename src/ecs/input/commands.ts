@@ -1,5 +1,5 @@
 import type { SlotRef } from "../inventory/components";
-import type { ItemId } from "../inventory/items";
+import type { ItemDef } from "../inventory/items";
 
 // One-off requests from the player: hotkeys and the HUD both send these, and
 // a system in the tick decides whether they happen. Unlike held actions they
@@ -12,7 +12,7 @@ export type Command =
   // Start or stop the player's equipped weapon autofiring.
   | { kind: "toggleAutoFire" }
   // Debug: add an item to the inventory.
-  | { kind: "give"; item: ItemId };
+  | { kind: "give"; item: ItemDef };
 
 // Number keys equip the matching inventory slot, in every layout.
 export const slotHotkeys: Record<string, Command> = Object.fromEntries(

@@ -1,6 +1,7 @@
 import type { Color, Outline } from "../ecs/sprite/components";
 import type { Art } from "./art";
-import type { FontName, SpriteFile } from "./assets";
+import type { SpriteFile } from "../ecs/sprite/art";
+import type { FontName } from "./assets";
 import type { GlyphMetrics } from "./loader";
 import type { QuadBuffer } from "./quads";
 import { OUTLINE_THICKNESS } from "./sprites";

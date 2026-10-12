@@ -9,6 +9,7 @@ import type {
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
 import type { Health, Invulnerable, Vulnerable } from "./combat/components";
+import type { Character } from "./character/components";
 import type { BossAction, Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
 import { createEvents, type Events } from "./events";
@@ -53,6 +54,7 @@ export type Components = {
   team: Store<Team>;
   health: Store<Health>;
   invulnerable: Store<Invulnerable>;
+  character: Store<Character>;
   enemy: Store<Enemy>;
   brain: Store<Brain>;
   bossAction: Store<BossAction>;
@@ -111,6 +113,7 @@ export function createWorld(
       team: createStore(),
       health: createStore(),
       invulnerable: createStore(),
+      character: createStore(),
       enemy: createStore(),
       brain: createStore(),
       bossAction: createStore(),

@@ -1,21 +1,22 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
-import { addControllable, addMovable, addSprite } from "./ecs/bundles";
 import {
   actionsFromKeys,
   keybindPresets,
   type KeybindPreset,
 } from "./ecs/input/actions";
 import { commandHotkeys, type Command } from "./ecs/input/commands";
-import { addHoldings } from "./ecs/inventory/bundle";
-import { itemIds, items, type ItemId } from "./ecs/inventory/items";
+import { itemIds, items, type ItemId } from "./content/items";
 import type { Vec2 } from "./ecs/shared/physics/math";
-import { enemyIds, type EnemyId } from "./ecs/enemy/definitions";
+import { enemies, enemyIds, type EnemyId } from "./content/enemies";
 import { spawnCrowd, spawnEnemy } from "./ecs/enemy/spawn";
 import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
-import { createWorld, spawn } from "./ecs/world";
-import { manifest } from "./render/assets";
+import { createWorld } from "./ecs/world";
+import { createManifest } from "./render/assets";
+import { contentArt } from "./content/art";
+import { characters } from "./content/characters";
+import { spawnCharacter } from "./ecs/character/spawn";
 import { drawHud, FLASH_SECONDS, layoutHud, uiScreen } from "./hud/draw";
 import { hudPointer, type PointerEvent } from "./hud/input";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
@@ -63,32 +64,10 @@ for (const [x, y] of [
 }
 
 const world = createWorld(tiles);
-const player = spawn(world);
-addMovable(world, player, {
-  at: { x: MIDDLE + 16, y: MIDDLE + 16 },
-  hitbox: { r: 0.4 },
+const player = spawnCharacter(world, characters.wizard, {
+  x: MIDDLE + 16,
+  y: MIDDLE + 16,
 });
-addControllable(world, player, { speed: 5 });
-addSprite(world, player, {
-  name: "player",
-  layer: "player",
-  outline: { color: [0, 0, 0, 1] },
-});
-world.components.team.set(player, "player");
-addHoldings(world, player, {
-  weapon: "apprenticeStaff",
-  carrying: [
-    "hasteStaff",
-    "serpentStaff",
-    "cometStaff",
-    "mireStaff",
-    "spiralStaff",
-    "boomerang",
-    "lance",
-    "prejudiceStaff",
-  ],
-});
-world.components.health.set(player, { hp: 500, max: 500 });
 world.components.invulnerable.set(player, true);
 world.camera.target = player;
 
@@ -101,9 +80,10 @@ for (const [id, x, y] of [
   ["archer", 26, 26],
   ["boar", 26, 6],
 ] as const) {
-  spawnEnemy(world, id, { x: MIDDLE + x, y: MIDDLE + y });
+  spawnEnemy(world, enemies[id], { x: MIDDLE + x, y: MIDDLE + y });
 }
 
+const manifest = createManifest(contentArt());
 const art = await buildAtlas(
   manifest,
   async (file) => {
@@ -161,11 +141,28 @@ hitboxToggle.addEventListener("change", () => {
 // One-off requests (number keys, debug buttons) waiting for the next tick.
 const pendingCommands: Command[] = [];
 
+// Debug: a few weapons to try, given on the first tick.
+for (const item of [
+  items.hasteStaff,
+  items.serpentStaff,
+  items.cometStaff,
+  items.mireStaff,
+  items.spiralStaff,
+  items.boomerang,
+  items.lance,
+  items.prejudiceStaff,
+]) {
+  pendingCommands.push({ kind: "give", item });
+}
+
 // Debug item giver: puts the picked item in the first empty slot.
 const itemPicker = document.getElementById("debugItem") as HTMLSelectElement;
 for (const id of itemIds) itemPicker.add(new Option(items[id].name, id));
 document.getElementById("debugGive")!.addEventListener("click", (event) => {
-  pendingCommands.push({ kind: "give", item: itemPicker.value as ItemId });
+  pendingCommands.push({
+    kind: "give",
+    item: items[itemPicker.value as ItemId],
+  });
   (event.currentTarget as HTMLButtonElement).blur();
 });
 
@@ -179,10 +176,10 @@ document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
   const aim = world.components.shooter.get(player)?.aim ??
     world.components.facing.get(player) ?? { x: 1, y: 0 };
   const center = { x: at.x + aim.x * 4, y: at.y + aim.y * 4 };
-  const id = enemyPicker.value as EnemyId;
+  const def = enemies[enemyPicker.value as EnemyId];
   const count = Math.max(1, Math.floor(Number(enemyCount.value) || 1));
-  if (count === 1) spawnEnemy(world, id, center);
-  else spawnCrowd(world, id, center, count);
+  if (count === 1) spawnEnemy(world, def, center);
+  else spawnCrowd(world, def, center, count);
   (event.currentTarget as HTMLButtonElement).blur();
 });
 

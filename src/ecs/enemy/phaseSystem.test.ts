@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testBoss, testEnemy, testWeapon } from "../../testing/defs";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { brainSystem } from "./brain";
@@ -10,12 +11,13 @@ const DT = 0.05;
 
 function setup() {
   const world = createWorld(createTiles(40, 40), () => 0.5);
-  const king = spawnEnemy(world, "slimeKing", { x: 10, y: 10 });
+  const boss = testBoss();
+  const king = spawnEnemy(world, boss, { x: 10, y: 10 });
   const c = world.components;
   const phase = () => c.enemy.get(king)!.phase!;
   const action = () => c.bossAction.get(king)!;
   const hurtTo = (fraction: number) => {
-    c.health.get(king)!.hp = 1500 * fraction;
+    c.health.get(king)!.hp = boss.health * fraction;
   };
   const tick = (ticks = 1) => {
     for (let i = 0; i < ticks; i++) phaseSystem(world, DT);
@@ -28,7 +30,7 @@ describe("spawning an enemy with phases", () => {
     const { phase, action, c, king } = setup();
     expect(phase()).toEqual({ name: "awake", time: 0 });
     expect(action()).toMatchObject({
-      sequence: "crownRing",
+      sequence: "ring",
       rotationIndex: 0,
       stageIndex: 0,
       active: false,
@@ -95,10 +97,11 @@ describe("phaseSystem", () => {
 
   it("leaves enemies without phases alone", () => {
     const { world } = setup();
-    const slime = spawnEnemy(world, "slime", { x: 5, y: 5 });
+    const slimeDef = testEnemy({ weapon: testWeapon() });
+    const slime = spawnEnemy(world, slimeDef, { x: 5, y: 5 });
     phaseSystem(world, DT);
     expect(world.components.enemy.get(slime)!.phase).toBeUndefined();
-    expect(world.components.shooter.get(slime)!.weapon).toBe("slimeSpit");
+    expect(world.components.shooter.get(slime)!.weapon).toBe(slimeDef.weapon);
   });
 });
 

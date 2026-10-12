@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testItem } from "../testing/defs";
 import type { SlotRef } from "../ecs/inventory/components";
 import { addHoldings } from "../ecs/inventory/bundle";
 import { createTiles } from "../ecs/tiles";
@@ -16,13 +17,13 @@ import { createHudState, type HudState } from "./state";
 
 const SCREEN = { w: 300, h: 200 };
 
-// The real HUD: Apprentice Staff worn, a lance and a comet staff carried.
+// The real HUD: a staff worn, a lance and a comet staff carried.
 function setup() {
   const world = createWorld(createTiles(1, 1));
   const player = spawn(world);
   addHoldings(world, player, {
-    weapon: "apprenticeStaff",
-    carrying: ["lance", "cometStaff"],
+    weapon: testItem({ name: "Staff" }),
+    carrying: [testItem({ name: "Lance" }), testItem({ name: "Comet" })],
   });
   const state = createHudState();
   const panels = () => layoutHud(world, player, state, SCREEN);

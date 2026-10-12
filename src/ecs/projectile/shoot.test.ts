@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { testWeapon } from "../../testing/defs";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type World } from "../world";
 import { shootSystem } from "./shoot";
-import { weaponDef, type WeaponId } from "./weapons";
+import type { WeaponDef } from "./weapons";
 
 const DT = 0.05;
 const AT = { x: 10, y: 10 };
 
-function setup(weapon: WeaponId = "bolt", player = true) {
+// 4 shots a second.
+const STAFF = testWeapon();
+
+function setup(weapon: WeaponDef = STAFF, player = true) {
   const world = createWorld(createTiles(20, 20));
   const shooter = spawn(world);
   const c = world.components;
@@ -39,7 +43,6 @@ describe("shootSystem", () => {
     it("fires straight away, then at the weapon's rate", () => {
       // 4 shots/s is one every 0.25 s: at 0, 0.25 and 0.5. Checked between
       // shots so rounding at the exact moment of a shot doesn't matter.
-      expect(weaponDef("bolt").rate).toBe(4);
       const { world } = setup();
       tick(world);
       expect(shots(world)).toHaveLength(1);
@@ -64,7 +67,7 @@ describe("shootSystem", () => {
     expect(shot.origin).toEqual(AT);
     expect(shot.owner).toBe(shooter);
     expect(shot.team).toBe("player");
-    expect(shot.def).toBe("bolt");
+    expect(shot.def).toBe(STAFF.projectile);
   });
 
   it("does not fire while player autofire is off", () => {
@@ -132,7 +135,7 @@ describe("shootSystem", () => {
     });
 
     it("ignores the cursor for anything not player controlled", () => {
-      const { world, shooter } = setup("bolt", false);
+      const { world, shooter } = setup(STAFF, false);
       const target = spawn(world);
       world.components.position.set(target, { x: 10, y: 15 });
       world.components.target.set(shooter, target);
@@ -142,7 +145,7 @@ describe("shootSystem", () => {
     });
 
     it("aims at its target when not player controlled", () => {
-      const { world, shooter } = setup("bolt", false);
+      const { world, shooter } = setup(STAFF, false);
       const target = spawn(world);
       world.components.position.set(target, { x: 13, y: 6 });
       world.components.target.set(shooter, target);
@@ -151,13 +154,13 @@ describe("shootSystem", () => {
     });
 
     it("holds fire without a target when not player controlled", () => {
-      const { world } = setup("bolt", false);
+      const { world } = setup(STAFF, false);
       tick(world, 10);
       expect(shots(world)).toHaveLength(0);
     });
 
     it("fires the moment it gets a target", () => {
-      const { world, shooter } = setup("bolt", false);
+      const { world, shooter } = setup(STAFF, false);
       tick(world, 10);
       const target = spawn(world);
       world.components.position.set(target, { x: 10, y: 15 });
@@ -168,15 +171,16 @@ describe("shootSystem", () => {
   });
 
   describe("patterns", () => {
-    it("fires Extreme Prejudice as ten shots in a full ring", () => {
-      const { world } = setup("extremePrejudice");
+    it("fires a full ring of shots at once", () => {
+      const ring = testWeapon({ count: 10, arcGap: (2 * Math.PI) / 10 });
+      const { world } = setup(ring);
       world.input.aim = { x: 20, y: 10 };
 
       tick(world);
 
       const fired = shots(world);
       expect(fired).toHaveLength(10);
-      expect(fired.every((p) => p.def === "prejudice")).toBe(true);
+      expect(fired.every((p) => p.def === ring.projectile)).toBe(true);
       const angles = fired
         .map((p) => Math.atan2(p.direction.y, p.direction.x))
         .map((a) => (a + 2 * Math.PI) % (2 * Math.PI))
@@ -186,15 +190,21 @@ describe("shootSystem", () => {
       }
       expect(world.events.shotsFired).toHaveLength(1);
       expect(world.events.shotsFired[0]).toMatchObject({
-        projectile: "prejudice",
+        weapon: ring,
       });
     });
+  });
+
+  it("refuses to fire for a shooter with no team", () => {
+    const { world, shooter } = setup();
+    world.components.team.delete(shooter);
+    expect(() => tick(world)).toThrow();
   });
 
   it("skips shooters with no position", () => {
     const world = createWorld(createTiles(20, 20));
     const shooter = spawn(world);
-    world.components.shooter.set(shooter, { weapon: "bolt", cooldown: 0 });
+    world.components.shooter.set(shooter, { weapon: STAFF, cooldown: 0 });
     tick(world);
     expect(shots(world)).toHaveLength(0);
   });

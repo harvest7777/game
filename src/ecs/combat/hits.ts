@@ -1,4 +1,3 @@
-import { projectileDef } from "../projectile/definitions";
 import {
   penetrationCircleCircle,
   sweptCircleCircle,
@@ -6,7 +5,7 @@ import {
 import type { Vec2 } from "../shared/physics/math";
 import type { Team } from "../projectile/components";
 import type { Entity, World } from "../world";
-import { opponents, targetsByTeam } from "./teams";
+import { opponents, targetsByTeam } from "../shared/teams";
 
 // Finds projectiles that touched something with health on another team this
 // tick, and records each as a Hit. Runs after movement, comparing where both
@@ -23,7 +22,7 @@ export function hitSystem(world: World, _dt: number): void {
   const opponentsOf = new Map<Team, Entity[]>();
 
   for (const [shot, p] of projectile) {
-    const def = projectileDef(p.def);
+    const { def } = p;
     const shotNow = position.get(shot);
     if (!shotNow) continue;
     const shotFrom = previousPosition.get(shot) ?? shotNow;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testProjectile } from "../../testing/defs";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { fireProjectile } from "./spawn";
@@ -9,7 +10,7 @@ describe("projectileWallHitSystem", () => {
     const world = createWorld(createTiles(10, 10));
     const owner = spawn(world);
     const projectile = fireProjectile(world, {
-      def: "bolt",
+      def: testProjectile(),
       owner,
       team: "player",
       at: { x: 3, y: 4 },

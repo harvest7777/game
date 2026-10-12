@@ -1,5 +1,4 @@
 import type { Equipment, Inventory, Item, SlotRef } from "./components";
-import { itemDef } from "./items";
 
 // Everything an entity holds, for the rules below.
 export type Holdings = { equipment: Equipment; inventory: Inventory };
@@ -20,7 +19,7 @@ function put(h: Holdings, ref: SlotRef, item: Item | null): void {
 // equipment slot only takes its own kind. Emptiness fits anywhere.
 export function fits(item: Item | null, ref: SlotRef): boolean {
   if (!item || ref.in === "inventory") return true;
-  return itemDef(item.def).kind === ref.slot;
+  return item.def.kind === ref.slot;
 }
 
 // Moves the item in `from` to `to`, swapping with whatever is there. Both
@@ -45,7 +44,7 @@ export function equipFromInventory(
 ): SlotRef | undefined {
   const item = h.inventory.slots[index];
   if (!item) return undefined;
-  const to: SlotRef = { in: "equipment", slot: itemDef(item.def).kind };
+  const to: SlotRef = { in: "equipment", slot: item.def.kind };
   return moveItem(h, { in: "inventory", index }, to) ? to : undefined;
 }
 

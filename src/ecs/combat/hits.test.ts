@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectileId } from "../projectile/definitions";
+import { testProjectile } from "../../testing/defs";
+import type { ProjectileDef } from "../projectile/definitions";
 import { fireProjectile } from "../projectile/spawn";
 import type { Team } from "../projectile/components";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
 import { hitSystem } from "./hits";
+
+const PIERCING = testProjectile({ pierces: true });
 
 function setup(random = () => 0) {
   const world = createWorld(createTiles(40, 40), random);
@@ -19,7 +22,7 @@ function shot(
   owner: Entity,
   from: Vec2,
   to: Vec2,
-  def: ProjectileId = "bolt",
+  def: ProjectileDef = testProjectile(),
   team: Team = "player",
 ): Entity {
   const e = fireProjectile(world, {
@@ -140,7 +143,7 @@ describe("hitSystem", () => {
       const { world, owner } = setup();
       const far = target(world, { x: 14, y: 10 });
       const near = target(world, { x: 10, y: 10 });
-      shot(world, owner, { x: 8, y: 10 }, { x: 16, y: 10 }, "lance");
+      shot(world, owner, { x: 8, y: 10 }, { x: 16, y: 10 }, PIERCING);
 
       hitSystem(world, 0.05);
 
@@ -156,7 +159,7 @@ describe("hitSystem", () => {
         owner,
         { x: 9, y: 10 },
         { x: 9.8, y: 10 },
-        "lance",
+        PIERCING,
       );
 
       hitSystem(world, 0.05);
@@ -170,11 +173,12 @@ describe("hitSystem", () => {
   });
 
   describe("damage roll", () => {
-    // The bolt deals 20 to 30.
+    const BOLT = testProjectile({ damage: [20, 30] });
+
     it("is the minimum at the bottom of the random range", () => {
       const { world, owner } = setup(() => 0);
       target(world, { x: 10, y: 10 });
-      shot(world, owner, { x: 8, y: 10 }, { x: 12, y: 10 });
+      shot(world, owner, { x: 8, y: 10 }, { x: 12, y: 10 }, BOLT);
       hitSystem(world, 0.05);
       expect(world.events.hits[0].damage).toBe(20);
     });
@@ -182,7 +186,7 @@ describe("hitSystem", () => {
     it("is the maximum at the top of the random range", () => {
       const { world, owner } = setup(() => 0.9999);
       target(world, { x: 10, y: 10 });
-      shot(world, owner, { x: 8, y: 10 }, { x: 12, y: 10 });
+      shot(world, owner, { x: 8, y: 10 }, { x: 12, y: 10 }, BOLT);
       hitSystem(world, 0.05);
       expect(world.events.hits[0].damage).toBe(30);
     });

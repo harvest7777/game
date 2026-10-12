@@ -1,15 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { testItem } from "../testing/defs";
 import { addHoldings } from "../ecs/inventory/bundle";
+import { ITEM_KINDS } from "../ecs/inventory/items";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
 import { HUD_COLORS, type HudElement } from "./elements";
-import {
-  equipmentPanel,
-  equipmentView,
-  SLOT_LABELS,
-  SLOT_ORDER,
-  type EquipmentView,
-} from "./equipment";
+import { equipmentPanel, equipmentView, type EquipmentView } from "./equipment";
+import { KIND_LABELS } from "./items";
 
 const empty: EquipmentView = {
   weapon: null,
@@ -17,11 +14,8 @@ const empty: EquipmentView = {
   armor: null,
   ring: null,
 };
-const lance = {
-  id: "lance" as const,
-  name: "Piercing Lance",
-  sprite: "item.lance",
-};
+const LANCE = testItem({ name: "Lance", icon: "items/lance" });
+const lance = { name: "Lance", icon: "items/lance" };
 
 function ofKind<K extends HudElement["kind"]>(
   elements: HudElement[],
@@ -36,7 +30,7 @@ describe("equipmentView", () => {
   it("shows what's worn in each slot by name and icon", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: "lance" });
+    addHoldings(world, player, { weapon: LANCE });
 
     expect(equipmentView(world, player)).toEqual({ ...empty, weapon: lance });
   });
@@ -52,7 +46,7 @@ describe("equipmentPanel", () => {
     const { elements } = equipmentPanel(empty);
     const slots = ofKind(elements, "slot");
     expect(slots.map((s) => s.ref)).toEqual(
-      SLOT_ORDER.map((slot) => ({ in: "equipment", slot })),
+      ITEM_KINDS.map((slot) => ({ in: "equipment", slot })),
     );
     const xs = slots.map((s) => s.rect.x);
     expect([...xs].sort((a, b) => a - b)).toEqual(xs);
@@ -70,7 +64,7 @@ describe("equipmentPanel", () => {
     const { elements } = equipmentPanel({ ...empty, weapon: lance });
     const [weaponSlot] = ofKind(elements, "slot");
     const [icon] = ofKind(elements, "icon");
-    expect(icon.sprite).toBe("item.lance");
+    expect(icon.file).toBe("items/lance");
     // A pixel of room between the icon and the slot's border.
     expect(icon.rect).toEqual({
       x: weaponSlot.rect.x + 2,
@@ -86,9 +80,9 @@ describe("equipmentPanel", () => {
       (t) => t.tint === HUD_COLORS.dimLabel,
     );
     expect(dim.map((t) => t.text)).toEqual([
-      SLOT_LABELS.ability,
-      SLOT_LABELS.armor,
-      SLOT_LABELS.ring,
+      KIND_LABELS.ability.letter,
+      KIND_LABELS.armor.letter,
+      KIND_LABELS.ring.letter,
     ]);
   });
 

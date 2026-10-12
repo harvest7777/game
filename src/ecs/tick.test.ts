@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testBoss, testEnemy, testItem, testWeapon } from "../testing/defs";
 import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
 import { spawnEnemy } from "./enemy/spawn";
 import { addHoldings } from "./inventory/bundle";
@@ -19,7 +20,11 @@ function setup() {
   const player = spawn(world);
   addMovable(world, player, { at: START, hitbox: { r: R } });
   addControllable(world, player, { speed: SPEED });
-  addSprite(world, player, { name: "player", layer: "player" });
+  world.components.team.set(player, "player");
+  addSprite(world, player, {
+    art: { kind: "static", file: "player" },
+    layer: "player",
+  });
   const position = () => world.components.position.get(player)!;
   const facing = () => world.components.facing.get(player)!;
   return { world, position, facing };
@@ -133,7 +138,7 @@ describe("runTick", () => {
       const setupResult = setup();
       const { world } = setupResult;
       const player = [...world.components.playerControlled][0][0];
-      addShooter(world, player, { weapon: "bolt", team: "player" });
+      addShooter(world, player, { weapon: testWeapon() });
       const shots = () =>
         [...world.components.projectile].map(([e, p]) => ({
           ...p,
@@ -158,9 +163,10 @@ describe("runTick", () => {
       const { world } = setup();
       const player = [...world.components.playerControlled][0][0];
       world.components.team.set(player, "player");
+      const lance = testItem({ name: "Lance" });
       addHoldings(world, player, {
-        weapon: "apprenticeStaff",
-        carrying: ["lance"],
+        weapon: testItem({ name: "Staff" }),
+        carrying: [lance],
       });
       world.input.aim = { x: START.x + 5, y: START.y };
       world.input.commands = [{ kind: "equip", index: 0 }];
@@ -168,7 +174,7 @@ describe("runTick", () => {
       runTick(world, DT);
 
       const shots = [...world.components.projectile].map(([, p]) => p.def);
-      expect(shots).toEqual(["lance"]);
+      expect(shots).toEqual([lance.weapon!.projectile]);
     });
 
     it("faces the cursor while walking the other way", () => {
@@ -195,17 +201,17 @@ describe("runTick", () => {
   it("shoots an enemy until it's removed", () => {
     const { world } = setup();
     const player = [...world.components.playerControlled][0][0];
-    addShooter(world, player, { weapon: "bolt", team: "player" });
+    addShooter(world, player, { weapon: testWeapon() });
     const dummy = spawn(world);
     addMovable(world, dummy, {
       at: { x: START.x + 3, y: START.y },
       hitbox: { r: 0.4 },
     });
-    world.components.health.set(dummy, { hp: 100, max: 100 });
+    world.components.health.set(dummy, { hp: 50, max: 50 });
     world.components.team.set(dummy, "enemy");
     world.input.aim = { x: START.x + 3, y: START.y };
 
-    // Bolts deal at least 20 at 4 shots/s: dead within 5 shots.
+    // Test shots deal 10 at 4 shots/s: dead within 5 shots.
     for (let i = 0; i < 20 && world.components.health.has(dummy); i++) {
       runTick(world, DT);
     }
@@ -217,8 +223,10 @@ describe("runTick", () => {
   it("shows damage numbers that float away and disappear", () => {
     const { world } = setup();
     const player = [...world.components.playerControlled][0][0];
-    addShooter(world, player, { weapon: "bolt", team: "player" });
-    const dummy = spawnEnemy(world, "dummy", { x: START.x + 2, y: START.y });
+    addShooter(world, player, { weapon: testWeapon() });
+    const still = { kind: "stationary" } as const;
+    const dummyDef = testEnemy({ idle: still, aggro: still });
+    const dummy = spawnEnemy(world, dummyDef, { x: START.x + 2, y: START.y });
     world.input.aim = { x: START.x + 2, y: START.y };
 
     let ticks = 0;
@@ -226,7 +234,7 @@ describe("runTick", () => {
       runTick(world, DT);
     }
     const [[text, number]] = [...world.components.floatingText];
-    const hurt = 300 - world.components.health.get(dummy)!.hp;
+    const hurt = dummyDef.health - world.components.health.get(dummy)!.hp;
     expect(Number(number.text)).toBe(hurt);
     // A new number starts fresh on the tick it appears.
     expect(number.age).toBe(0);
@@ -237,6 +245,9 @@ describe("runTick", () => {
   });
 
   describe("enemies", () => {
+    // Notices things within 7 tiles and chases to 2.5 tiles, shooting.
+    const SLIME = testEnemy({ weapon: testWeapon() });
+
     function withPlayerHealth() {
       const result = setup();
       const player = [...result.world.components.playerControlled][0][0];
@@ -248,7 +259,7 @@ describe("runTick", () => {
 
     it("shoot the player once in range, and it hurts", () => {
       const { world, hp } = withPlayerHealth();
-      spawnEnemy(world, "slime", { x: START.x + 3, y: START.y });
+      spawnEnemy(world, SLIME, { x: START.x + 3, y: START.y });
 
       for (let i = 0; i < 20; i++) runTick(world, DT);
 
@@ -257,7 +268,7 @@ describe("runTick", () => {
 
     it("come after the player once in range", () => {
       const { world } = withPlayerHealth();
-      const slime = spawnEnemy(world, "slime", { x: START.x + 6, y: START.y });
+      const slime = spawnEnemy(world, SLIME, { x: START.x + 6, y: START.y });
 
       for (let i = 0; i < 10; i++) runTick(world, DT);
 
@@ -269,11 +280,12 @@ describe("runTick", () => {
 
     it("move a boss on to its next phase as it's hurt", () => {
       const { world } = withPlayerHealth();
-      const king = spawnEnemy(world, "slimeKing", {
+      const king = spawnEnemy(world, testBoss(), {
         x: START.x + 5,
         y: START.y,
       });
-      world.components.health.get(king)!.hp = 900;
+      // Below two thirds of its 1000 health.
+      world.components.health.get(king)!.hp = 600;
 
       runTick(world, DT);
 
@@ -286,7 +298,7 @@ describe("runTick", () => {
 
     it("leave the player alone out of range", () => {
       const { world, hp } = withPlayerHealth();
-      spawnEnemy(world, "slime", { x: START.x + 9, y: START.y });
+      spawnEnemy(world, SLIME, { x: START.x + 9, y: START.y });
 
       for (let i = 0; i < 20; i++) runTick(world, DT);
 

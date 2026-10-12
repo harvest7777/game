@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testItem } from "../testing/defs";
 import { addHoldings } from "../ecs/inventory/bundle";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
@@ -13,18 +14,16 @@ describe("inventoryView", () => {
   it("shows each slot's item in order", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { carrying: ["lance", "boomerang"] });
+    const lance = testItem({ name: "Lance", icon: "items/lance" });
+    const boomerang = testItem({ name: "Boomerang", icon: "items/boomerang" });
+    addHoldings(world, player, { carrying: [lance, boomerang] });
 
     const view = inventoryView(world, player)!;
 
     expect(view).toHaveLength(8);
     expect(view.slice(0, 3)).toEqual([
-      { id: "lance", name: "Piercing Lance", sprite: "item.lance" },
-      {
-        id: "boomerang",
-        name: "Wanderer's Boomerang",
-        sprite: "item.boomerang",
-      },
+      { name: "Lance", icon: "items/lance" },
+      { name: "Boomerang", icon: "items/boomerang" },
       null,
     ]);
   });

@@ -1,5 +1,4 @@
 import { despawn, type Entity, type World } from "../world";
-import { projectileDef } from "./definitions";
 import { pathPoint } from "./path";
 
 // Steers projectiles along their paths. Runs before movement: it sets each
@@ -15,7 +14,7 @@ export function projectileSystem(world: World, dt: number): void {
   const finished: Entity[] = [];
 
   for (const [entity, p] of projectile) {
-    const def = projectileDef(p.def);
+    const { def } = p;
     if (p.age >= def.lifetime) {
       finished.push(entity);
       continue;

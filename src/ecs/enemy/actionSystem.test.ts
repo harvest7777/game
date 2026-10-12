@@ -1,13 +1,23 @@
 import { describe, expect, it } from "vitest";
+import {
+  BOSS_CAST,
+  BOSS_CAST_CUE,
+  BOSS_DASH,
+  BOSS_EXPOSED_MULTIPLIER,
+  BOSS_RECOVER,
+  BOSS_RING_COUNT,
+  BOSS_TELL,
+  testBoss,
+} from "../../testing/defs";
 import { createTiles } from "../tiles";
-import { createWorld, spawn } from "../world";
+import { createWorld, spawn, type Entity, type World } from "../world";
 import { bossActionSystem } from "./actionSystem";
 import { phaseSystem } from "./phaseSystem";
 import { spawnEnemy } from "./spawn";
 
 function setup() {
   const world = createWorld(createTiles(40, 40), () => 0.5);
-  const king = spawnEnemy(world, "slimeKing", { x: 10, y: 10 });
+  const king = spawnEnemy(world, testBoss(), { x: 10, y: 10 });
   const player = spawn(world);
   world.components.position.set(player, { x: 16, y: 10 });
   world.components.target.set(king, player);
@@ -16,54 +26,60 @@ function setup() {
   return { world, king, action, tick };
 }
 
+// Hurts the boss into its enraged phase, which opens with a charge.
+function enrage(world: World, king: Entity) {
+  world.components.health.get(king)!.hp = 500;
+  phaseSystem(world, 0.05);
+}
+
 describe("bossActionSystem", () => {
   it("plays the current phase's deterministic rotation", () => {
     const { action, tick } = setup();
-    tick(0.55);
-    expect(action()).toMatchObject({ sequence: "crownRing", stageIndex: 1 });
-    tick(0.25);
-    expect(action()).toMatchObject({ sequence: "crownRing", stageIndex: 2 });
-    tick(0.45);
-    expect(action()).toMatchObject({ sequence: "aimedSpray", stageIndex: 0 });
+    tick(BOSS_TELL);
+    expect(action()).toMatchObject({ sequence: "ring", stageIndex: 1 });
+    tick(BOSS_CAST);
+    expect(action()).toMatchObject({ sequence: "ring", stageIndex: 2 });
+    tick(BOSS_RECOVER);
+    expect(action()).toMatchObject({ sequence: "spray", stageIndex: 0 });
   });
 
   it("fires a ring once at the cast cue, from the boss center", () => {
     const { world, king, tick } = setup();
-    tick(0.55);
-    tick(0.1);
+    tick(BOSS_TELL);
+    tick(BOSS_CAST_CUE);
 
     const shots = [...world.components.projectile].filter(
       ([, projectile]) => projectile.owner === king,
     );
-    expect(shots).toHaveLength(12);
+    expect(shots).toHaveLength(BOSS_RING_COUNT);
     for (const [, projectile] of shots) {
       expect(projectile.origin).toEqual({ x: 10, y: 10 });
     }
-    tick(0.1);
-    expect([...world.components.projectile]).toHaveLength(12);
+    tick(BOSS_CAST_CUE);
+    expect([...world.components.projectile]).toHaveLength(BOSS_RING_COUNT);
   });
 
   it("makes the charge recovery vulnerable", () => {
     const { world, king, tick } = setup();
-    world.components.health.get(king)!.hp = 1500 * 0.6;
-    phaseSystem(world, 0.05);
+    enrage(world, king);
 
-    tick(0.55);
-    tick(0.6);
+    tick(BOSS_TELL);
+    tick(BOSS_DASH);
 
     expect(world.components.bossAction.get(king)).toMatchObject({
       sequence: "charge",
       stageIndex: 2,
     });
-    expect(world.components.vulnerable.get(king)).toEqual({ multiplier: 1.5 });
+    expect(world.components.vulnerable.get(king)).toEqual({
+      multiplier: BOSS_EXPOSED_MULTIPLIER,
+    });
   });
 
   it("stops the timeline and clears weak points without a target", () => {
     const { world, king, tick } = setup();
-    world.components.health.get(king)!.hp = 1500 * 0.6;
-    phaseSystem(world, 0.05);
-    tick(0.55);
-    tick(0.6);
+    enrage(world, king);
+    tick(BOSS_TELL);
+    tick(BOSS_DASH);
     expect(world.components.vulnerable.has(king)).toBe(true);
 
     world.components.target.delete(king);

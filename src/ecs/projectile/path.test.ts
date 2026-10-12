@@ -9,9 +9,8 @@ function def(changes: Partial<ProjectileDef>): ProjectileDef {
     damage: [10, 10],
     lifetime: 2,
     hitbox: { r: 0.1 },
-    sprite: { name: "orb" },
+    sprite: { art: { kind: "static", file: "orb" } },
     sound: {
-      fire: "magicFire",
       hitPlayer: "hitPlayer",
       hitEnemy: "hitEnemy",
     },

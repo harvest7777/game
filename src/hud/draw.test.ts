@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testItem } from "../testing/defs";
 import { addHoldings } from "../ecs/inventory/bundle";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn } from "../ecs/world";
@@ -17,9 +18,11 @@ import type { SlotRef } from "../ecs/inventory/components";
 import { DRAGGED_FROM_ALPHA, HUD_COLORS, type HudElement } from "./elements";
 import { createHudState } from "./state";
 
+const LANCE = testItem({ name: "Lance", icon: "items/lance" });
+
 const art: Art = {
   manifest: {
-    sprites: { "item.lance": { kind: "static", file: "items/lance" } },
+    sprites: [],
     ground: {},
     walls: { top: "top", side: "side" },
     fonts: { bold: {}, regular: { W: "rW" } },
@@ -67,7 +70,7 @@ describe("pushElements", () => {
         {
           kind: "icon",
           rect: { x: 1, y: 1, w: 8, h: 8 },
-          sprite: "item.lance",
+          file: "items/lance",
         },
       ],
       10,
@@ -114,7 +117,7 @@ describe("layoutHud", () => {
   it("puts the equipment panel in the bottom-right corner by default", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: "lance" });
+    addHoldings(world, player, { weapon: LANCE });
 
     const [panel] = layoutHud(world, player, createHudState(), {
       w: 300,
@@ -129,7 +132,7 @@ describe("layoutHud", () => {
   it("stacks the inventory just above the equipment, aligned", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: "lance" });
+    addHoldings(world, player, { weapon: LANCE });
 
     const [equipment, inventory] = layoutHud(world, player, createHudState(), {
       w: 300,
@@ -156,7 +159,7 @@ describe("drawHud", () => {
   it("lays the HUD out in UI pixels on the device-pixel canvas", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { weapon: "lance" });
+    addHoldings(world, player, { weapon: LANCE });
     const out = new QuadBuffer();
 
     drawHud(out, art, world, player, createHudState(), 1200, 800, 4, 0);
@@ -208,7 +211,7 @@ describe("drawing interaction", () => {
         {
           kind: "icon",
           rect: { x: 1, y: 1, w: 8, h: 8 },
-          sprite: "item.lance",
+          file: "items/lance",
           ref: inv0,
         },
       ],
@@ -223,7 +226,7 @@ describe("drawing interaction", () => {
   it("draws a dragged item at the pointer, last", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { carrying: ["lance"] });
+    addHoldings(world, player, { carrying: [LANCE] });
     const state = createHudState();
     state.pointer = { x: 50, y: 40 };
     state.press = {
@@ -248,7 +251,7 @@ describe("tooltips", () => {
   function hovering(hoverSince: number) {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { carrying: ["lance"] });
+    addHoldings(world, player, { carrying: [LANCE] });
     const state = createHudState();
     state.pointer = { x: 50, y: 40 };
     state.hover = { in: "inventory", index: 0 };
@@ -324,7 +327,7 @@ describe("flashes", () => {
   it("fades out over FLASH_SECONDS in drawHud", () => {
     const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
-    addHoldings(world, player, { carrying: ["lance"] });
+    addHoldings(world, player, { carrying: [LANCE] });
     const state = createHudState();
     state.flashes = [{ ref: inv0, at: 10 }];
 

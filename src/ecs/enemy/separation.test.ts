@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testEnemy } from "../../testing/defs";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { brainSystem } from "./brain";
@@ -6,6 +7,7 @@ import { separation, SPACING, withSeparation } from "./separation";
 import { spawnEnemy } from "./spawn";
 
 // Slimes have 0.4-tile hitboxes, so they ease apart within 0.8 + SPACING.
+const SLIME = testEnemy({ hitbox: { r: 0.4 } });
 const REACH = 0.8 + SPACING;
 
 function world() {
@@ -15,8 +17,8 @@ function world() {
 describe("separation", () => {
   it("pushes crowded enemies straight apart, equally", () => {
     const w = world();
-    const a = spawnEnemy(w, "slime", { x: 10, y: 10 });
-    const b = spawnEnemy(w, "slime", { x: 10.5, y: 10 });
+    const a = spawnEnemy(w, SLIME, { x: 10, y: 10 });
+    const b = spawnEnemy(w, SLIME, { x: 10.5, y: 10 });
 
     const pushes = separation(w);
 
@@ -28,8 +30,8 @@ describe("separation", () => {
 
   it("leaves enemies with room alone", () => {
     const w = world();
-    spawnEnemy(w, "slime", { x: 10, y: 10 });
-    spawnEnemy(w, "slime", { x: 10 + REACH + 0.01, y: 10 });
+    spawnEnemy(w, SLIME, { x: 10, y: 10 });
+    spawnEnemy(w, SLIME, { x: 10 + REACH + 0.01, y: 10 });
     expect(separation(w).size).toBe(0);
   });
 
@@ -37,10 +39,10 @@ describe("separation", () => {
     const w = world();
     // The grid starts at the top-left enemy and its cells are REACH wide,
     // so these two are either side of a cell boundary, both ways.
-    spawnEnemy(w, "slime", { x: 1, y: 1 });
+    spawnEnemy(w, SLIME, { x: 1, y: 1 });
     const edge = 1 + REACH * 5;
-    const a = spawnEnemy(w, "slime", { x: edge - 0.1, y: edge - 0.1 });
-    const b = spawnEnemy(w, "slime", { x: edge + 0.1, y: edge + 0.1 });
+    const a = spawnEnemy(w, SLIME, { x: edge - 0.1, y: edge - 0.1 });
+    const b = spawnEnemy(w, SLIME, { x: edge + 0.1, y: edge + 0.1 });
     const pushes = separation(w);
     expect(pushes.get(a)!.x).toBeLessThan(0);
     expect(pushes.get(b)!.y).toBeGreaterThan(0);
@@ -48,8 +50,8 @@ describe("separation", () => {
 
   it("splits enemies exactly on top of each other opposite ways", () => {
     const w = world();
-    const a = spawnEnemy(w, "slime", { x: 10, y: 10 });
-    const b = spawnEnemy(w, "slime", { x: 10, y: 10 });
+    const a = spawnEnemy(w, SLIME, { x: 10, y: 10 });
+    const b = spawnEnemy(w, SLIME, { x: 10, y: 10 });
 
     const pushes = separation(w);
     const pa = pushes.get(a)!;
@@ -61,7 +63,7 @@ describe("separation", () => {
 
   it("only spaces enemies from each other, not the player", () => {
     const w = world();
-    spawnEnemy(w, "slime", { x: 10, y: 10 });
+    spawnEnemy(w, SLIME, { x: 10, y: 10 });
     const player = spawn(w);
     w.components.position.set(player, { x: 10.2, y: 10 });
     w.components.hitbox.set(player, { r: 0.4 });
@@ -95,7 +97,7 @@ describe("in the brain", () => {
     w.components.position.set(player, { x: 20, y: 20 });
     w.components.team.set(player, "player");
     const pile = Array.from({ length: 6 }, () =>
-      spawnEnemy(w, "slime", { x: 14, y: 20 }),
+      spawnEnemy(w, SLIME, { x: 14, y: 20 }),
     );
     for (const e of pile) w.components.target.set(e, player);
 
@@ -119,9 +121,11 @@ describe("in the brain", () => {
   });
 
   it("doesn't push stationary enemies", () => {
+    const still = { kind: "stationary" } as const;
+    const DUMMY = testEnemy({ idle: still, aggro: still });
     const w = world();
-    const a = spawnEnemy(w, "dummy", { x: 10, y: 10 });
-    spawnEnemy(w, "dummy", { x: 10.1, y: 10 });
+    const a = spawnEnemy(w, DUMMY, { x: 10, y: 10 });
+    spawnEnemy(w, DUMMY, { x: 10.1, y: 10 });
     brainSystem(w, 0.05);
     expect(w.components.velocity.get(a)).toEqual({ x: 0, y: 0 });
   });

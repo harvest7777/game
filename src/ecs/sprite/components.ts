@@ -1,4 +1,5 @@
 import type { Vec2 } from "../shared/physics/math";
+import type { SpriteArt } from "./art";
 
 // Which band an entity is drawn in. The renderer owns the actual order
 // (player on top of projectiles on top of enemies, all above the ground and
@@ -17,11 +18,10 @@ export type Glow = {
 
 export type Outline = { color: Color; glow?: Glow };
 
-// How an entity looks. `name` is a sprite id from the renderer's asset
-// manifest, which decides whether it's a single frame or a walk cycle. Pure
-// data: only the renderer reads it.
+// How an entity looks. `art` decides whether it's a single frame, a walk
+// cycle or a set of animation clips. Pure data: only the renderer reads it.
 export type Sprite = {
-  name: string;
+  art: SpriteArt;
   layer: SpriteLayer;
   outline?: Outline;
   // How big the art is drawn: 1 is one sprite pixel per 1/8 tile. Only

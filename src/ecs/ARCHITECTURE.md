@@ -11,7 +11,22 @@ An archetype is the set of components an entity currently has. Ex an enemy might
 A system is a series of pure helper functions that update the world state for some dt that has passed.
 
 - Game systems ONLY know how to update the WORLD based on some DELTA TIME.
-- Systems should never import each other, they MUST be completely self isolated. If they need to share some behavior, that is a good candidate for a shared helper function.
+- Systems should never import each other, they MUST be completely self isolated. If they need to share some behavior, it goes in a helper under `src/ecs/shared/` (physics, firing, arming shooters, boss actions, teams). Only `tick.ts` imports systems, and `architecture.test.ts` fails if anything else does.
+
+# Content
+
+Game content is data, one file per thing under `src/content/`: `projectiles/`, `weapons/`, `items/`, `enemies/` and `characters/`. The types it's written in (`ProjectileDef`, `WeaponDef`, `ItemDef`, `EnemyDef`, `CharacterDef`) live with the systems that use them, and nothing in `src/ecs/` imports content.
+
+- **Definitions refer to each other directly**, by importing them: an item holds its `WeaponDef`, a weapon its `ProjectileDef`, an enemy its weapons. Components do the same (`Projectile.def`, `Shooter.weapon`, `Item.def`, `Enemy.def`), so a typo or a missing definition doesn't compile, and nothing is looked up by id at runtime.
+- **Each folder's `index.ts` lists everything in it**, keyed by id, for debug pickers and for the content tests, which check every definition makes sense and that whatever it refers to is listed too.
+- **Art lives with what uses it** (see Art), so there are no sprite names to keep in sync.
+- **Engine tests don't use content.** They build what they need from the fixtures in `src/testing/defs.ts` (`testProjectile`, `testWeapon`, `testItem`, `testEnemy`, `testBoss`, `testCharacter`), passing only the fields the test is about, so retuning or removing content never breaks them.
+
+To add something, add its file and list it in its folder's index.
+
+# Characters
+
+The player is an entity built from a `CharacterDef` (a class from the character list, like the `wizard`): name, art, hitbox, health, speed and starting weapon. `spawnCharacter` makes it player-controlled on the `player` team at full health, wearing its starting weapon, with a `Character` component recording its class.
 
 # Units
 
@@ -60,7 +75,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 # Enemies
 
-An enemy is an ordinary entity built from an `EnemyDef` in `src/ecs/enemy/definitions.ts`: sprite, hitbox, health, speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, `Health`, the `enemy` team, `Speed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
+An enemy is an ordinary entity built from an `EnemyDef` (one file per kind under `src/content/enemies/`, made with `defineEnemy`): sprite, hitbox, health, speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, `Health`, the `enemy` team, `Speed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
 
 - `aggroSystem` sets each enemy's `target` to the nearest living thing on another team within its `detectRange`, and clears it when nothing is. Like `hitSystem`, it groups targets by team once a tick (`targetsByTeam`) and only looks at other teams, so ten thousand enemies each check the player rather than each other.
 - `spawnCrowd` scatters many enemies over a disc around a point, loose enough not to start piled up and off walls, for swarms and stress tests.
@@ -89,17 +104,19 @@ So a group doesn't move as one:
 
 ## Phases
 
-A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory.
+A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). Each condition is one entry in the `CONDITIONS` table in `phases.ts`, so adding one touches nothing else. `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory.
 
-A boss phase can instead declare a deterministic `rotation` of named sequences. A sequence is an authored timeline of stages: each stage names its animation clip, duration, movement (`phase`, `stationary`, or a locked-aim dash), optional weak-point multiplier, and timed cues. Cues cross their timestamp exactly once; `fire` uses the same weapon/pattern path as ordinary shooters, while `sound` becomes a spatial sound request. `bossActionSystem` owns the timeline and runs before the brain; the renderer only samples its clip progress, never deciding gameplay. A phase transition restarts its rotation, and losing a target pauses it and clears any vulnerability.
+A boss phase can instead declare a deterministic `rotation` of named sequences. A sequence is an authored timeline of stages: each stage names its animation clip, duration, movement (`phase`, `stationary`, or a locked-aim `dash`), optional weak-point multiplier, and timed cues. Cues cross their timestamp exactly once; `fire` uses the same weapon/pattern path as ordinary shooters, while `sound` becomes a spatial sound request. Movement kinds and cue kinds are each a table of handlers (`stageMovement.ts`, `cues.ts`), so a new kind is a new entry, not a new branch in the brain or the action system.
+
+**Names are checked at compile time.** `defineEnemy` ties a boss's phase names, sequence names and animation clips together, so a transition to a phase it doesn't have, a rotation naming a missing sequence, or a stage playing a clip its art doesn't have won't compile. `bossActionSystem` owns the timeline and runs before the brain; the renderer only samples its clip progress, never deciding gameplay. A phase transition restarts its rotation, and losing a target pauses it and clears any vulnerability.
 
 `slimeKing` demonstrates the encounter pattern. At 100–66% it teaches an outward ring and aim-locked spray; at 66–30% it alternates a clearly telegraphed dash with ring casts, exposing itself after the dash; below 30% it repeats frenzy, dash and a bright `collapse` core that takes double damage. Like every other enemy, its projectiles originate at its center, so standing on the King during a release is dangerous.
 
 # Items and inventory
 
-Items are data (`src/ecs/inventory/items.ts`): a name, a `kind` (`weapon`, `ability`, `armor` or `ring`), an icon, and for weapons the weapon they fire. What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
+Items are data, one file each under `src/content/items/`: a name, a `kind` (one of `ITEM_KINDS`: `weapon`, `ability`, `armor` or `ring`), an icon file, and for weapons the weapon they fire. What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
 
-- `Equipment`: one slot per kind. Only weapons exist so far, so the other three stay empty.
+- `Equipment`: one slot per kind in `ITEM_KINDS`. Only weapons exist so far, so the other three stay empty.
 - `Inventory`: 8 slots that take anything.
 
 A `SlotRef` names any slot (`{ in: "equipment", slot }` or `{ in: "inventory", index }`). The rules are pure functions in `slots.ts`: moving onto an occupied slot swaps, an equipment slot only takes its own kind, and a swap only happens if _both_ items fit where they land.
@@ -110,11 +127,11 @@ Number keys 1–8 equip that inventory slot in every control layout. The overlay
 
 # Projectiles
 
-A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.
+A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition**, one file per kind under `src/content/projectiles/`.
 
 ## Definitions
 
-Each kind of projectile is a typed data object (`ProjectileDef`), checked with `satisfies`. To add a kind, add an entry and, if it needs new art, a PNG plus a manifest entry. Tests check every definition makes sense and has art. Fields reuse component types where they end up in components (`hitbox: Hitbox`, `sprite` is part of a `Sprite`, `walls` is a `WallResponse` or `"pass"`, speeds are `Speed`), so spawning just copies them, deep-copied so nothing is shared.
+Each kind of projectile is a typed data object (`ProjectileDef`). To add a kind, add its file, list it in the index and, if it needs new art, add a PNG. Tests check every definition makes sense and has art. Fields reuse component types where they end up in components (`hitbox: Hitbox`, `sprite` is part of a `Sprite`, `walls` is a `WallResponse` or `"pass"`, speeds are `Speed`), so spawning just copies them, deep-copied so nothing is shared.
 
 ## Paths
 
@@ -129,7 +146,9 @@ Each tick, `projectileSystem` sets velocity to exactly cover this tick's stretch
 
 ## Weapons and shooting
 
-A **weapon** (`src/ecs/projectile/weapons.ts`) decides what a shooter fires and in what pattern: which projectile, `rate` (shots per second), `count` (projectiles per shot) and `arcGap` (radians between them, centered on the aim). Every projectile automatically gets a single-shot weapon so each can be tried alone. `extremePrejudice` fires ten `prejudice` shards in a full ring.
+A **weapon** (one file each under `src/content/weapons/`) decides what a shooter fires and in what pattern: which projectile, `rate` (shots per second), `count` (projectiles per shot), `arcGap` (radians between them, centered on the aim) and its firing `sound`. `extremePrejudice` fires ten `prejudice` shards in a full ring.
+
+A shooter's shots take its own `team`, so every shooter needs one: firing without one throws rather than guessing a side.
 
 A `Shooter` autofires its weapon at its rate, several shots per tick if needed. Every tick it also records where it's aiming (`Shooter.aim`). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Otherwise it aims the way it's moving, or keeps its last aim when still. The player's weapon comes from what they have equipped (see Items and inventory).
 
@@ -208,7 +227,7 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty) and
 
 ## Sound
 
-Projectile definitions author their firing, player-hit and enemy-hit sounds beside damage and movement. Enemy definitions author their death sound; ordinary enemies fire silently while bosses can opt into their projectile's firing sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
+Weapons author their firing sound, played once per volley; one without a sound fires quietly, so crowds of ordinary enemies don't drown everything out. Projectile definitions author their player-hit and enemy-hit sounds, and enemy definitions their death sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
 
 Playback lives in `src/audio/`, outside the ECS. WAV files under `public/sounds/` are loaded into Web Audio buffers. The player position is the listener: sounds are full volume within 2 tiles, fade to silence at 18, and pan in the camera's rotated screen space. The browser plays the nearest requests first with at most 32 voices, so enemy crowds cannot create unbounded audio nodes. Audio resumes on the first keyboard or pointer interaction, as browsers require.
 
@@ -229,6 +248,6 @@ How far each pixel is from the art comes from a **distance map** baked when the 
 
 ## Art
 
-Sprites are separate 8x8 PNGs under `public/sprites/` so they're easy to edit. `src/render/assets.ts` lists which files each sprite name and tile type uses. At load, every file is packed into one atlas canvas with 1 px of padding and uploaded to the GPU once. To add art, drop in a PNG and reference it in the manifest. A test fails if the manifest names a file that doesn't exist.
+Sprites are separate 8x8 PNGs under `public/sprites/` so they're easy to edit. A `Sprite` holds its `SpriteArt` directly (`src/ecs/sprite/art.ts`: a static file, a walker's facings or a set of animation clips), and definitions declare that art beside everything else about them. `contentArt()` gathers every piece of content art, and `createManifest` adds the fonts and tiles. At load, every file is packed into one atlas canvas with 1 px of padding and uploaded to the GPU once. To add art, drop in a PNG and point a definition at it. A test fails if the manifest names a file that doesn't exist.
 
 `scripts/generate-sprites.mjs` only seeded the starter art. Re-running it overwrites the PNGs.

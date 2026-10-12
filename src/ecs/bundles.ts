@@ -1,6 +1,5 @@
 import type { Hitbox, WallResponse } from "./movement/components";
-import type { Team } from "./projectile/components";
-import type { WeaponId } from "./projectile/weapons";
+import type { WeaponDef } from "./projectile/weapons";
 import type { Sprite } from "./sprite/components";
 import type { Vec2 } from "./shared/physics/math";
 import type { Entity, World } from "./world";
@@ -46,14 +45,14 @@ export function addSprite(world: World, entity: Entity, sprite: Sprite): void {
   world.components.facing.set(entity, { x: 0, y: 1 });
 }
 
-type ShooterOptions = { weapon: WeaponId; team: Team };
+type ShooterOptions = { weapon: WeaponDef };
 
-// Autofires `weapon`, starting right away.
+// Autofires `weapon`, starting right away. Its shots take the entity's own
+// team, so give it one.
 export function addShooter(
   world: World,
   entity: Entity,
-  { weapon, team }: ShooterOptions,
+  { weapon }: ShooterOptions,
 ): void {
   world.components.shooter.set(entity, { weapon, cooldown: 0 });
-  world.components.team.set(entity, team);
 }

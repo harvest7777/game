@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { projectileDef, projectileIds } from "./definitions";
+import type { ProjectileDef } from "../../ecs/projectile/definitions";
+import { projectileIds, projectiles } from ".";
 
 describe("projectile definitions", () => {
   for (const id of projectileIds) {
     describe(id, () => {
-      const def = projectileDef(id);
+      const def: ProjectileDef = projectiles[id];
 
       it("deals a sensible range of damage", () => {
         const [min, max] = def.damage;

@@ -1,5 +1,6 @@
 import { packAtlas, type PackedRect } from "./atlas";
-import { manifestFiles, type Manifest, type SpriteFile } from "./assets";
+import type { SpriteFile } from "../ecs/sprite/art";
+import { manifestFiles, type Manifest } from "./assets";
 import { distanceField, FIELD_REACH } from "./distance";
 
 // Transparent pixels between sprites in the atlas so sampling never bleeds

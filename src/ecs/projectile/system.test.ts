@@ -3,7 +3,8 @@ import { cleanupSystem } from "../cleanup";
 import { movementSystem } from "../movement/system";
 import { createTiles, setWall } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
-import { projectiles, type ProjectileId } from "./definitions";
+import { testProjectile } from "../../testing/defs";
+import type { ProjectileDef } from "./definitions";
 import { pathPoint } from "./path";
 import { fireProjectile } from "./spawn";
 import { projectileSystem } from "./system";
@@ -13,7 +14,10 @@ const DT = 0.05;
 const FROM = { x: 2.5, y: 10.5 };
 const RIGHT = { x: 1, y: 0 };
 
-function setup(def: ProjectileId) {
+// 12 tiles/s for 0.6 s.
+const BOLT = testProjectile({ speed: 12, lifetime: 0.6 });
+
+function setup(def: ProjectileDef) {
   const world = createWorld(createTiles(40, 21));
   const owner = spawn(world);
   const entity = fireProjectile(world, {
@@ -42,26 +46,32 @@ function alive(world: World, entity: Entity) {
 
 describe("projectileSystem", () => {
   it("follows its path tick by tick", () => {
-    for (const def of ["bolt", "wavy", "spiral", "accelerating"] as const) {
+    const paths = {
+      straight: BOLT,
+      wavy: testProjectile({ wave: { amplitude: 0.5, frequency: 2 } }),
+      spiral: testProjectile({ speed: 6, turnRate: Math.PI }),
+      accelerating: testProjectile({ acceleration: 40, maxSpeed: 20 }),
+    };
+    for (const [name, def] of Object.entries(paths)) {
       const { world, entity } = setup(def);
 
       step(world, 8);
 
-      const expected = pathPoint(projectiles[def], FROM, RIGHT, 8 * DT);
+      const expected = pathPoint(def, FROM, RIGHT, 8 * DT);
       const actual = world.components.position.get(entity)!;
-      expect(actual.x, `${def} x`).toBeCloseTo(expected.x, 4);
-      expect(actual.y, `${def} y`).toBeCloseTo(expected.y, 4);
+      expect(actual.x, `${name} x`).toBeCloseTo(expected.x, 4);
+      expect(actual.y, `${name} y`).toBeCloseTo(expected.y, 4);
     }
   });
 
   it("ages each tick", () => {
-    const { world, entity } = setup("bolt");
+    const { world, entity } = setup(BOLT);
     step(world, 3);
     expect(world.components.projectile.get(entity)!.age).toBeCloseTo(3 * DT);
   });
 
   it("is removed once its lifetime is up", () => {
-    const { world, entity } = setup("bolt");
+    const { world, entity } = setup(BOLT);
     // 0.6 s lifetime is 12 ticks; it's removed on the tick after.
     step(world, 12);
     expect(alive(world, entity)).toBe(true);
@@ -71,8 +81,8 @@ describe("projectileSystem", () => {
   });
 
   it("never travels past its range when ticks don't divide its lifetime", () => {
-    const { world, entity } = setup("bolt");
-    const { speed, lifetime } = projectiles.bolt;
+    const { world, entity } = setup(BOLT);
+    const { speed, lifetime } = BOLT;
 
     // 0.25 s ticks: the third would run to 0.75 s, past the 0.6 s lifetime.
     for (let i = 0; i < 3; i++) {
@@ -85,7 +95,9 @@ describe("projectileSystem", () => {
   });
 
   it("ends a boomerang back where it was fired", () => {
-    const { world, entity } = setup("boomerang");
+    const { world, entity } = setup(
+      testProjectile({ lifetime: 1.2, boomerang: true }),
+    );
     // 1.2 s lifetime is 24 ticks.
     step(world, 24);
     const at = world.components.position.get(entity)!;
@@ -95,7 +107,7 @@ describe("projectileSystem", () => {
 
   describe("walls", () => {
     it("stops at a wall and is removed", () => {
-      const { world, entity } = setup("bolt");
+      const { world, entity } = setup(BOLT);
       setWall(world.tiles, 5, 10);
 
       let ticks = 0;
@@ -107,7 +119,7 @@ describe("projectileSystem", () => {
 
       // Stopped against the wall's face, not inside or past it.
       const at = world.components.position.get(entity)!;
-      expect(at.x).toBeCloseTo(5 - projectiles.bolt.hitbox.r, 3);
+      expect(at.x).toBeCloseTo(5 - BOLT.hitbox.r, 3);
       expect(alive(world, entity)).toBe(true);
       projectileWallHitSystem(world, DT);
       cleanupSystem(world, DT);
@@ -116,7 +128,9 @@ describe("projectileSystem", () => {
 
     it("can't skip a wall however fast it goes", () => {
       // 40 tiles/s covers 2 tiles a tick.
-      const { world, entity } = setup("fastBolt");
+      const { world, entity } = setup(
+        testProjectile({ speed: 40, hitbox: { r: 0.12 } }),
+      );
       setWall(world.tiles, 4, 10);
 
       let furthest = 0;
@@ -131,7 +145,7 @@ describe("projectileSystem", () => {
     });
 
     it("flies through walls when it passes them", () => {
-      const { world, entity } = setup("ghost");
+      const { world, entity } = setup(testProjectile({ walls: "pass" }));
       setWall(world.tiles, 4, 10);
 
       step(world, 10);
@@ -140,7 +154,7 @@ describe("projectileSystem", () => {
     });
 
     it("skids along a wall when it slides", () => {
-      const { world, entity } = setup("skidding");
+      const { world, entity } = setup(testProjectile({ walls: "slide" }));
       setWall(world.tiles, 4, 10);
 
       step(world, 5);
@@ -152,7 +166,12 @@ describe("projectileSystem", () => {
   describe("rotation", () => {
     it("points along its path when it faces its direction", () => {
       // A quarter wave in, a tight wave has turned well off straight.
-      const { world, entity } = setup("tightWave");
+      const { world, entity } = setup(
+        testProjectile({
+          wave: { amplitude: 0.25, frequency: 6 },
+          faceDirection: true,
+        }),
+      );
 
       step(world, 1);
 
@@ -163,8 +182,8 @@ describe("projectileSystem", () => {
     });
 
     it("spins at its spin rate, remembering last tick's angle", () => {
-      const { world, entity } = setup("spinningStar");
-      const spin = projectiles.spinningStar.spin;
+      const spin = 3 * Math.PI;
+      const { world, entity } = setup(testProjectile({ spin }));
 
       step(world, 2);
 

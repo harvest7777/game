@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { testItem } from "../../testing/defs";
 import type { Command } from "../input/commands";
 import { slotHotkeys } from "../input/commands";
 import { createTiles } from "../tiles";
@@ -6,14 +7,19 @@ import { createWorld, spawn } from "../world";
 import { addHoldings } from "./bundle";
 import { inventorySystem } from "./system";
 
+const STAFF = testItem({ name: "Staff" });
+const LANCE = testItem({ name: "Lance" });
+const COMET = testItem({ name: "Comet" });
+const PHANTOM = testItem({ name: "Phantom" });
+
 function setup() {
   const world = createWorld(createTiles(1, 1));
   const player = spawn(world);
   world.components.playerControlled.set(player, true);
   world.components.team.set(player, "player");
   addHoldings(world, player, {
-    weapon: "apprenticeStaff",
-    carrying: ["lance", "cometStaff"],
+    weapon: STAFF,
+    carrying: [LANCE, COMET],
   });
   const c = world.components;
   const run = (...commands: Command[]) => {
@@ -27,14 +33,14 @@ describe("addHoldings", () => {
   it("wears the weapon and carries the rest, arming the shooter", () => {
     const { player, c } = setup();
     expect(c.equipment.get(player)).toEqual({
-      weapon: { def: "apprenticeStaff" },
+      weapon: { def: STAFF },
       ability: null,
       armor: null,
       ring: null,
     });
     expect(c.inventory.get(player)!.slots).toEqual([
-      { def: "lance" },
-      { def: "cometStaff" },
+      { def: LANCE },
+      { def: COMET },
       null,
       null,
       null,
@@ -42,7 +48,7 @@ describe("addHoldings", () => {
       null,
       null,
     ]);
-    expect(c.shooter.get(player)!.weapon).toBe("bolt");
+    expect(c.shooter.get(player)!.weapon).toBe(STAFF.weapon);
   });
 });
 
@@ -52,11 +58,9 @@ describe("inventorySystem", () => {
 
     run({ kind: "equip", index: 0 });
 
-    expect(c.equipment.get(player)!.weapon).toEqual({ def: "lance" });
-    expect(c.inventory.get(player)!.slots[0]).toEqual({
-      def: "apprenticeStaff",
-    });
-    expect(c.shooter.get(player)!.weapon).toBe("lance");
+    expect(c.equipment.get(player)!.weapon).toEqual({ def: LANCE });
+    expect(c.inventory.get(player)!.slots[0]).toEqual({ def: STAFF });
+    expect(c.shooter.get(player)!.weapon).toBe(LANCE.weapon);
   });
 
   it("keeps the shooter's cooldown when switching weapons", () => {
@@ -77,7 +81,7 @@ describe("inventorySystem", () => {
     expect(c.shooter.has(player)).toBe(false);
 
     run({ kind: "equip", index: 5 });
-    expect(c.shooter.get(player)!.weapon).toBe("bolt");
+    expect(c.shooter.get(player)!.weapon).toBe(STAFF.weapon);
     expect(c.shooter.get(player)!.cooldown).toBe(0);
   });
 
@@ -85,10 +89,10 @@ describe("inventorySystem", () => {
     const { player, c, run } = setup();
     // Lance in, then the comet staff in, sending the lance back to slot 1.
     run({ kind: "equip", index: 0 }, { kind: "equip", index: 1 });
-    expect(c.equipment.get(player)!.weapon).toEqual({ def: "cometStaff" });
+    expect(c.equipment.get(player)!.weapon).toEqual({ def: COMET });
     expect(c.inventory.get(player)!.slots.slice(0, 2)).toEqual([
-      { def: "apprenticeStaff" },
-      { def: "lance" },
+      { def: STAFF },
+      { def: LANCE },
     ]);
   });
 
@@ -106,8 +110,8 @@ describe("inventorySystem", () => {
 
   it("gives items into the first empty slot", () => {
     const { world, player, c, run } = setup();
-    run({ kind: "give", item: "phantomStaff" });
-    expect(c.inventory.get(player)!.slots[2]).toEqual({ def: "phantomStaff" });
+    run({ kind: "give", item: PHANTOM });
+    expect(c.inventory.get(player)!.slots[2]).toEqual({ def: PHANTOM });
     expect(world.events.itemsMoved).toEqual([
       { entity: player, to: { in: "inventory", index: 2 } },
     ]);
@@ -120,7 +124,7 @@ describe("inventorySystem", () => {
       from: { in: "inventory", index: 0 },
       to: { in: "equipment", slot: "ring" },
     });
-    expect(c.inventory.get(player)!.slots[0]).toEqual({ def: "lance" });
+    expect(c.inventory.get(player)!.slots[0]).toEqual({ def: LANCE });
     expect(c.equipment.get(player)!.ring).toBeNull();
   });
 });

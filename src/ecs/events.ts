@@ -1,6 +1,6 @@
 import type { SlotRef } from "./inventory/components";
 import type { Vec2 } from "./shared/physics/math";
-import type { ProjectileId } from "./projectile/definitions";
+import type { WeaponDef } from "./projectile/weapons";
 import type { SoundId } from "../audio/assets";
 import type { Entity } from "./world";
 
@@ -28,7 +28,7 @@ export type Death = { entity: Entity; killer?: Entity };
 // A weapon discharged once. A volley is one shot, however many projectiles
 // it creates, so its firing sound only plays once.
 export type ShotFired = {
-  projectile: ProjectileId;
+  weapon: WeaponDef;
   owner: Entity;
   at: Vec2;
 };
@@ -65,12 +65,7 @@ export function createEvents(): Events {
   };
 }
 
+// Empties every list, so a new kind of event needs no change here.
 export function clearEvents(events: Events): void {
-  events.hits.length = 0;
-  events.damaged.length = 0;
-  events.deaths.length = 0;
-  events.shotsFired.length = 0;
-  events.soundCues.length = 0;
-  events.itemsMoved.length = 0;
-  events.despawns.length = 0;
+  for (const list of Object.values(events)) list.length = 0;
 }

@@ -1,7 +1,6 @@
 import type { Vec2 } from "../shared/physics/math";
 import type { Entity, World } from "../world";
-import { fireProjectile } from "./spawn";
-import { volley, weaponDef, type WeaponId } from "./weapons";
+import { fireWeapon } from "../shared/firing";
 
 // Autofire: every shooter fires its weapon at the weapon's rate, from where
 // it stands, every projectile of each shot at once.
@@ -19,7 +18,6 @@ export function shootSystem(world: World, dt: number): void {
   for (const [entity, s] of shooter) {
     const at = position.get(entity);
     if (!at) continue;
-    const weapon = weaponDef(s.weapon);
     s.aim = aimOf(world, entity, at, s.aim);
 
     // Only the player fires without a target. Anything else holds fire,
@@ -37,41 +35,8 @@ export function shootSystem(world: World, dt: number): void {
     s.cooldown -= dt;
     while (s.cooldown <= 0) {
       fireWeapon(world, { entity, weapon: s.weapon, at, aim: s.aim });
-      s.cooldown += 1 / weapon.rate;
+      s.cooldown += 1 / s.weapon.rate;
     }
-  }
-}
-
-type FireWeaponOptions = {
-  entity: Entity;
-  weapon: WeaponId;
-  at: Vec2;
-  aim: Vec2;
-  // Starts every projectile this far along its own direction. Boss rings use
-  // this to leave a deliberate safe pocket inside their hitbox.
-  offset?: number;
-};
-
-// Fires a weapon once. Boss action cues share this path with Shooter autofire
-// so patterns, teams, projectile metadata and sound events remain identical.
-export function fireWeapon(
-  world: World,
-  { entity, weapon: weaponId, at, aim, offset = 0 }: FireWeaponOptions,
-): void {
-  const weapon = weaponDef(weaponId);
-  world.events.shotsFired.push({
-    projectile: weapon.projectile,
-    owner: entity,
-    at: { ...at },
-  });
-  for (const toward of volley(weapon, aim)) {
-    fireProjectile(world, {
-      def: weapon.projectile,
-      owner: entity,
-      team: world.components.team.get(entity) ?? "enemy",
-      at: { x: at.x + toward.x * offset, y: at.y + toward.y * offset },
-      toward,
-    });
   }
 }
 

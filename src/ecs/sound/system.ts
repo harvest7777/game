@@ -1,5 +1,3 @@
-import { enemyDef } from "../enemy/definitions";
-import { projectileDef } from "../projectile/definitions";
 import type { SoundMessage } from "../outbox";
 import type { World } from "../world";
 
@@ -13,23 +11,15 @@ export function soundSystem(world: World, _dt: number): void {
   }
 
   for (const shot of world.events.shotsFired) {
-    const enemy = world.components.enemy.get(shot.owner);
-    const audible =
-      world.components.playerControlled.has(shot.owner) ||
-      (enemy !== undefined && enemyDef(enemy.def).playsShotSound === true);
-    if (!audible) continue;
-    sounds.push({
-      kind: "sound",
-      sound: projectileDef(shot.projectile).sound.fire,
-      at: shot.at,
-    });
+    if (!shot.weapon.sound) continue;
+    sounds.push({ kind: "sound", sound: shot.weapon.sound, at: shot.at });
   }
 
   for (const hit of world.events.hits) {
     const projectile = world.components.projectile.get(hit.projectile);
     const at = world.components.position.get(hit.target);
     if (!projectile || !at) continue;
-    const sound = projectileDef(projectile.def).sound;
+    const sound = projectile.def.sound;
     sounds.push({
       kind: "sound",
       sound:
@@ -46,7 +36,7 @@ export function soundSystem(world: World, _dt: number): void {
     if (!enemy || !at) continue;
     sounds.push({
       kind: "sound",
-      sound: enemyDef(enemy.def).deathSound,
+      sound: enemy.def.deathSound,
       at: { ...at },
     });
   }

@@ -1,6 +1,6 @@
 import type { Position } from "../movement/components";
 import type { BehaviorMemory, Quirks } from "./behaviors";
-import type { EnemyId } from "./definitions";
+import type { EnemyDef } from "./definitions";
 import type { BossAction } from "./sequences";
 
 // An enemy: which kind, where it was spawned (which behaviors like
@@ -8,7 +8,7 @@ import type { BossAction } from "./sequences";
 // which phase it's in and for how many seconds. Its quirks vary how it moves
 // from others of its kind.
 export type Enemy = {
-  def: EnemyId;
+  def: EnemyDef;
   origin: Position;
   phase?: { name: string; time: number };
   quirks?: Quirks;

@@ -1,7 +1,6 @@
-import { addShooter } from "../bundles";
+import { armWithEquippedWeapon } from "../shared/arming";
 import type { Entity, World } from "../world";
 import type { SlotRef } from "./components";
-import { itemDef } from "./items";
 import { equipFromInventory, giveItem, moveItem, type Holdings } from "./slots";
 
 // Applies the player's item commands, in order, recording each move that
@@ -31,20 +30,6 @@ export function inventorySystem(world: World, _dt: number): void {
       }
     }
     armWithEquippedWeapon(world, entity);
-  }
-}
-
-// Makes the entity's shooter fire its equipped weapon, keeping its cooldown
-// so swapping can't skip it; with no weapon equipped it can't shoot.
-export function armWithEquippedWeapon(world: World, entity: Entity): void {
-  const worn = world.components.equipment.get(entity)?.weapon;
-  const weapon = worn ? itemDef(worn.def).weapon : undefined;
-  const shooter = world.components.shooter.get(entity);
-  if (!weapon) world.components.shooter.delete(entity);
-  else if (shooter) shooter.weapon = weapon;
-  else {
-    const team = world.components.team.get(entity) ?? "player";
-    addShooter(world, entity, { weapon, team });
   }
 }
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { testWeapon } from "../testing/defs";
 import { addSprite } from "../ecs/bundles";
 import { createCamera } from "../ecs/camera/resource";
 import type { Vec2 } from "../ecs/shared/physics/math";
+import type { SpriteArt } from "../ecs/sprite/art";
 import type { Color, Sprite, SpriteLayer } from "../ecs/sprite/components";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type Entity, type World } from "../ecs/world";
@@ -20,31 +22,30 @@ import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 
 const frames = (facing: string) => [0, 1, 2].map((i) => `${facing}-${i}`);
 const bossFrames = (clip: string) => [0, 1, 2].map((i) => `boss-${clip}-${i}`);
-const manifest: Manifest = {
-  sprites: {
-    hero: {
-      kind: "walker",
-      front: frames("front"),
-      back: frames("back"),
-      side: frames("side"),
-      attack: {
-        front: frames("front-attack"),
-        back: frames("back-attack"),
-        side: frames("side-attack"),
-      },
-    },
-    plainWalker: {
-      kind: "walker",
-      front: frames("front"),
-      back: frames("back"),
-      side: frames("side"),
-    },
-    boss: {
-      kind: "animated",
-      clips: { idle: bossFrames("idle"), cast: bossFrames("cast") },
-    },
-    orb: { kind: "static", file: "orb" },
+const HERO: SpriteArt = {
+  kind: "walker",
+  front: frames("front"),
+  back: frames("back"),
+  side: frames("side"),
+  attack: {
+    front: frames("front-attack"),
+    back: frames("back-attack"),
+    side: frames("side-attack"),
   },
+};
+const PLAIN_WALKER: SpriteArt = {
+  kind: "walker",
+  front: frames("front"),
+  back: frames("back"),
+  side: frames("side"),
+};
+const BOSS: SpriteArt = {
+  kind: "animated",
+  clips: { idle: bossFrames("idle"), cast: bossFrames("cast") },
+};
+const ORB: SpriteArt = { kind: "static", file: "orb" };
+const manifest: Manifest = {
+  sprites: [HERO, PLAIN_WALKER, BOSS, ORB],
   fonts: { bold: {}, regular: {} },
   ground: {},
   walls: { top: "top", side: "side" },
@@ -87,7 +88,7 @@ function addAt(
 ): Entity {
   const e = spawn(world);
   world.components.position.set(e, { ...at });
-  addSprite(world, e, { name: "hero", layer: "player", ...sprite });
+  addSprite(world, e, { art: HERO, layer: "player", ...sprite });
   if (facing) world.components.facing.set(e, facing);
   return e;
 }
@@ -184,7 +185,7 @@ describe("pushSprites", () => {
     // the sprite's center on screen.
     function cornerOffsets(angle: number, cameraAngle = 0, previous = angle) {
       const { world, view } = setup(cameraAngle);
-      const e = addAt(world, CENTER, { name: "orb", layer: "projectile" });
+      const e = addAt(world, CENTER, { art: ORB, layer: "projectile" });
       world.components.rotation.set(e, { angle, previous });
       const [quad] = draw(world, view, 0.5);
       const c = worldToScreen(view, CENTER);
@@ -242,7 +243,7 @@ describe("pushSprites", () => {
       const { world, view } = setup();
       // Screen shows 5..15; the center is past the right edge by more than
       // half a tile but less than half the diagonal.
-      const e = addAt(world, { x: 15.6, y: 10 }, { name: "orb" });
+      const e = addAt(world, { x: 15.6, y: 10 }, { art: ORB });
       world.components.rotation.set(e, {
         angle: Math.PI / 4,
         previous: Math.PI / 4,
@@ -255,7 +256,7 @@ describe("pushSprites", () => {
     it("draws the art at its scale, outline included", () => {
       const { world, view } = setup();
       addAt(world, CENTER, {
-        name: "orb",
+        art: ORB,
         scale: 0.8,
         outline: { color: [0, 0, 0, 1] },
       });
@@ -269,7 +270,7 @@ describe("pushSprites", () => {
 
     it("stays centered on the entity", () => {
       const { world, view } = setup();
-      addAt(world, { x: 11, y: 9 }, { name: "orb", scale: 0.5 });
+      addAt(world, { x: 11, y: 9 }, { art: ORB, scale: 0.5 });
 
       const [quad] = draw(world, view);
 
@@ -323,7 +324,7 @@ describe("pushSprites", () => {
       const layers: SpriteLayer[] = ["player", "projectile", "enemy"];
       // Player is highest on screen, which would otherwise put it first.
       layers.forEach((layer, i) =>
-        addAt(world, { x: 10, y: 9 + i }, { name: "orb", layer }),
+        addAt(world, { x: 10, y: 9 + i }, { art: ORB, layer }),
       );
 
       const ys = draw(world, view).map((q) => q.corners[0].y);
@@ -335,8 +336,8 @@ describe("pushSprites", () => {
 
     it("draws lower sprites over higher ones within a layer", () => {
       const { world, view } = setup();
-      addAt(world, { x: 10, y: 11 }, { name: "orb", layer: "enemy" });
-      addAt(world, { x: 10, y: 9 }, { name: "orb", layer: "enemy" });
+      addAt(world, { x: 10, y: 11 }, { art: ORB, layer: "enemy" });
+      addAt(world, { x: 10, y: 9 }, { art: ORB, layer: "enemy" });
 
       const ys = draw(world, view).map((q) => q.corners[0].y);
 
@@ -415,12 +416,12 @@ describe("pushSprites", () => {
     });
 
     describe("attacking", () => {
-      // The bolt weapon fires 4 times a second: 0.25 s between shots, so
+      // The test weapon fires 4 times a second: 0.25 s between shots, so
       // it thrusts while more than 0.125 s of cooldown is left.
-      function shooting(cooldown: number, facing: Vec2, name = "hero") {
+      function shooting(cooldown: number, facing: Vec2, art = HERO) {
         const { world, view } = setup();
-        const e = addAt(world, CENTER, { name }, facing);
-        world.components.shooter.set(e, { weapon: "bolt", cooldown });
+        const e = addAt(world, CENTER, { art }, facing);
+        world.components.shooter.set(e, { weapon: testWeapon(), cooldown });
         return { world, view, e };
       }
 
@@ -453,14 +454,14 @@ describe("pushSprites", () => {
       });
 
       it("uses its normal frames when it has no attack art", () => {
-        const { world, view } = shooting(0.24, { x: 0, y: 1 }, "plainWalker");
+        const { world, view } = shooting(0.24, { x: 0, y: 1 }, PLAIN_WALKER);
         expect(fileOf(draw(world, view)[0])).toBe("front-0");
       });
     });
 
     it("draws static art regardless of facing", () => {
       const { world, view } = setup();
-      addAt(world, CENTER, { name: "orb" }, { x: -1, y: 0 });
+      addAt(world, CENTER, { art: ORB }, { x: -1, y: 0 });
       const [quad] = draw(world, view);
       expect(fileOf(quad)).toBe("orb");
       expect(quad.flipX).toBe(false);
@@ -468,7 +469,7 @@ describe("pushSprites", () => {
 
     it("samples named animation clips from simulation progress", () => {
       const { world, view } = setup();
-      const e = addAt(world, CENTER, { name: "boss" });
+      const e = addAt(world, CENTER, { art: BOSS });
       world.components.animation.set(e, {
         clip: "cast",
         previousTime: 0,
@@ -481,9 +482,9 @@ describe("pushSprites", () => {
     });
   });
 
-  it("refuses a sprite name with no art", () => {
+  it("refuses art that isn't in the atlas", () => {
     const { world, view } = setup();
-    addAt(world, CENTER, { name: "ghost" });
+    addAt(world, CENTER, { art: { kind: "static", file: "missing" } });
     expect(() => draw(world, view)).toThrow();
   });
 });
@@ -491,7 +492,7 @@ describe("pushSprites", () => {
 describe("marginOf", () => {
   it("stops at the distance map's reach for big glows", () => {
     const sprite: Sprite = {
-      name: "slime",
+      art: ORB,
       layer: "enemy",
       outline: {
         color: [1, 1, 0, 1] as Color,

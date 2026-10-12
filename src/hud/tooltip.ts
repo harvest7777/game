@@ -1,12 +1,9 @@
-import { itemDef, type ItemId } from "../ecs/inventory/items";
-import {
-  projectileDef,
-  type ProjectileDef,
-} from "../ecs/projectile/definitions";
+import type { ItemDef } from "../ecs/inventory/items";
+import type { ProjectileDef } from "../ecs/projectile/definitions";
 import { pathOffset } from "../ecs/projectile/path";
-import { weaponDef } from "../ecs/projectile/weapons";
 import type { Color } from "../ecs/sprite/components";
 import { HUD_COLORS, type HudElement, type PanelLayout } from "./elements";
+import { KIND_LABELS } from "./items";
 
 export type TooltipLine = { text: string; color: Color };
 
@@ -17,25 +14,17 @@ export const TOOLTIP_COLORS = {
   trait: [0.55, 0.8, 0.95, 1] as Color,
 };
 
-const KIND_NAMES = {
-  weapon: "Weapon",
-  ability: "Ability",
-  armor: "Armor",
-  ring: "Ring",
-};
-
 // What a tooltip says about an item, worked out from its definitions so it
 // can't drift from how the item actually behaves.
-export function itemTooltip(id: ItemId): TooltipLine[] {
-  const item = itemDef(id);
+export function itemTooltip(item: ItemDef): TooltipLine[] {
   const lines: TooltipLine[] = [
     { text: item.name, color: TOOLTIP_COLORS.name },
-    { text: KIND_NAMES[item.kind], color: TOOLTIP_COLORS.kind },
+    { text: KIND_LABELS[item.kind].name, color: TOOLTIP_COLORS.kind },
   ];
   if (!item.weapon) return lines;
 
-  const weapon = weaponDef(item.weapon);
-  const shot = projectileDef(weapon.projectile);
+  const weapon = item.weapon;
+  const shot = weapon.projectile;
   const [min, max] = shot.damage;
   const count = weapon.count ?? 1;
   lines.push(
