@@ -39,9 +39,9 @@ describe("placePanel", () => {
 
 describe("uiPixel", () => {
   it("is a whole number of device pixels", () => {
-    expect(uiPixel(1)).toBe(4);
-    expect(uiPixel(2)).toBe(8);
-    expect(uiPixel(1.25)).toBe(5);
+    expect(uiPixel(1)).toBe(6);
+    expect(uiPixel(2)).toBe(12);
+    expect(uiPixel(1.25)).toBe(8);
   });
 });
 

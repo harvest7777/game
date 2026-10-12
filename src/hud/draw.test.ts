@@ -11,6 +11,7 @@ import {
   layoutHud,
   pushElements,
   TOOLTIP_DELAY,
+  tooltipPixel,
 } from "./draw";
 import type { SlotRef } from "../ecs/inventory/components";
 import { DRAGGED_FROM_ALPHA, HUD_COLORS, type HudElement } from "./elements";
@@ -160,9 +161,10 @@ describe("drawHud", () => {
 
     drawHud(out, art, world, player, createHudState(), 1200, 800, 4, 0);
 
-    // The panel frame's bottom-right is 6 UI pixels in from the corner.
-    const [frame] = readQuads(out);
-    expect(frame.corners[2]).toEqual({ x: 1200 - 6 * 4, y: 800 - 6 * 4 });
+    // The HUD's bottom-right edge is 6 UI pixels in from the corner.
+    const quads = readQuads(out);
+    expect(Math.max(...quads.map((q) => q.corners[2].x))).toBe(1200 - 6 * 4);
+    expect(Math.max(...quads.map((q) => q.corners[2].y))).toBe(800 - 6 * 4);
   });
 });
 
@@ -267,6 +269,17 @@ describe("tooltips", () => {
     const before = draw(h, 1 + TOOLTIP_DELAY - 0.01).length;
     const after = draw(h, 1 + TOOLTIP_DELAY + 0.01).length;
     expect(after).toBeGreaterThan(before);
+  });
+
+  it("draws at half the HUD's scale, beside the pointer", () => {
+    const h = hovering(0);
+    const quads = draw(h, 5);
+    // The tooltip is drawn last; its glyph cells are 8 tooltip pixels tall.
+    const last = quads[quads.length - 1];
+    expect(last.corners[2].y - last.corners[0].y).toBe(8 * tooltipPixel(4));
+    expect(tooltipPixel(4)).toBe(2);
+    // Beside the pointer at UI (50, 40) = device (200, 160).
+    expect(Math.abs(last.corners[0].x - 200)).toBeLessThan(400);
   });
 
   it("doesn't show over an empty slot", () => {

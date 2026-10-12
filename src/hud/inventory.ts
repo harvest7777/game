@@ -17,7 +17,6 @@ export function inventoryView(
 // them.
 export function inventoryPanel(view: InventoryView): PanelLayout {
   return slotPanel(
-    "Inventory",
     view.map((item, index) => ({
       ref: { in: "inventory", index },
       item,

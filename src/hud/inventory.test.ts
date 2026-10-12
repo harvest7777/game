@@ -54,10 +54,10 @@ describe("inventoryPanel", () => {
     expect(labels).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
   });
 
-  it("is titled Inventory", () => {
-    const [title] = inventoryPanel(view).elements.filter(
+  it("has no title, just the slot numbers", () => {
+    const texts = inventoryPanel(view).elements.filter(
       (e) => e.kind === "text",
     );
-    expect(title).toMatchObject({ text: "Inventory" });
+    expect(texts).toHaveLength(8);
   });
 });

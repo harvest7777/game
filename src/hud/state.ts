@@ -35,16 +35,20 @@ export type HudState = {
   lastClick?: { ref: SlotRef; time: number };
   // Slots that just had an item land in them, and when (seconds).
   flashes: { ref: SlotRef; at: number }[];
+  // Whether panels can be dragged around. Off in play; a HUD edit mode will
+  // turn it on.
+  editMode: boolean;
 };
 
 export function createHudState(): HudState {
   return {
     panels: {
       equipment: { corner: "bottomRight", x: 6, y: 6 },
-      // Stacked above equipment.
-      inventory: { corner: "bottomRight", x: 6, y: 30 },
+      // Just above equipment (12 UI pixels tall), one slot gap apart.
+      inventory: { corner: "bottomRight", x: 6, y: 20 },
     },
     flashes: [],
+    editMode: false,
   };
 }
 
@@ -68,8 +72,8 @@ export function placePanel(
 }
 
 // CSS pixels per UI pixel. Each UI pixel is one art pixel, so 8x8 icons draw
-// 32 CSS pixels across.
-export const UI_SCALE = 4;
+// 48 CSS pixels across.
+export const UI_SCALE = 6;
 
 // Device pixels per UI pixel, a whole number so the HUD stays crisp.
 export function uiPixel(devicePixelRatio: number): number {

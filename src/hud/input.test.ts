@@ -11,6 +11,7 @@ import {
   type PlacedPanel,
   type PointerEvent,
 } from "./input";
+import { SLOT } from "./layout";
 import { createHudState, type HudState } from "./state";
 
 const SCREEN = { w: 300, h: 200 };
@@ -83,14 +84,13 @@ describe("hitTest", () => {
     });
   });
 
-  it("finds the panel but no slot on its frame", () => {
+  it("finds the panel but no slot in the gap between slots", () => {
     const { panels } = setup();
     const p = panels();
     const equipment = p.find((x) => x.id === "equipment")!;
-    expect(hitTest(p, { x: equipment.x + 1, y: equipment.y + 1 })).toEqual({
-      panel: "equipment",
-      hasItem: false,
-    });
+    expect(
+      hitTest(p, { x: equipment.x + SLOT + 1, y: equipment.y + 1 }),
+    ).toEqual({ panel: "equipment", hasItem: false });
   });
 
   it("picks the panel on top where panels overlap", () => {
@@ -249,12 +249,40 @@ describe("hudPointer", () => {
     });
   });
 
-  describe("moving panels", () => {
-    it("drags a panel by its title bar so the grabbed point follows", () => {
+  describe("moving panels in edit mode", () => {
+    it("doesn't move panels outside edit mode", () => {
       const { state, panels } = setup();
       const p = panels();
       const equipment = p.find((x) => x.id === "equipment")!;
-      const grab = { x: equipment.x + 5, y: equipment.y + 3 };
+      const grab = { x: equipment.x + SLOT + 1, y: equipment.y + 1 };
+      const before = { ...state.panels.equipment };
+
+      send(
+        state,
+        p,
+        { kind: "down", ...grab, time: 0 },
+        { kind: "move", x: 20, y: 20 },
+        { kind: "up", x: 20, y: 20, time: 1 },
+      );
+
+      expect(state.panels.equipment).toEqual(before);
+    });
+
+    it("grabs the whole panel even when pressing on an item", () => {
+      const { state, panels } = setup();
+      state.editMode = true;
+      const p = panels();
+      send(state, p, { kind: "down", ...centerOf(p, worn), time: 0 });
+      expect(state.press?.panel?.id).toBe("equipment");
+      expect(state.press?.item).toBeUndefined();
+    });
+
+    it("drags a panel by its frame so the grabbed point follows", () => {
+      const { state, panels } = setup();
+      state.editMode = true;
+      const p = panels();
+      const equipment = p.find((x) => x.id === "equipment")!;
+      const grab = { x: equipment.x + SLOT + 1, y: equipment.y + 1 };
 
       send(
         state,
@@ -270,9 +298,10 @@ describe("hudPointer", () => {
 
     it("keeps a dragged panel on whole UI pixels", () => {
       const { state, panels } = setup();
+      state.editMode = true;
       const p = panels();
       const equipment = p.find((x) => x.id === "equipment")!;
-      const grab = { x: equipment.x + 5, y: equipment.y + 3 };
+      const grab = { x: equipment.x + SLOT + 1, y: equipment.y + 1 };
 
       send(
         state,
@@ -289,9 +318,10 @@ describe("hudPointer", () => {
 
     it("keeps a dragged panel on screen", () => {
       const { state, panels } = setup();
+      state.editMode = true;
       const p = panels();
       const equipment = p.find((x) => x.id === "equipment")!;
-      const grab = { x: equipment.x + 5, y: equipment.y + 3 };
+      const grab = { x: equipment.x + SLOT + 1, y: equipment.y + 1 };
 
       send(
         state,
@@ -307,9 +337,10 @@ describe("hudPointer", () => {
 
     it("attaches a dropped panel to its nearest corner", () => {
       const { state, panels } = setup();
+      state.editMode = true;
       const p = panels();
       const equipment = p.find((x) => x.id === "equipment")!;
-      const grab = { x: equipment.x + 5, y: equipment.y + 3 };
+      const grab = { x: equipment.x + SLOT + 1, y: equipment.y + 1 };
 
       send(
         state,
@@ -320,10 +351,11 @@ describe("hudPointer", () => {
       );
 
       expect(state.panels.equipment.corner).toBe("topLeft");
+      // Grabbed 13 across and 1 down, dropped at (30, 20).
       expect(state.panels.equipment).toEqual({
         corner: "topLeft",
-        x: 25,
-        y: 17,
+        x: 17,
+        y: 19,
       });
     });
   });

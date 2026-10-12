@@ -114,9 +114,21 @@ export function drawHud(
       itemTooltip(tooltip),
       (text) => layoutText(text, regular, art.glyphs).width,
     );
-    const at = placeTooltip(layout, state.pointer, screen);
-    pushElements(out, art, layout.elements, at.x, at.y, pixel);
+    // Tooltips are drawn at half the HUD's scale, so laid out and placed in
+    // their own, smaller pixels.
+    const tipPixel = tooltipPixel(pixel);
+    const pointer = {
+      x: (state.pointer.x * pixel) / tipPixel,
+      y: (state.pointer.y * pixel) / tipPixel,
+    };
+    const at = placeTooltip(layout, pointer, uiScreen(width, height, tipPixel));
+    pushElements(out, art, layout.elements, at.x, at.y, tipPixel);
   }
+}
+
+// Device pixels per tooltip pixel: half the HUD's, in whole device pixels.
+export function tooltipPixel(pixel: number): number {
+  return Math.max(1, Math.round(pixel / 2));
 }
 
 // The item to show a tooltip for: the one under the pointer once it's been

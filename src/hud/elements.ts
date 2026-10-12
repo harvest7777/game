@@ -23,9 +23,7 @@ export type HudElement =
       align?: "left" | "center";
     }
   // Where an item slot is, for clicking. Not drawn.
-  | { kind: "slot"; rect: Rect; ref: SlotRef }
-  // Where the panel can be grabbed to move it. Not drawn.
-  | { kind: "handle"; rect: Rect };
+  | { kind: "slot"; rect: Rect; ref: SlotRef };
 
 // A panel's contents: its size and what's in it.
 export type PanelLayout = { w: number; h: number; elements: HudElement[] };
@@ -35,8 +33,9 @@ export const HUD_COLORS = {
   panel: [0.08, 0.08, 0.1, 0.92] as Color,
   panelBorder: [0.42, 0.38, 0.32, 1] as Color,
   slot: [0.16, 0.15, 0.18, 1] as Color,
-  slotBorder: [0.3, 0.28, 0.3, 1] as Color,
+  slotBorder: [0.46, 0.45, 0.5, 1] as Color,
   dimLabel: [0.38, 0.36, 0.4, 1] as Color,
+  // Tooltip item names.
   title: [0.85, 0.75, 0.5, 1] as Color,
   hoverBorder: [0.95, 0.85, 0.55, 1] as Color,
 };

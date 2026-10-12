@@ -58,14 +58,12 @@ describe("equipmentPanel", () => {
     expect([...xs].sort((a, b) => a - b)).toEqual(xs);
   });
 
-  it("fits every slot inside the panel", () => {
+  it("spans exactly its slots", () => {
     const { w, h, elements } = equipmentPanel(empty);
-    for (const { rect } of ofKind(elements, "slot")) {
-      expect(rect.x).toBeGreaterThan(0);
-      expect(rect.y).toBeGreaterThan(0);
-      expect(rect.x + rect.w).toBeLessThan(w);
-      expect(rect.y + rect.h).toBeLessThan(h);
-    }
+    const slots = ofKind(elements, "slot");
+    expect(Math.min(...slots.map((s) => s.rect.x))).toBe(0);
+    expect(Math.max(...slots.map((s) => s.rect.x + s.rect.w))).toBe(w);
+    expect(Math.max(...slots.map((s) => s.rect.y + s.rect.h))).toBe(h);
   });
 
   it("shows a worn item's icon inside its slot", () => {
@@ -73,9 +71,10 @@ describe("equipmentPanel", () => {
     const [weaponSlot] = ofKind(elements, "slot");
     const [icon] = ofKind(elements, "icon");
     expect(icon.sprite).toBe("item.lance");
+    // A pixel of room between the icon and the slot's border.
     expect(icon.rect).toEqual({
-      x: weaponSlot.rect.x + 1,
-      y: weaponSlot.rect.y + 1,
+      x: weaponSlot.rect.x + 2,
+      y: weaponSlot.rect.y + 2,
       w: 8,
       h: 8,
     });
@@ -93,15 +92,11 @@ describe("equipmentPanel", () => {
     ]);
   });
 
-  it("has a title bar to grab it by, above the slots", () => {
-    const { w, elements } = equipmentPanel(empty);
-    const [title] = ofKind(elements, "text");
-    const [handle] = ofKind(elements, "handle");
-    expect(title.text).toBe("Equipment");
-    expect(handle.rect).toMatchObject({ x: 0, y: 0, w });
-    for (const slot of ofKind(elements, "slot")) {
-      expect(slot.rect.y).toBeGreaterThanOrEqual(handle.rect.h);
-    }
+  it("has no title, just the slot letters", () => {
+    const texts = ofKind(equipmentPanel(empty).elements, "text").map(
+      (t) => t.text,
+    );
+    expect(texts).toEqual(["W", "S", "A", "R"]);
   });
 
   it("tags each icon with its slot so it can be dragged", () => {
@@ -112,11 +107,9 @@ describe("equipmentPanel", () => {
     });
   });
 
-  it("draws the panel frame first, under everything", () => {
-    const { w, h, elements } = equipmentPanel(empty);
-    expect(elements[0]).toMatchObject({
-      kind: "box",
-      rect: { x: 0, y: 0, w, h },
-    });
+  it("draws only the slot squares, nothing behind them", () => {
+    const boxes = ofKind(equipmentPanel(empty).elements, "box");
+    expect(boxes).toHaveLength(4);
+    expect(boxes.every((b) => b.ref !== undefined)).toBe(true);
   });
 });

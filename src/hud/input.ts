@@ -64,7 +64,9 @@ export const DOUBLE_CLICK = 0.35;
 
 // Updates the HUD for one pointer event and returns the commands it asks
 // for. `used` says whether the HUD took the event (it was over a panel, or
-// part of a drag), so the game shouldn't also act on it.
+// part of a drag), so the game shouldn't also act on it. Items can be
+// clicked and dragged in play; in edit mode, presses grab whole panels
+// instead, which snap to their nearest screen corner when dropped.
 export function hudPointer(
   state: HudState,
   event: PointerEvent,
@@ -93,9 +95,10 @@ export function hudPointer(
 
   if (event.kind === "down") {
     if (!hit) return { commands, used: false };
-    if (hit.slot && hit.hasItem) {
+    if (hit.slot && hit.hasItem && !state.editMode) {
       state.press = { at: point, dragging: false, item: hit.slot };
-    } else {
+    } else if (state.editMode) {
+      // In edit mode, pressing anywhere on a panel grabs the whole panel.
       const panel = panels.find((p) => p.id === hit.panel)!;
       state.press = {
         at: point,

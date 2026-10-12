@@ -38,7 +38,6 @@ export const SLOT_LABELS: Record<ItemKind, string> = {
 // shows its item's icon, or a dim letter for its kind when empty.
 export function equipmentPanel(view: EquipmentView): PanelLayout {
   return slotPanel(
-    "Equipment",
     SLOT_ORDER.map((kind) => ({
       ref: { in: "equipment", slot: kind },
       item: view[kind],
