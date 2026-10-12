@@ -25,6 +25,9 @@ export type HudElement =
       tint: Color;
       align?: "left" | "center";
       outline?: Color;
+      // Drawn this many times smaller than the panel's pixels, for quiet
+      // labels; 1 if unset.
+      shrink?: number;
     }
   // Where an item slot is, for clicking. Not drawn.
   | { kind: "slot"; rect: Rect; ref: SlotRef };

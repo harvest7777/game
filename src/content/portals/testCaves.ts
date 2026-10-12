@@ -5,7 +5,7 @@ export const testCavesPortal: PortalDef = {
   label: "Test Caves",
   to: "testCaves",
   sprite: {
-    art: { kind: "static", file: "portals/abyss" },
-    outline: { color: [1, 0.55, 0.2, 1], glow: { radius: 2, pulseHz: 0.8 } },
+    art: { kind: "static", file: "portals/caves" },
+    outline: { color: [0.5, 1, 0.55, 1], glow: { radius: 2, pulseHz: 0.8 } },
   },
 };

@@ -294,6 +294,8 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty), st
 
 **Portal prompt** (`portalPrompt.ts`): while the player stands on a portal, the portal's label and "press Enter" show in the lower middle of the screen, outlined like tooltips.
 
+**Arrival fade** (`fade.ts`): arriving somewhere through a portal fades in from black over 0.35 s, over the world and under the HUD, as a whoosh plays.
+
 **Quest pointer** (`quest.ts`): an enemy whose definition says `quest` (a dungeon's boss: Malphas, the Slime King) gets a `Quest` marker when it spawns. While the nearest quest is off screen, the HUD draws a gold arrow on the screen's edge, on the line from the screen's middle toward it (so it follows the camera's rotation), beside a card with the quest's portrait (`firstFrame` of its art), its health bar and its distance in tiles. It hides while the quest is in view, and is always on. Choosing the quest (`currentQuest`) and placing the pointer (`questPointer`) are pure; drawing reads the world and the frame's view, under the HUD panels.
 
 **HUD hotkeys** (`hotkeys.ts`) change only the HUD and never reach the game: G toggles the inventory, rebindable in settings to any key the game isn't using.

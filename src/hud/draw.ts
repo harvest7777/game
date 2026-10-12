@@ -322,7 +322,7 @@ export function pushElements(
         (y + element.y) * pixel,
         {
           font: element.font,
-          pixel,
+          pixel: pixel / (element.shrink ?? 1),
           tint: element.tint,
           align: element.align,
           ...(element.outline && { outline: { color: element.outline } }),

@@ -3,9 +3,13 @@ import { ATTRIBUTE_STATS, STAT, type StatValue } from "../ecs/stats/components";
 import type { Color } from "../ecs/sprite/components";
 import { HUD_COLORS, type HudElement, type PanelLayout } from "./elements";
 
-const SCALE = 2;
+// Drawn at a third of the HUD's size, like the vitals' numbers, so the
+// panel reads as detail beside the items rather than competing with them.
+const SCALE = 3;
 const PADDING = 3;
-const COLUMN_WIDTH = 50;
+// Wide enough for "ATT 25/75", and keeping the panel a whole number of UI
+// pixels across at a third of the size.
+const COLUMN_WIDTH = 51;
 const COLUMN_GAP = 6;
 const WIDTH = PADDING * 2 + COLUMN_WIDTH * 2 + COLUMN_GAP;
 const ROW_HEIGHT = 9;

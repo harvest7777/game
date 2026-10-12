@@ -28,6 +28,7 @@ import {
 import { hudPointer, type PointerEvent } from "./hud/input";
 import { pushQuestPointer } from "./hud/quest";
 import { pushPortalPrompt } from "./hud/portalPrompt";
+import { fadeDarkness, pushFade } from "./hud/fade";
 import { createHudState, restorePanels, uiPixel } from "./hud/state";
 import { installDebugPanel } from "./debug/panel";
 import { hudHotkey } from "./hud/hotkeys";
@@ -54,6 +55,8 @@ if (!gl) throw new Error("WebGL2 isn't available");
 // The world being played and where characters arrive in it: replaced when
 // travelling to another level.
 let level: LevelDef = levels.nexus;
+// When the player last arrived somewhere, in seconds, for the fade in.
+let arrivedAt = -Infinity;
 let { world, spawn } = loadLevel(level, Math.random, gameLoot);
 // Who's being played: replaced on respawn. Once they die, the entity has no
 // components left, so everything reading it finds nothing.
@@ -114,6 +117,11 @@ function enterLevel(to: LevelDef) {
   level = to;
   world = next.world;
   spawn = next.spawn;
+  arrivedAt = performance.now() / 1000;
+  soundPlayer.play([{ kind: "sound", sound: "travel", at: spawn }], {
+    at: spawn,
+    angle: world.camera.angle,
+  });
   // Requests aimed at the old world, like moving a bag's item, mean nothing
   // here.
   pendingCommands.length = 0;
@@ -125,6 +133,13 @@ const debug = installDebugPanel(
   () => player,
 );
 debug.characterSpawned(player);
+
+// The folded settings and debug menu lets go of focus once opened or
+// closed, so Enter and Space go to the game rather than toggling it again.
+const menu = document.getElementById("menu") as HTMLDetailsElement;
+menu.addEventListener("toggle", () => {
+  (document.activeElement as HTMLElement | null)?.blur();
+});
 
 // Shown while there's no character: brings a fresh one back at the spawn.
 const respawnButton = document.getElementById("respawn") as HTMLButtonElement;
@@ -377,6 +392,8 @@ function render(time: number) {
     time,
     debug.renderDebug,
     (out) => {
+      // Over the world, under the HUD.
+      pushFade(out, width, height, fadeDarkness(arrivedAt, time));
       // Under the panels, so a panel in the same corner covers the pointer.
       pushQuestPointer(out, frameArt, world, player, view, alpha, uiPixel(dpr));
       pushPortalPrompt(

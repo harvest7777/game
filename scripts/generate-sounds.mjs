@@ -109,6 +109,13 @@ const cues = {
       0.38
     );
   }),
+  // Going through a portal: a rising, shimmering whoosh.
+  "world/travel": wav(0.6, (t, d) => {
+    const rise = 220 + 660 * (t / d) ** 2;
+    const shimmer = Math.sin(2 * Math.PI * rise * t) * 0.35;
+    const air = noise() * 0.12 * Math.sin((Math.PI * t) / d);
+    return (shimmer + air) * envelope(t, d, 0.05) * 0.4;
+  }),
 };
 
 for (const [name, data] of Object.entries(cues)) {

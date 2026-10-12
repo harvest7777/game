@@ -10,6 +10,7 @@ export const sounds = {
   bossCast: "enemies/boss-cast",
   bossDash: "enemies/boss-dash",
   bossExpose: "enemies/boss-expose",
+  travel: "world/travel",
 } as const;
 
 export type SoundId = keyof typeof sounds;

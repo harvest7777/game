@@ -21,6 +21,24 @@ body {
   left: 8px;
   color: white;
   font-family: monospace;
+  /* Readable over any ground without a box behind it. */
+  text-shadow:
+    1px 1px 0 black,
+    -1px 1px 0 black,
+    1px -1px 0 black,
+    -1px -1px 0 black;
+  opacity: 0.85;
+}
+
+/* Settings and debug controls stay folded away until wanted. */
+#menu summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+#menu[open] {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px 8px 0;
 }
 
 #performance p {

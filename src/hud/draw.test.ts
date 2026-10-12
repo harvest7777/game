@@ -429,3 +429,24 @@ describe("flashes", () => {
     expect(borderAt(10 + FLASH_SECONDS + 0.1)).toBeLessThan(0.9);
   });
 });
+
+describe("pushElements text", () => {
+  it("draws shrunk text at a fraction of the panel's pixels", () => {
+    const text = (shrink?: number) =>
+      quadsOf([
+        {
+          kind: "text",
+          x: 0,
+          y: 0,
+          text: "W",
+          font: "regular",
+          tint: [1, 1, 1, 1],
+          ...(shrink && { shrink }),
+        },
+      ]);
+    const width = (q: ReturnType<typeof text>[number]) =>
+      q.corners[1].x - q.corners[0].x;
+
+    expect(width(text(2)[0])).toBeCloseTo(width(text()[0]) / 2);
+  });
+});

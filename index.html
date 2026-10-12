@@ -9,53 +9,58 @@
   <body>
     <canvas id="game"></canvas>
     <div id="performance">
-      <p><span>fps: </span> <span id="fps">----</span></p>
-      <p><span>max frame time: </span> <span id="maxFrameTime">----</span></p>
-      <p><span>avg frame time: </span> <span id="avgFrameTime">----</span></p>
       <p>
-        <span>tick: </span> <span id="tickTime">----</span>
-        <span> build: </span> <span id="buildTime">----</span>
-        <span> quads: </span> <span id="quadCount">----</span>
+        <span id="fps">----</span> fps · <span id="avgFrameTime">----</span> ms
+        (max <span id="maxFrameTime">----</span>)
       </p>
       <p>
-        <label
-          >controls
-          <select id="settingsControls">
-            <option value="default">default (FRST, W/P)</option>
-            <option value="wasd">WASD, Q/E</option>
-          </select></label
-        >
-      </p>
-      <p>Tab toggles autofire</p>
-      <p>
-        toggle inventory
-        <button id="settingsInventoryKey">G</button>
+        tick <span id="tickTime">----</span> · build
+        <span id="buildTime">----</span> · <span id="quadCount">----</span>
+        quads
       </p>
       <p><button id="respawn" hidden>respawn</button></p>
-      <p>debug renders</p>
-      <label><input type="checkbox" id="debugHitboxes" /> hitboxes</label>
-      <label><input type="checkbox" id="debugFont" /> font</label>
-      <label
-        ><input type="checkbox" id="debugInvulnerable" /> invulnerable</label
-      >
-      <button id="debugMaxStats">max stats</button>
-      <p>
+      <details id="menu">
+        <summary>settings &amp; debug</summary>
+        <p>
+          <label
+            >controls
+            <select id="settingsControls">
+              <option value="default">default (FRST, W/P)</option>
+              <option value="wasd">WASD, Q/E</option>
+            </select></label
+          >
+        </p>
+        <p>Tab toggles autofire</p>
+        <p>
+          toggle inventory
+          <button id="settingsInventoryKey">G</button>
+        </p>
+        <p>debug renders</p>
+        <label><input type="checkbox" id="debugHitboxes" /> hitboxes</label>
+        <label><input type="checkbox" id="debugFont" /> font</label>
         <label
-          >item
-          <select id="debugItem"></select
-        ></label>
-        <button id="debugGive">give</button>
-      </p>
-      <p>
-        <label
-          >enemy
-          <select id="debugEnemy"></select
-        ></label>
-        <label
-          >× <input id="debugCount" type="number" value="1" min="1" max="20000"
-        /></label>
-        <button id="debugSpawn">spawn</button>
-      </p>
+          ><input type="checkbox" id="debugInvulnerable" /> invulnerable</label
+        >
+        <button id="debugMaxStats">max stats</button>
+        <p>
+          <label
+            >item
+            <select id="debugItem"></select
+          ></label>
+          <button id="debugGive">give</button>
+        </p>
+        <p>
+          <label
+            >enemy
+            <select id="debugEnemy"></select
+          ></label>
+          <label
+            >×
+            <input id="debugCount" type="number" value="1" min="1" max="20000"
+          /></label>
+          <button id="debugSpawn">spawn</button>
+        </p>
+      </details>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

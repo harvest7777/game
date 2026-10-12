@@ -751,6 +751,14 @@ SPRITES["portals/nexus"] = {
     c: [190, 230, 255, 255], // bright inner edge
   },
 };
+SPRITES["portals/caves"] = {
+  rows: PORTAL,
+  colors: {
+    a: [24, 80, 40, 255], // rim
+    b: [60, 170, 80, 255], // swirl
+    c: [190, 250, 170, 255], // bright inner edge
+  },
+};
 SPRITES["portals/abyss"] = {
   rows: PORTAL,
   colors: {
@@ -1106,8 +1114,28 @@ function writePoses(name, rows, poses, colors) {
   }
 }
 
+// Skin tones per demon, so a crowd reads at a glance: orange imps, red
+// demons, maroon warriors and a near-black Protector.
+const DEMON_SKINS = {
+  "enemies/imp": {
+    r: [232, 112, 44, 255],
+    R: [164, 64, 24, 255],
+  },
+  "enemies/demon-warrior": {
+    r: [150, 34, 44, 255],
+    R: [92, 16, 24, 255],
+  },
+  "enemies/malphas-protector": {
+    r: [96, 22, 30, 255],
+    R: [52, 10, 16, 255],
+  },
+};
+
 for (const [name, rows] of Object.entries(DEMONS)) {
-  writePoses(name, rows, DEMON_POSES[name], POSE_COLORS);
+  writePoses(name, rows, DEMON_POSES[name], {
+    ...POSE_COLORS,
+    ...DEMON_SKINS[name],
+  });
 }
 
 // A small living flame Malphas calls in. It flickers, swells as it winds

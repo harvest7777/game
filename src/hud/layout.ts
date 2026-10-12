@@ -8,6 +8,10 @@ export const SLOT = 12;
 export const GAP = 2;
 // How far in from the slot's corner the icon sits.
 const INSET = 2;
+// Empty slots' labels: half size, their 7 rows of capitals (3.5 UI pixels)
+// sitting in the middle of the slot.
+const LABEL_SHRINK = 2;
+const LABEL_TOP = 4;
 
 export type SlotContent = {
   ref: SlotRef;
@@ -51,14 +55,17 @@ export function slotPanel(slots: SlotContent[], columns: number): PanelLayout {
         ref,
       });
     } else if (emptyLabel) {
+      // Half size, so an empty slot's label stays a quiet hint beside the
+      // items.
       elements.push({
         kind: "text",
         x: rect.x + SLOT / 2,
-        y: rect.y + INSET,
+        y: rect.y + LABEL_TOP,
         text: emptyLabel,
         font: "regular",
         tint: HUD_COLORS.dimLabel,
         align: "center",
+        shrink: LABEL_SHRINK,
       });
     }
   });
