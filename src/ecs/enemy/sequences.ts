@@ -1,12 +1,22 @@
 import type { SoundId } from "../../audio/assets";
 import type { Vec2 } from "../shared/physics/math";
 import type { WeaponDef } from "../projectile/weapons";
+import type { EnemyDef } from "./definitions";
 
 // A boss move is an authored timeline. Stages are the source of truth for
 // both gameplay cues and the clip the renderer shows to the player.
 export type BossCue =
   | { kind: "fire"; weapon: WeaponDef; offset?: number }
-  | { kind: "sound"; sound: SoundId };
+  | { kind: "sound"; sound: SoundId }
+  // Calls `count` of `enemy` in, evenly around the boss `radius` tiles out,
+  // but never so many that more than `max` of them it summoned are alive.
+  | {
+      kind: "summon";
+      enemy: EnemyDef;
+      count: number;
+      radius: number;
+      max?: number;
+    };
 
 // How a boss moves during a stage: as its phase's behavior says, not at
 // all, or dashing along its locked aim at `speedScale` times its speed. Each
@@ -26,6 +36,8 @@ export type BossStage<Clip extends string = string> = {
   lockAim?: boolean;
   // Multiplies incoming damage while this stage is active.
   vulnerable?: number;
+  // Takes no damage while this stage is active.
+  invulnerable?: boolean;
   cues?: { at: number; cue: BossCue }[];
 };
 

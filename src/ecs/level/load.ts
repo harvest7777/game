@@ -1,4 +1,5 @@
 import { spawnEnemy } from "../enemy/spawn";
+import { spawnPortal } from "../portal/spawn";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles, setGround, setWall, type Tiles } from "../tiles";
 import { createWorld, type World } from "../world";
@@ -41,7 +42,7 @@ export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
   return { tiles, spawn: spawns[0] };
 }
 
-// A new world for `level`: its map, with its enemies placed. Characters
+// A new world for `level`: its map, with its enemies and portals placed. Characters
 // aren't spawned; put them at `spawn`.
 export function loadLevel(
   level: LevelDef,
@@ -52,6 +53,9 @@ export function loadLevel(
   const world = createWorld(tiles, random, loot);
   for (const { enemy, at } of level.enemies ?? []) {
     spawnEnemy(world, enemy, at);
+  }
+  for (const { portal, at } of level.portals ?? []) {
+    spawnPortal(world, portal, at);
   }
   return { world, spawn };
 }

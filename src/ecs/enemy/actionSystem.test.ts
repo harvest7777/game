@@ -91,4 +91,35 @@ describe("bossActionSystem", () => {
     });
     expect(world.components.vulnerable.has(king)).toBe(false);
   });
+
+  it("is invulnerable only during stages that say so", () => {
+    const world = createWorld(createTiles(40, 40), () => 0.5);
+    const def = testBoss();
+    def.sequences!.ring.stages[0].invulnerable = true;
+    const king = spawnEnemy(world, def, { x: 10, y: 10 });
+    const player = spawn(world);
+    world.components.position.set(player, { x: 16, y: 10 });
+    world.components.target.set(king, player);
+
+    bossActionSystem(world, 0.01);
+    expect(world.components.invulnerable.has(king)).toBe(true);
+    bossActionSystem(world, BOSS_TELL);
+    expect(world.components.invulnerable.has(king)).toBe(false);
+  });
+
+  it("drops invulnerability when it loses its target", () => {
+    const world = createWorld(createTiles(40, 40), () => 0.5);
+    const def = testBoss();
+    def.sequences!.ring.stages[0].invulnerable = true;
+    const king = spawnEnemy(world, def, { x: 10, y: 10 });
+    const player = spawn(world);
+    world.components.position.set(player, { x: 16, y: 10 });
+    world.components.target.set(king, player);
+    bossActionSystem(world, 0.01);
+
+    world.components.target.delete(king);
+    bossActionSystem(world, 0.01);
+
+    expect(world.components.invulnerable.has(king)).toBe(false);
+  });
 });

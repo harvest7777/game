@@ -14,6 +14,7 @@ export function resetBossAction(world: World, entity: Entity): void {
     world.components.bossAction.delete(entity);
     world.components.animation.delete(entity);
     world.components.vulnerable.delete(entity);
+    world.components.invulnerable.delete(entity);
     return;
   }
   world.components.bossAction.set(entity, {
@@ -31,6 +32,7 @@ export function resetBossAction(world: World, entity: Entity): void {
     duration: 1,
   });
   world.components.vulnerable.delete(entity);
+  world.components.invulnerable.delete(entity);
 }
 
 // The live stage, used by the brain to apply an action's movement override.

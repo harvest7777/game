@@ -83,3 +83,20 @@ describe("loadLevel", () => {
     expect(world.components.position.get(enemy)).toEqual({ x: 1.5, y: 1.5 });
   });
 });
+
+describe("loadLevel portals", () => {
+  it("places the level's portals", () => {
+    const portal = {
+      label: "Out",
+      to: "nexus",
+      sprite: { art: { kind: "static", file: "portal" } },
+    } as const;
+    const { world } = loadLevel({
+      ...ROOM,
+      portals: [{ portal, at: { x: 1.5, y: 1.5 } }],
+    });
+    const [[entity, { def }]] = [...world.components.portal];
+    expect(def).toBe(portal);
+    expect(world.components.position.get(entity)).toEqual({ x: 1.5, y: 1.5 });
+  });
+});

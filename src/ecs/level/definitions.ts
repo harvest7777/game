@@ -1,6 +1,7 @@
 import type { EnemyDef } from "../enemy/definitions";
 import type { Vec2 } from "../shared/physics/math";
 import type { GroundDef } from "../tiles";
+import type { PortalDef } from "../portal/definitions";
 
 // What one map character stands for: a wall, or a ground to walk on, which
 // can be where characters spawn.
@@ -18,4 +19,6 @@ export type LevelDef = {
   map: string[];
   // Placed when the level loads, in tiles from the map's top-left corner.
   enemies?: { enemy: EnemyDef; at: Vec2 }[];
+  // Portals placed when the level loads, in tiles like enemies.
+  portals?: { portal: PortalDef; at: Vec2 }[];
 };

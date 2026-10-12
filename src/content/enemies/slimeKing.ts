@@ -4,6 +4,7 @@ import { kingFrenzy } from "../weapons/kingFrenzy";
 import { kingRing } from "../weapons/kingRing";
 import { kingSpray } from "../weapons/kingSpray";
 import { slimeKingLoot } from "../loot/pools";
+import { nexusPortal } from "../portals/nexus";
 import { STAT, stat } from "../../ecs/stats/components";
 
 const CLIPS = [
@@ -201,4 +202,5 @@ export const slimeKing = defineEnemy({
   },
   loot: slimeKingLoot,
   deathSound: "bossDeath",
+  deathPortal: nexusPortal,
 });

@@ -16,7 +16,10 @@ export type ItemMovedMessage = {
 
 export type SoundMessage = { kind: "sound"; sound: SoundId; at: Vec2 };
 
-export type OutboxMessage = ItemMovedMessage | SoundMessage;
+// `entity` asked to go through a portal to `to`.
+export type TravelMessage = { kind: "travel"; entity: Entity; to: string };
+
+export type OutboxMessage = ItemMovedMessage | SoundMessage | TravelMessage;
 
 // Copies this tick's events that the outside world cares about into the
 // outbox. Runs at the end of the tick.

@@ -3,7 +3,7 @@ import { generateGraph, type Graph } from "./graph";
 import { flood, isOn, key, maskFromAscii, onCells, type Cell } from "./mask";
 import { boxOf, placeRooms, type Placement } from "./place";
 import { seeded } from "./rng";
-import { routeCorridors, widen, type Corridor } from "./route";
+import { findPath, routeCorridors, widen, type Corridor } from "./route";
 import { makeShape } from "./shapes";
 
 // Two rooms joined by one edge.
@@ -90,6 +90,90 @@ describe("L", () => {
   });
 });
 
+describe("astar", () => {
+  // Rooms 0 and 1 face each other along a row, with room 2 squarely
+  // between them, so straight and L corridors can't get past it.
+  const blocked: Placement = [
+    { node: 0, x: 0, y: 0, mask: square },
+    { node: 1, x: 20, y: 0, mask: square },
+    { node: 2, x: 9, y: -3, mask: maskFromAscii(Array(9).fill("...")) },
+  ];
+  const THREE: Graph = {
+    nodes: [...PAIR.nodes, { id: 2, tag: "deadEnd", depth: 1, parent: 0 }],
+    edges: [[0, 1]],
+  };
+
+  it("when straight and L corridors are blocked, finds a way around", () => {
+    const straightOrL = routeCorridors(seeded(1), THREE, blocked, {
+      routers: [{ kind: "straight" }, { kind: "L" }],
+      width: 1,
+    });
+    expect(straightOrL).toBeNull();
+
+    const corridors = routeCorridors(seeded(1), THREE, blocked, {
+      routers: [{ kind: "astar" }],
+      width: 1,
+    })!;
+
+    const other = boxOf(blocked[2]);
+    for (const { x, y } of corridors[0].cells) {
+      const inside =
+        x >= other.x - 1 &&
+        y >= other.y - 1 &&
+        x <= other.x + other.w &&
+        y <= other.y + other.h;
+      expect(inside).toBe(false);
+    }
+    expect(connected(blocked.slice(0, 2), corridors)).toBe(true);
+  });
+
+  it("when given the same seed, wiggles the same way", () => {
+    const route = (seed: number) =>
+      routeCorridors(seeded(seed), PAIR, blocked.slice(0, 2), {
+        routers: [{ kind: "astar", wiggle: 3 }],
+        width: 1,
+      });
+    expect(route(5)).toEqual(route(5));
+  });
+});
+
+describe("findPath", () => {
+  const anywhere = () => true;
+  const free = () => 0;
+
+  it("when nothing's in the way, goes straight", () => {
+    const path = findPath({ x: 0, y: 0 }, { x: 4, y: 0 }, anywhere, free, 2);
+    expect(path).toEqual([0, 1, 2, 3, 4].map((x) => ({ x, y: 0 })));
+  });
+
+  it("with a turn cost, bends once rather than zigzagging", () => {
+    const path = findPath({ x: 0, y: 0 }, { x: 4, y: 4 }, anywhere, free, 2)!;
+    const turns = path
+      .slice(2)
+      .filter(
+        (c, i) =>
+          c.x - path[i + 1].x !== path[i + 1].x - path[i].x ||
+          c.y - path[i + 1].y !== path[i + 1].y - path[i].y,
+      );
+    expect(path).toHaveLength(9);
+    expect(turns).toHaveLength(1);
+  });
+
+  it("goes around closed cells", () => {
+    // A wall at x 2 from y -5 to 5.
+    const open = (x: number, y: number) => x !== 2 || Math.abs(y) > 5;
+    const path = findPath({ x: 0, y: 0 }, { x: 4, y: 0 }, open, free, 0)!;
+    expect(path.every((c) => open(c.x, c.y))).toBe(true);
+    expect(path.at(-1)).toEqual({ x: 4, y: 0 });
+  });
+
+  it("when there's no way through, is null", () => {
+    const open = (x: number, y: number) =>
+      x !== 2 && Math.abs(x) < 10 && Math.abs(y) < 10;
+    expect(findPath({ x: 0, y: 0 }, { x: 4, y: 0 }, open, free, 0)).toBeNull();
+  });
+});
+
 describe("widen", () => {
   it("covers `width` cells across, centered on the line", () => {
     expect(sorted(widen([{ x: 5, y: 5 }], 3))).toEqual(
@@ -123,7 +207,7 @@ describe("routeCorridors", () => {
     );
     if (!placement) return null;
     const corridors = routeCorridors(rng, graph, placement, {
-      routers: [{ kind: "straight" }, { kind: "L" }],
+      routers: [{ kind: "straight" }, { kind: "L" }, { kind: "astar" }],
       width,
     });
     return corridors && { graph, placement, corridors };

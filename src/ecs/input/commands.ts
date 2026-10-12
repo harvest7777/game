@@ -18,7 +18,9 @@ export type Command =
   // Debug/UI convenience: raise every current player stat to its cap.
   | { kind: "maxStats" }
   // Debug: add an item to the inventory.
-  | { kind: "give"; item: ItemDef };
+  | { kind: "give"; item: ItemDef }
+  // Go through the portal the player is standing on, if any.
+  | { kind: "enterPortal" };
 
 // Number keys equip the matching inventory slot, in every layout.
 export const slotHotkeys: Record<string, Command> = Object.fromEntries(
@@ -32,4 +34,5 @@ export const slotHotkeys: Record<string, Command> = Object.fromEntries(
 export const commandHotkeys: Record<string, Command> = {
   ...slotHotkeys,
   Tab: { kind: "toggleAutoFire" },
+  Enter: { kind: "enterPortal" },
 };

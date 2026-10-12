@@ -265,6 +265,15 @@ const PLACEMENT_CHECKS: Record<PlacementKind, KindCheck> = {
 const ROUTER_CHECKS: Record<RouterKind, KindCheck> = {
   straight: { check: () => {} },
   L: { check: () => {} },
+  astar: {
+    optional: ["wiggle", "turnCost"],
+    check: (c, path, f) => {
+      if ("wiggle" in f) c.number(`${path}.wiggle`, f.wiggle, { min: 0 });
+      if ("turnCost" in f) {
+        c.number(`${path}.turnCost`, f.turnCost, { min: 0 });
+      }
+    },
+  },
 };
 
 const SPAWN_PLACEMENT_CHECKS: Record<SpawnPlacementKind, KindCheck> = {
@@ -276,6 +285,10 @@ const SPAWN_PLACEMENT_CHECKS: Record<SpawnPlacementKind, KindCheck> = {
   },
   center: { check: () => {} },
   ring: {
+    required: ["radius"],
+    check: (c, path, f) => c.number(`${path}.radius`, f.radius, { min: 0 }),
+  },
+  cluster: {
     required: ["radius"],
     check: (c, path, f) => c.number(`${path}.radius`, f.radius, { min: 0 }),
   },

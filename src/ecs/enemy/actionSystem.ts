@@ -15,6 +15,7 @@ export function bossActionSystem(world: World, dt: number): void {
       action.active = false;
       action.time = action.previousTime = 0;
       world.components.vulnerable.delete(entity);
+      world.components.invulnerable.delete(entity);
       setAnimation(world, entity, IDLE_CLIP, 0, 1);
       continue;
     }
@@ -67,6 +68,8 @@ function enterStage(world: World, entity: Entity, action: BossAction): void {
   if (stage.vulnerable !== undefined) {
     world.components.vulnerable.set(entity, { multiplier: stage.vulnerable });
   }
+  if (stage.invulnerable) world.components.invulnerable.set(entity, true);
+  else world.components.invulnerable.delete(entity);
   setAnimation(world, entity, stage.animation, 0, stage.duration);
   fireCrossedCues(world, entity, stage, 0, 0, action, true);
 }

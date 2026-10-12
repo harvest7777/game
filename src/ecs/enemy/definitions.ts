@@ -8,6 +8,7 @@ import type { SpriteArt } from "../sprite/art";
 import type { Sprite } from "../sprite/components";
 import type { SoundId } from "../../audio/assets";
 import type { LootTableDef } from "../loot/definitions";
+import type { PortalDef } from "../portal/definitions";
 import type { LivingStatBlock } from "../stats/components";
 
 // What a kind of enemy is. Each kind is its own file under
@@ -43,6 +44,8 @@ export type EnemyDef<
   // Rolled once when this enemy dies.
   loot?: LootTableDef;
   deathSound: SoundId;
+  // Opened where it dies, like a dungeon boss's way home.
+  deathPortal?: PortalDef;
 };
 
 // Checks an enemy's names against each other (see EnemyDef) and returns it

@@ -1,4 +1,5 @@
 import type { Position } from "../movement/components";
+import type { Entity } from "../world";
 import type { BehaviorMemory, Quirks } from "./behaviors";
 import type { EnemyDef } from "./definitions";
 import type { BossAction } from "./sequences";
@@ -10,6 +11,8 @@ import type { BossAction } from "./sequences";
 export type Enemy = {
   def: EnemyDef;
   origin: Position;
+  // The boss that summoned it, if one did.
+  summoner?: Entity;
   phase?: { name: string; time: number };
   quirks?: Quirks;
 };

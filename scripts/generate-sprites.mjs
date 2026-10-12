@@ -727,6 +727,35 @@ SPRITES["tiles/lava"] = {
   },
 };
 
+// Portals: a swirling ring, lying on the ground. One shape, colored by
+// where it goes.
+const PORTAL = [
+  "..aaaa..",
+  ".abbbba.",
+  "abccccba",
+  "abc..cba",
+  "abc..cba",
+  "abccccba",
+  ".abbbba.",
+  "..aaaa..",
+];
+SPRITES["portals/nexus"] = {
+  rows: PORTAL,
+  colors: {
+    a: [40, 70, 160, 255], // rim
+    b: [80, 140, 230, 255], // swirl
+    c: [190, 230, 255, 255], // bright inner edge
+  },
+};
+SPRITES["portals/abyss"] = {
+  rows: PORTAL,
+  colors: {
+    a: [90, 14, 14, 255], // rim
+    b: [200, 50, 24, 255], // swirl
+    c: [255, 170, 60, 255], // bright inner edge
+  },
+};
+
 const only = process.argv.slice(2);
 for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
   if (only.length > 0 && !only.includes(name)) continue;

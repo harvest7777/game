@@ -1,5 +1,5 @@
 import type { Graph } from "./graph";
-import { isOn, key, onCells, type Cell } from "./mask";
+import { isOn, key, NEIGHBORS_4, onCells, type Cell } from "./mask";
 import {
   boxOf,
   grow,
@@ -14,13 +14,18 @@ import { shuffled, type Rng } from "./rng";
 // in canvas coordinates; routing then widens it and keeps whatever isn't
 // already room floor. Adding a way to draw corridors is one entry in
 // ROUTERS. They're tried in the order a dungeon lists them, so a dungeon
-// can prefer straight corridors and fall back to bent ones.
+// can prefer straight corridors and fall back to bent or freeform ones.
 
 export type RouterSpec =
   // A straight line, across a row (or column) both rooms have floor in.
   | { kind: "straight" }
   // One bend, between the two rooms' middles.
-  | { kind: "L" };
+  | { kind: "L" }
+  // Any path between the rooms' middles that keeps clear of other rooms,
+  // found by A*. `wiggle` (0 if unset) makes some tiles costlier at random,
+  // so the corridor wanders; `turnCost` (2 if unset) is what each bend
+  // costs in tiles, so higher makes longer, straighter runs.
+  | { kind: "astar"; wiggle?: number; turnCost?: number };
 
 export type RouterKind = RouterSpec["kind"];
 
@@ -99,7 +104,22 @@ export const ROUTERS: {
     }
     return null;
   },
+
+  astar: (context, { wiggle = 0, turnCost = 2 }) => {
+    const { rng, from, to } = context;
+    const start = middleFloor(from);
+    const goal = middleFloor(to);
+    const bounds = grow(union(boxOf(from), boxOf(to)), ASTAR_REACH);
+    const salt = Math.floor(rng() * 2 ** 32);
+    const open = (x: number, y: number) =>
+      inBox(bounds, x, y) && fits(context, [{ x, y }]);
+    const extra = (x: number, y: number) => wiggle * noise(x, y, salt);
+    return findPath(start, goal, open, extra, turnCost);
+  },
 };
+
+// How far past the two rooms' boxes A* looks for a way around.
+const ASTAR_REACH = 12;
 
 // A corridor for every edge in the graph, or null if one couldn't be drawn.
 export function routeCorridors(
@@ -200,4 +220,116 @@ function swap(box: Box): Box {
 
 function inBox(box: Box, x: number, y: number): boolean {
   return x >= box.x && y >= box.y && x < box.x + box.w && y < box.y + box.h;
+}
+
+function union(a: Box, b: Box): Box {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return {
+    x,
+    y,
+    w: Math.max(a.x + a.w, b.x + b.w) - x,
+    h: Math.max(a.y + a.h, b.y + b.h) - y,
+  };
+}
+
+// A number in [0, 1) that's the same every time for the same cell and salt.
+function noise(x: number, y: number, salt: number): number {
+  let h = Math.imul(x, 0x27d4eb2d) ^ Math.imul(y, 0x165667b1) ^ salt;
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+// The cheapest path from `start` to `goal` through `open` cells, moving in
+// four directions: each step costs 1 plus the cell's `extra`, and each
+// change of direction `turnCost` more. Null if there's none.
+export function findPath(
+  start: Cell,
+  goal: Cell,
+  open: (x: number, y: number) => boolean,
+  extra: (x: number, y: number) => number,
+  turnCost: number,
+): Cell[] | null {
+  // A state is a cell and the direction it was entered from (4 for the
+  // start, entered from nowhere).
+  const id = (x: number, y: number, dir: number) => `${x},${y},${dir}`;
+  const cost = new Map<string, number>();
+  const came = new Map<string, { x: number; y: number; dir: number }>();
+  const heap = new Heap<{ x: number; y: number; dir: number }>();
+  const guess = (x: number, y: number) =>
+    Math.abs(goal.x - x) + Math.abs(goal.y - y);
+
+  cost.set(id(start.x, start.y, 4), 0);
+  heap.push({ ...start, dir: 4 }, guess(start.x, start.y));
+  while (heap.size) {
+    const state = heap.pop()!;
+    const here = id(state.x, state.y, state.dir);
+    if (state.x === goal.x && state.y === goal.y) {
+      const path: Cell[] = [];
+      for (let s: typeof state | undefined = state; s;) {
+        path.push({ x: s.x, y: s.y });
+        s = came.get(id(s.x, s.y, s.dir));
+      }
+      return path.reverse();
+    }
+    const spent = cost.get(here)!;
+    NEIGHBORS_4.forEach((d, dir) => {
+      const x = state.x + d.x;
+      const y = state.y + d.y;
+      if (!open(x, y)) return;
+      const turn = state.dir !== 4 && state.dir !== dir ? turnCost : 0;
+      const next = spent + 1 + extra(x, y) + turn;
+      const there = id(x, y, dir);
+      if (next >= (cost.get(there) ?? Infinity)) return;
+      cost.set(there, next);
+      came.set(there, state);
+      heap.push({ x, y, dir }, next + guess(x, y));
+    });
+  }
+  return null;
+}
+
+// A binary min-heap of items by priority.
+class Heap<T> {
+  private items: { item: T; priority: number }[] = [];
+
+  get size(): number {
+    return this.items.length;
+  }
+
+  push(item: T, priority: number): void {
+    const items = this.items;
+    items.push({ item, priority });
+    let i = items.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (items[parent].priority <= items[i].priority) break;
+      [items[parent], items[i]] = [items[i], items[parent]];
+      i = parent;
+    }
+  }
+
+  pop(): T | undefined {
+    const items = this.items;
+    const top = items[0];
+    const last = items.pop();
+    if (items.length && last) {
+      items[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1;
+        const r = l + 1;
+        let least = i;
+        if (l < items.length && items[l].priority < items[least].priority)
+          least = l;
+        if (r < items.length && items[r].priority < items[least].priority)
+          least = r;
+        if (least === i) break;
+        [items[least], items[i]] = [items[i], items[least]];
+        i = least;
+      }
+    }
+    return top?.item;
+  }
 }

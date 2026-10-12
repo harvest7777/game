@@ -32,6 +32,7 @@ import { screenToWorld, type View } from "./render/view";
 import { createSoundPlayer } from "./audio/player";
 import type { SoundMessage } from "./ecs/outbox";
 import { gameLoot } from "./content/loot";
+import { destination } from "./content/destinations";
 
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
@@ -276,14 +277,18 @@ function callback() {
 }
 
 // Reacts to what the simulation reported this frame: an item landing in one
-// of the player's slots makes that slot flash, and sounds play.
+// of the player's slots makes that slot flash, sounds play, and the player
+// goes through any portal they entered.
 function takeOutbox(time: number) {
   const sounds: SoundMessage[] = [];
+  let travelTo: LevelDef | undefined;
   for (const message of world.outbox.splice(0)) {
     if (message.kind === "itemMoved" && message.entity === player) {
       hudState.flashes.push({ ref: message.to, at: time });
     } else if (message.kind === "sound") {
       sounds.push(message);
+    } else if (message.kind === "travel" && message.entity === player) {
+      travelTo = destination(message.to);
     }
   }
   hudState.flashes = hudState.flashes.filter(
@@ -294,6 +299,7 @@ function takeOutbox(time: number) {
   const at =
     target === undefined ? undefined : world.components.position.get(target);
   if (at) soundPlayer.play(sounds, { at, angle: world.camera.angle });
+  if (travelTo) enterLevel(travelTo);
 }
 
 // Draws between the last two ticks: alpha is how far into the next tick the

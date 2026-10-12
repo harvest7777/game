@@ -133,3 +133,23 @@ describe("ring", () => {
     ]);
   });
 });
+
+describe("cluster", () => {
+  it("packs spawns within `radius` of one another's middle", () => {
+    for (const seed of SEEDS) {
+      const map = room(14);
+      const spawns = populateRoom(seeded(seed), map, map.rooms[0], [
+        imps({ kind: "cluster", radius: 2 }, 5),
+      ]);
+      expect(spawns).toHaveLength(5);
+      for (const a of spawns) {
+        for (const b of spawns) {
+          // Both within 2 of the same spot, so within 4 of each other.
+          expect(
+            Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y),
+          ).toBeLessThanOrEqual(4);
+        }
+      }
+    }
+  });
+});

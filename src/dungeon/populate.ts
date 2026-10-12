@@ -14,7 +14,10 @@ export type SpawnPlacement =
   // As near the middle of the room as they fit, the first right on it.
   | { kind: "center" }
   // Evenly around the middle of the room, `radius` tiles out.
-  | { kind: "ring"; radius: number };
+  | { kind: "ring"; radius: number }
+  // Packed together around one random spot away from entrances, all within
+  // `radius` tiles of it.
+  | { kind: "cluster"; radius: number };
 
 export type SpawnPlacementKind = SpawnPlacement["kind"];
 
@@ -85,6 +88,18 @@ export const PLACEMENTS: {
       left.splice(left.indexOf(nearest), 1);
     }
     return chosen;
+  },
+
+  cluster: (rng, room, open, count, { radius }) => {
+    const anchors = open.filter(
+      (c) => distanceTo(room.entrances, c) >= ENTRANCE_CLEARANCE,
+    );
+    if (!anchors.length) return [];
+    const anchor = anchors[Math.floor(rng() * anchors.length)];
+    return open
+      .filter((c) => distance(c, anchor) <= radius)
+      .sort((a, b) => distance(a, anchor) - distance(b, anchor))
+      .slice(0, count);
   },
 };
 

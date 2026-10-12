@@ -10,6 +10,7 @@ import type {
 import { createCamera, type Camera } from "./camera/resource";
 import type { Invulnerable, Vulnerable } from "./combat/components";
 import type { HazardExposure } from "./hazard/components";
+import type { Portal } from "./portal/components";
 import type { Character } from "./character/components";
 import type { BossAction, Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
@@ -77,6 +78,7 @@ export type Components = {
   containerAccess: Store<ContainerAccess>;
   lootBag: Store<LootBag>;
   hazardExposure: Store<HazardExposure>;
+  portal: Store<Portal>;
 } & Record<StatKind, Store<StatValue>>;
 
 export type World = {
@@ -150,6 +152,7 @@ export function createWorld(
       containerAccess: createStore(),
       lootBag: createStore(),
       hazardExposure: createStore(),
+      portal: createStore(),
     },
   };
 }

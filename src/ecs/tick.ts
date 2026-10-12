@@ -2,6 +2,7 @@ import { cameraSystem } from "./camera/system";
 import { containerAccessSystem } from "./container/system";
 import { gravestoneSystem } from "./character/system";
 import { hazardSystem } from "./hazard/system";
+import { deathPortalSystem, portalSystem } from "./portal/system";
 import { cleanupSystem } from "./cleanup";
 import { damageSystem, deathSystem } from "./combat/damage";
 import { hitSystem } from "./combat/hits";
@@ -30,7 +31,8 @@ import { statSystem } from "./stats/system";
 // maxing Speed affects movement immediately. Input and projectiles set
 // velocity before movement applies it, and facing follows it.
 // Item commands apply before shooting, so a weapon swap fires on the same
-// tick. Bag lifetime and empty cleanup follow transfers. Proximity container
+// tick, and portal requests are answered from where the player stood. Bag
+// lifetime and empty cleanup follow transfers. Proximity container
 // access updates after movement and only writes access state, and hazardous
 // ground burns whoever ends the move standing on it. Enemies pick
 // targets, move through their phases, then their brains steer
@@ -40,13 +42,14 @@ import { statSystem } from "./stats/system";
 // moves on the tick it's fired. Hits are found once everything has moved;
 // each step of hit, damage, death and removal reads the events the step
 // before it recorded. Floating text ages before new damage numbers are
-// spawned, so a new number starts at age 0. Gravestones go down before
-// cleanup removes whoever died.
+// spawned, so a new number starts at age 0. Gravestones and death portals
+// go down before cleanup removes whoever died.
 export const tickSystems: System[] = [
   cameraSystem,
   statSystem,
   playerInputSystem,
   inventorySystem,
+  portalSystem,
   lootBagSystem,
   autoFireSystem,
   aggroSystem,
@@ -65,6 +68,7 @@ export const tickSystems: System[] = [
   floatingTextSystem,
   damageTextSystem,
   lootSystem,
+  deathPortalSystem,
   deathSystem,
   gravestoneSystem,
   soundSystem,

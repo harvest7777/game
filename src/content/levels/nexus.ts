@@ -1,13 +1,14 @@
 import type { LevelDef } from "../../ecs/level/definitions";
 import { LEGEND } from "./legend";
+import { testCavesPortal } from "../portals/testCaves";
 
 // The safe hub everyone starts in, somewhere cozy to rest after a fight. A
 // rounded square of grass, crossed by a plus of boardwalks with a ring of
 // them around a fountain in the middle. Low curved walls shelter the ring
 // from outside, leaving gaps where the boardwalks and diagonals pass. Each
 // quarter has a pond with a dock, and each arm has little nooks off to the
-// sides. Characters spawn just south of the fountain. Nothing hostile lives
-// here.
+// sides. Characters spawn just south of the fountain, a few steps from a
+// portal into the Test Caves. Nothing hostile lives here.
 export const nexus: LevelDef = {
   name: "Nexus",
   legend: LEGEND,
@@ -64,4 +65,5 @@ export const nexus: LevelDef = {
     "#########,,,,,,,,,,,,,,=====,,,,,,,,,,,,,,#########",
     "###################################################",
   ],
+  portals: [{ portal: testCavesPortal, at: { x: 26.5, y: 33.5 } }],
 };
