@@ -60,7 +60,26 @@ addSprite(world, player, {
   outline: { color: [0, 0, 0, 1] },
 });
 addShooter(world, player, { weapon: "bolt", team: "player" });
+world.components.health.set(player, { hp: 500, max: 500 });
 world.camera.target = player;
+
+// Training dummies to shoot at: they don't move or fight back.
+for (const at of [
+  { x: 20, y: 14 },
+  { x: 22, y: 16 },
+  { x: 20, y: 18 },
+  { x: 24, y: 12 },
+]) {
+  const dummy = spawn(world);
+  addMovable(world, dummy, { at, hitbox: { r: 0.4 } });
+  addSprite(world, dummy, {
+    name: "dummy",
+    layer: "enemy",
+    outline: { color: [0, 0, 0, 1] },
+  });
+  world.components.health.set(dummy, { hp: 300, max: 300 });
+  world.components.team.set(dummy, "enemy");
+}
 
 const art = await buildAtlas(
   manifest,

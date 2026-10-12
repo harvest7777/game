@@ -173,6 +173,47 @@ describe("runTick", () => {
     });
   });
 
+  it("shoots an enemy until it's removed", () => {
+    const { world } = setup();
+    const player = [...world.components.playerControlled][0][0];
+    addShooter(world, player, { weapon: "bolt", team: "player" });
+    const dummy = spawn(world);
+    addMovable(world, dummy, {
+      at: { x: START.x + 3, y: START.y },
+      hitbox: { r: 0.4 },
+    });
+    world.components.health.set(dummy, { hp: 100, max: 100 });
+    world.components.team.set(dummy, "enemy");
+    world.input.aim = { x: START.x + 3, y: START.y };
+
+    // Bolts deal at least 20 at 4 shots/s: dead within 5 shots.
+    for (let i = 0; i < 20 && world.components.health.has(dummy); i++) {
+      runTick(world, DT);
+    }
+
+    expect(world.components.health.has(dummy)).toBe(false);
+    expect(world.components.position.has(dummy)).toBe(false);
+  });
+
+  it("clears events from before the tick, queued removals included", () => {
+    const { world } = setup();
+    const doomed = spawn(world);
+    world.components.position.set(doomed, { x: 1, y: 1 });
+    world.events.hits.push({
+      projectile: doomed,
+      target: doomed,
+      owner: doomed,
+      damage: 1,
+      armorPiercing: false,
+    });
+    world.events.despawns.push(doomed);
+
+    runTick(world, DT);
+
+    expect(world.events.hits).toHaveLength(0);
+    expect(world.components.position.has(doomed)).toBe(true);
+  });
+
   it("stops the player at walls", () => {
     const { world, position } = setup();
     setWall(world.tiles, 11, 10);

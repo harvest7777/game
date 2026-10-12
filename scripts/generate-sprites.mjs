@@ -26,6 +26,11 @@ const PALETTE = {
   b: [60, 120, 255, 255], // bolt tail
   B: [120, 180, 255, 255], // bolt body
   V: [230, 245, 255, 255], // bolt head
+  z: [214, 180, 90, 255], // dummy straw
+  Z: [170, 140, 60, 255], // dummy straw shadow
+  n: [120, 80, 40, 255], // dummy wood
+  x: [200, 40, 40, 255], // dummy target red
+  X: [240, 240, 240, 255], // dummy target white
   k: [230, 60, 220, 255], // prejudice shard
   K: [255, 190, 250, 255], // prejudice core
   g: [74, 107, 58, 255], // floor
@@ -118,6 +123,17 @@ const ATTACK_BODY = {
 };
 
 const SPRITES = {
+  // A straw training dummy with a target on its chest.
+  "enemies/dummy": [
+    "..zzzz..",
+    ".zZzzZz.",
+    "..zzzz..",
+    "nnnnnnnn",
+    "..xXXx..",
+    "..XxxX..",
+    "..xXXx..",
+    "...nn...",
+  ],
   // Projectile art points right; the renderer turns it to face its path.
   "projectiles/bolt": [
     "........",

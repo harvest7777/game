@@ -1,4 +1,8 @@
 import { cameraSystem } from "./camera/system";
+import { cleanupSystem } from "./cleanup";
+import { damageSystem, deathSystem } from "./combat/damage";
+import { hitSystem } from "./combat/hits";
+import { clearEvents } from "./events";
 import { playerInputSystem } from "./input/system";
 import { movementSystem } from "./movement/system";
 import { shootSystem } from "./projectile/shoot";
@@ -12,7 +16,9 @@ import type { System, World } from "./world";
 // projectiles set velocity before movement applies it, and facing follows it.
 // Shooting aims before facing, so this tick's aim decides which way a shooter
 // faces, and fires before projectiles are steered, so a new shot already
-// moves on the tick it's fired.
+// moves on the tick it's fired. Hits are found once everything has moved;
+// each step of hit, damage, death and removal reads the events the step
+// before it recorded.
 const systems: System[] = [
   cameraSystem,
   playerInputSystem,
@@ -20,8 +26,14 @@ const systems: System[] = [
   facingSystem,
   projectileSystem,
   movementSystem,
+  hitSystem,
+  damageSystem,
+  deathSystem,
+  cleanupSystem,
 ];
 
+// Events only last the tick they happen in.
 export function runTick(world: World, dt: number): void {
+  clearEvents(world.events);
   for (const system of systems) system(world, dt);
 }

@@ -50,6 +50,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
     origin: { x: options.at.x, y: options.at.y },
     direction,
     age: 0,
+    struck: [],
   });
 
   if (def.faceDirection || def.spin) {

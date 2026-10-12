@@ -21,6 +21,8 @@ export type Projectile = {
   direction: Vec2;
   // Seconds since it was fired.
   age: number;
+  // What it has already hit, so piercing shots hit each thing once.
+  struck: Entity[];
 };
 
 // Fires its weapon automatically at the weapon's rate. `cooldown` is seconds

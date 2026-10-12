@@ -6,6 +6,12 @@ describe("projectile definitions", () => {
     describe(id, () => {
       const def = projectileDef(id);
 
+      it("deals a sensible range of damage", () => {
+        const [min, max] = def.damage;
+        expect(min).toBeGreaterThanOrEqual(0);
+        expect(min).toBeLessThanOrEqual(max);
+      });
+
       it("lives for some time", () => {
         expect(def.lifetime).toBeGreaterThan(0);
       });

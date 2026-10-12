@@ -6,6 +6,7 @@ import { pathOffset, pathPoint, trackDistance } from "./path";
 function def(changes: Partial<ProjectileDef>): ProjectileDef {
   return {
     speed: 10,
+    damage: [10, 10],
     lifetime: 2,
     hitbox: { r: 0.1 },
     sprite: { name: "orb" },

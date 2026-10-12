@@ -23,10 +23,10 @@ const singles = Object.fromEntries(
 
 export const weapons = {
   ...singles,
-  // Ten swirling shards in a full ring around the shooter, fast.
+  // Ten swirling shards in a full ring around the shooter, once a second.
   extremePrejudice: {
     projectile: "prejudice",
-    rate: 6,
+    rate: 1,
     count: 10,
     arcGap: (2 * Math.PI) / 10,
   },

@@ -16,6 +16,8 @@ import type { Sprite } from "../sprite/components";
 //   the end of its lifetime.
 export type ProjectileDef = {
   speed: Speed;
+  // Damage per hit, rolled as a whole number from min to max inclusive.
+  damage: [min: number, max: number];
   // Seconds before it disappears.
   lifetime: number;
   hitbox: Hitbox;
@@ -34,8 +36,10 @@ export type ProjectileDef = {
   // Radians per second; positive curves clockwise on screen.
   turnRate?: number;
   boomerang?: boolean;
-  // Not used yet: hits are a later system.
+  // Passes through what it hits instead of stopping, hitting each thing
+  // once.
   pierces?: boolean;
+  // Ignores defense (once there's a stat system).
   armorPiercing?: boolean;
   // Point the sprite along its path.
   faceDirection?: boolean;
@@ -52,6 +56,7 @@ const SMALL = { r: 0.15 };
 export const projectiles = {
   bolt: {
     speed: 12,
+    damage: [20, 30],
     lifetime: 0.6,
     hitbox: SMALL,
     sprite: { name: "bolt" },
@@ -60,6 +65,7 @@ export const projectiles = {
   // Covers far more than a tile per tick, to check it still stops at walls.
   fastBolt: {
     speed: 40,
+    damage: [10, 15],
     lifetime: 0.35,
     hitbox: { r: 0.12 },
     sprite: { name: "bolt" },
@@ -67,6 +73,7 @@ export const projectiles = {
   },
   wavy: {
     speed: 8,
+    damage: [15, 25],
     lifetime: 1,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },
@@ -74,6 +81,7 @@ export const projectiles = {
   },
   tightWave: {
     speed: 10,
+    damage: [12, 18],
     lifetime: 0.8,
     hitbox: SMALL,
     sprite: { name: "bolt" },
@@ -82,6 +90,7 @@ export const projectiles = {
   },
   accelerating: {
     speed: 2,
+    damage: [25, 35],
     lifetime: 1,
     hitbox: SMALL,
     sprite: { name: "bolt" },
@@ -92,6 +101,7 @@ export const projectiles = {
   // Slows to a crawl and lingers.
   slowing: {
     speed: 14,
+    damage: [30, 40],
     lifetime: 2,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },
@@ -100,6 +110,7 @@ export const projectiles = {
   },
   spiral: {
     speed: 6,
+    damage: [15, 20],
     lifetime: 2,
     hitbox: SMALL,
     sprite: { name: "bolt" },
@@ -108,6 +119,7 @@ export const projectiles = {
   },
   boomerang: {
     speed: 10,
+    damage: [20, 30],
     lifetime: 1.2,
     hitbox: { r: 0.25 },
     sprite: { name: "star" },
@@ -116,6 +128,7 @@ export const projectiles = {
   },
   spinningStar: {
     speed: 7,
+    damage: [15, 25],
     lifetime: 1.2,
     hitbox: { r: 0.25 },
     sprite: { name: "star" },
@@ -124,6 +137,7 @@ export const projectiles = {
   // Flies through walls, glowing so it's easy to follow behind them.
   ghost: {
     speed: 9,
+    damage: [10, 20],
     lifetime: 1,
     hitbox: { r: 0.2 },
     sprite: {
@@ -139,6 +153,7 @@ export const projectiles = {
   // spinning, glowing and pulsing, so a full ring of them swirls outward.
   prejudice: {
     speed: 6,
+    damage: [25, 40],
     lifetime: 1.4,
     hitbox: { r: 0.2 },
     sprite: {
@@ -154,9 +169,20 @@ export const projectiles = {
     wave: { amplitude: 0.4, frequency: 3 },
     spin: 6 * Math.PI,
   },
+  // Goes through everything it hits.
+  lance: {
+    speed: 14,
+    damage: [30, 40],
+    lifetime: 0.7,
+    hitbox: SMALL,
+    sprite: { name: "bolt", scale: 1.2 },
+    pierces: true,
+    faceDirection: true,
+  },
   // Skids along walls instead of stopping.
   skidding: {
     speed: 10,
+    damage: [15, 20],
     lifetime: 1.5,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },

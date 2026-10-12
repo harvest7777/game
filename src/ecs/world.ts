@@ -8,6 +8,8 @@ import type {
   WallResponse,
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
+import type { Health } from "./combat/components";
+import { createEvents, type Events } from "./events";
 import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
 import type { Projectile, Shooter, Team } from "./projectile/components";
@@ -43,6 +45,7 @@ export type Components = {
   projectile: Store<Projectile>;
   shooter: Store<Shooter>;
   team: Store<Team>;
+  health: Store<Health>;
 };
 
 export type World = {
@@ -51,16 +54,25 @@ export type World = {
   tiles: Tiles;
   input: Input;
   camera: Camera;
+  events: Events;
+  // Random number in [0, 1), for anything random like damage rolls. Tests
+  // swap it for a predictable one.
+  random: () => number;
 };
 
 export type System = (world: World, dt: number) => void;
 
-export function createWorld(tiles: Tiles): World {
+export function createWorld(
+  tiles: Tiles,
+  random: () => number = Math.random,
+): World {
   return {
     nextEntity: 0,
     tiles,
     input: { held: new Set() },
     camera: createCamera(),
+    events: createEvents(),
+    random,
     components: {
       position: createStore(),
       velocity: createStore(),
@@ -77,6 +89,7 @@ export function createWorld(tiles: Tiles): World {
       projectile: createStore(),
       shooter: createStore(),
       team: createStore(),
+      health: createStore(),
     },
   };
 }

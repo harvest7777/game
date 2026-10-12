@@ -36,6 +36,23 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 Movement keys are always **screen-relative**: Up moves toward the top of the screen no matter how the camera is rotated. The player input system builds the direction in screen space and rotates it by `camera.angle` to get the world direction. Nothing else should need to know the screen and world differ.
 
+# Events
+
+`world.events` holds what happened this tick, for other systems to react to: `hits`, `deaths` and `despawns`. A system records what happened, and each reaction is its own system reading the list, so adding a reaction (loot, sounds, damage numbers) never touches the system that found the event.
+
+- Events last **one tick**: `runTick` clears them first, and the order in `tick.ts` runs producers before consumers.
+- `despawns` is the removal queue. Systems ask for an entity to be removed, and `cleanupSystem` removes them all at the end of the tick, so nothing disappears while another system is iterating over it.
+- `world.random` is the source of randomness (damage rolls). Tests swap in a predictable one.
+
+# Combat
+
+`Health { hp, max }` works on anything, player or enemy. Each tick, after movement:
+
+1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
+2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. Reaching 0 records a death once.
+3. `deathSystem` queues the dead for removal. The player doesn't die yet: it stays at 0.
+4. `cleanupSystem` removes everything queued.
+
 # Projectiles
 
 A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.

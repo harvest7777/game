@@ -46,6 +46,7 @@ export const manifest: Manifest = {
         side: walkerFrames("side-attack"),
       },
     },
+    dummy: { kind: "static", file: "enemies/dummy" },
     bolt: { kind: "static", file: "projectiles/bolt" },
     orb: { kind: "static", file: "projectiles/orb" },
     star: { kind: "static", file: "projectiles/star" },

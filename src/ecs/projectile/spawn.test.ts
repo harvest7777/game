@@ -33,6 +33,7 @@ describe("fireProjectile", () => {
       origin: { x: 5, y: 6 },
       direction: { x: 0, y: 1 },
       age: 0,
+      struck: [],
     });
   });
 
