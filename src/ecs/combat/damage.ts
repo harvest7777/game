@@ -13,9 +13,11 @@ export function applyDamage(
 ): void {
   const health = world.components.health.get(target);
   if (!health || health.hp <= 0) return;
-  world.events.damaged.push({ target, amount, source });
+  const dealt =
+    amount * (world.components.vulnerable.get(target)?.multiplier ?? 1);
+  world.events.damaged.push({ target, amount: dealt, source });
   if (world.components.invulnerable.has(target)) return;
-  health.hp = Math.max(0, health.hp - amount);
+  health.hp = Math.max(0, health.hp - dealt);
   if (health.hp === 0) {
     world.events.deaths.push({ entity: target, killer: source });
   }

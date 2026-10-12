@@ -3,7 +3,7 @@ import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
 import { Action } from "./actions";
-import { CROUCH_SPEED, playerInputSystem } from "./system";
+import { autoFireSystem, CROUCH_SPEED, playerInputSystem } from "./system";
 
 const SPEED = 4;
 
@@ -116,5 +116,30 @@ describe("playerInputSystem", () => {
     playerInputSystem(world, 1);
 
     expectVelocity(world, enemy, 0, 1);
+  });
+});
+
+describe("autoFireSystem", () => {
+  it("toggles each player when asked", () => {
+    const { world, player } = setup([]);
+    world.components.autoFire.set(player, true);
+    world.input.commands = [{ kind: "toggleAutoFire" }];
+
+    autoFireSystem(world, 0.05);
+
+    expect(world.components.autoFire.get(player)).toBe(false);
+  });
+
+  it("leaves autofire alone after an even number of toggles", () => {
+    const { world, player } = setup([]);
+    world.components.autoFire.set(player, true);
+    world.input.commands = [
+      { kind: "toggleAutoFire" },
+      { kind: "toggleAutoFire" },
+    ];
+
+    autoFireSystem(world, 0.05);
+
+    expect(world.components.autoFire.get(player)).toBe(true);
   });
 });

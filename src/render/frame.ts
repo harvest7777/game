@@ -74,7 +74,7 @@ export function buildFrame(
   pushGround(out, world.tiles, view, art);
   pushWalls(out, world.tiles, view, art);
   const terrain = out.count;
-  pushHealthBars(out, world, view, alpha);
+  pushHealthBars(out, world, view, alpha, art);
   pushSprites(out, world, view, art, alpha, time);
   const sprites = out.count - terrain;
   pushFloatingText(out, world, view, art, alpha);

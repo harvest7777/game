@@ -1,8 +1,7 @@
 import type { Vec2 } from "../shared/physics/math";
 import type { Entity, World } from "../world";
-import type { ProjectileId } from "./definitions";
 import { fireProjectile } from "./spawn";
-import { volley, weaponDef } from "./weapons";
+import { volley, weaponDef, type WeaponId } from "./weapons";
 
 // Autofire: every shooter fires its weapon at the weapon's rate, from where
 // it stands, every projectile of each shot at once.
@@ -16,14 +15,7 @@ import { volley, weaponDef } from "./weapons";
 // A rate faster than the tick rate fires several shots in one tick, so the
 // rate holds exactly.
 export function shootSystem(world: World, dt: number): void {
-  const { shooter, position, team } = world.components;
-  const shots: {
-    owner: Entity;
-    projectile: ProjectileId;
-    at: Vec2;
-    toward: Vec2;
-  }[] = [];
-
+  const { shooter, position } = world.components;
   for (const [entity, s] of shooter) {
     const at = position.get(entity);
     if (!at) continue;
@@ -33,6 +25,10 @@ export function shootSystem(world: World, dt: number): void {
     // Only the player fires without a target. Anything else holds fire,
     // ready to shoot the moment it has something to shoot at.
     const player = world.components.playerControlled.has(entity);
+    if (player && world.components.autoFire.get(entity) === false) {
+      s.cooldown = Math.max(0, s.cooldown - dt);
+      continue;
+    }
     if (!player && targetPosition(world, entity) === undefined) {
       s.cooldown = Math.max(0, s.cooldown - dt);
       continue;
@@ -40,26 +36,41 @@ export function shootSystem(world: World, dt: number): void {
 
     s.cooldown -= dt;
     while (s.cooldown <= 0) {
-      for (const toward of volley(weapon, s.aim)) {
-        shots.push({
-          owner: entity,
-          projectile: weapon.projectile,
-          at,
-          toward,
-        });
-      }
+      fireWeapon(world, { entity, weapon: s.weapon, at, aim: s.aim });
       s.cooldown += 1 / weapon.rate;
     }
   }
+}
 
-  // Fired after the loop so new entities aren't added mid-iteration.
-  for (const shot of shots) {
+type FireWeaponOptions = {
+  entity: Entity;
+  weapon: WeaponId;
+  at: Vec2;
+  aim: Vec2;
+  // Starts every projectile this far along its own direction. Boss rings use
+  // this to leave a deliberate safe pocket inside their hitbox.
+  offset?: number;
+};
+
+// Fires a weapon once. Boss action cues share this path with Shooter autofire
+// so patterns, teams, projectile metadata and sound events remain identical.
+export function fireWeapon(
+  world: World,
+  { entity, weapon: weaponId, at, aim, offset = 0 }: FireWeaponOptions,
+): void {
+  const weapon = weaponDef(weaponId);
+  world.events.shotsFired.push({
+    projectile: weapon.projectile,
+    owner: entity,
+    at: { ...at },
+  });
+  for (const toward of volley(weapon, aim)) {
     fireProjectile(world, {
-      def: shot.projectile,
-      owner: shot.owner,
-      team: team.get(shot.owner) ?? "enemy",
-      at: shot.at,
-      toward: shot.toward,
+      def: weapon.projectile,
+      owner: entity,
+      team: world.components.team.get(entity) ?? "enemy",
+      at: { x: at.x + toward.x * offset, y: at.y + toward.y * offset },
+      toward,
     });
   }
 }

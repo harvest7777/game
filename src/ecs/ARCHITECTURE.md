@@ -32,7 +32,7 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 # Controls
 
-Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
+Keys map to actions through a keybind preset (`keybindPresets`): `default` (F/R/S/T to move, W/P to turn) or `wasd` (WASD to move, Q/E to turn), both with Shift to crouch-walk. Tab toggles the player's autofire in either layout. The overlay's controls picker switches presets and remembers the choice in the browser. Only `main.ts` sees keys; everything else works with actions.
 
 # Camera and movement input
 
@@ -42,7 +42,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 # Events
 
-`world.events` holds what happened this tick, for other systems to react to: `hits`, `damaged`, `deaths` and `despawns`. A system records what happened, and each reaction is its own system reading the list, so adding a reaction (loot, sounds, damage numbers) never touches the system that found the event.
+`world.events` holds what happened this tick, for other systems to react to: shots, hits, damage, deaths, item moves and despawns. A system records what happened, and each reaction is its own system reading the list, so adding a reaction (loot, sounds, damage numbers) never touches the system that found the event.
 
 - Events last **one tick**: `runTick` clears them first, and the order in `tick.ts` runs producers before consumers.
 - `despawns` is the removal queue. Systems ask for an entity to be removed, and `cleanupSystem` removes them all at the end of the tick, so nothing disappears while another system is iterating over it.
@@ -54,7 +54,7 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 
 1. `hitSystem` finds projectiles that touched something with health on another `team`. It compares where both moved from and to over the tick, so neither can skip through the other. A shot that doesn't pierce hits the first thing it reached and is queued for removal. A piercing shot hits everything it touched, each thing once over its flight (`Projectile.struck`). Damage is rolled from the projectile's `damage: [min, max]`.
 2. `damageSystem` applies each hit through `applyDamage`, the one place damage happens. Defense and armor piercing go there when stats arrive. It records a `damaged` event with the amount dealt, and reaching 0 records a death once. Something `invulnerable` records the hit (so damage numbers still show) but keeps its health.
-3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. The text follows the target (copying its position and previous position each tick, so it's drawn moving with it), and stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
+3. `damageTextSystem` turns each `damaged` event into a red `FloatingText` entity over the target. Several on one target in a tick start stacked. While its target exists, the renderer anchors the text to that target's own interpolated position, so it stays smooth through turns; it stays where it last was once the target is gone. `floatingTextSystem` ages them and queues them for removal after 0.8 s. The event lasts a tick; the entity carries the lasting effect.
 4. `deathSystem` queues the dead for removal. The player doesn't die yet: it stays at 0.
 5. `cleanupSystem` removes everything queued.
 
@@ -89,7 +89,11 @@ So a group doesn't move as one:
 
 ## Phases
 
-A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory. The `slimeKing` boss shows all of it: it circles and sprays fans, chases and fires rings below 66%, charges with shard rings below 30%, and rests for 2.5 s every 6 s of that.
+A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory.
+
+A boss phase can instead declare a deterministic `rotation` of named sequences. A sequence is an authored timeline of stages: each stage names its animation clip, duration, movement (`phase`, `stationary`, or a locked-aim dash), optional weak-point multiplier, and timed cues. Cues cross their timestamp exactly once; `fire` uses the same weapon/pattern path as ordinary shooters, while `sound` becomes a spatial sound request. `bossActionSystem` owns the timeline and runs before the brain; the renderer only samples its clip progress, never deciding gameplay. A phase transition restarts its rotation, and losing a target pauses it and clears any vulnerability.
+
+`slimeKing` demonstrates the encounter pattern. At 100–66% it teaches an outward ring and aim-locked spray; at 66–30% it alternates a clearly telegraphed dash with ring casts, exposing itself after the dash; below 30% it repeats frenzy, dash and a bright `collapse` core that takes double damage. Like every other enemy, its projectiles originate at its center, so standing on the King during a release is dangerous.
 
 # Items and inventory
 
@@ -200,7 +204,13 @@ Panels: **equipment** (weapon, ability, armor, ring; dim W/S/A/R when empty) and
 
 ## Outbox
 
-`world.outbox` carries what the simulation tells the outside world, starting with `itemMoved` (copied from events by `outboxSystem` at the end of each tick). It isn't cleared per tick: the client drains it after running the frame's ticks, so a frame that ran two ticks still sees both. Sound and network messages belong here too.
+`world.outbox` carries what the simulation tells the outside world: item moves for HUD feedback and positioned sound requests. It isn't cleared per tick: the client drains it after running the frame's ticks, so a frame that ran two ticks still sees both. Network messages belong here too.
+
+## Sound
+
+Projectile definitions author their firing, player-hit and enemy-hit sounds beside damage and movement. Enemy definitions author their death sound; ordinary enemies fire silently while bosses can opt into their projectile's firing sound. Shooting records one event per volley and entity impacts reuse `hits`. `soundSystem` translates those events into `{ sound, at }` outbox messages before cleanup removes their entities. Wall impacts are intentionally silent.
+
+Playback lives in `src/audio/`, outside the ECS. WAV files under `public/sounds/` are loaded into Web Audio buffers. The player position is the listener: sounds are full volume within 2 tiles, fade to silence at 18, and pan in the camera's rotated screen space. The browser plays the nearest requests first with at most 32 voices, so enemy crowds cannot create unbounded audio nodes. Audio resumes on the first keyboard or pointer interaction, as browsers require.
 
 ## Debug renders
 

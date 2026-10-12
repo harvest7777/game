@@ -9,6 +9,8 @@ export type Command =
   | { kind: "move"; from: SlotRef; to: SlotRef }
   // Equip the item in inventory slot `index` (number keys, double-click).
   | { kind: "equip"; index: number }
+  // Start or stop the player's equipped weapon autofiring.
+  | { kind: "toggleAutoFire" }
   // Debug: add an item to the inventory.
   | { kind: "give"; item: ItemId };
 
@@ -19,3 +21,9 @@ export const slotHotkeys: Record<string, Command> = Object.fromEntries(
     { kind: "equip", index: i } satisfies Command,
   ]),
 );
+
+// One-off controls shared by every movement layout.
+export const commandHotkeys: Record<string, Command> = {
+  ...slotHotkeys,
+  Tab: { kind: "toggleAutoFire" },
+};

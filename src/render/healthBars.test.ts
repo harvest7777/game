@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCamera } from "../ecs/camera/resource";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
+import type { Art } from "./art";
 import { BAR_COLORS, barColor, pushHealthBars } from "./healthBars";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
@@ -9,6 +10,20 @@ import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
 const SIZE = 400;
 const CENTER = { x: 10, y: 10 };
 const PIXEL = TILE_PIXELS / 8;
+const tallArt: Art = {
+  manifest: {
+    sprites: { boss: { kind: "static", file: "boss" } },
+    fonts: { bold: {}, regular: {} },
+    ground: {},
+    walls: { top: "top", side: "side" },
+  },
+  regions: new Map([
+    ["boss", { x: 0, y: 0, w: 16, h: 16 }],
+    ["top", { x: 0, y: 0, w: 8, h: 8 }],
+    ["side", { x: 0, y: 0, w: 8, h: 8 }],
+  ]),
+  glyphs: new Map(),
+};
 
 function setup(angle = 0) {
   const world = createWorld(createTiles(20, 20));
@@ -23,9 +38,9 @@ function addHurt(world: World, hp: number, at = CENTER) {
   return e;
 }
 
-function bars(world: World, view = setup().view, alpha = 1): Quad[] {
+function bars(world: World, view = setup().view, alpha = 1, art?: Art): Quad[] {
   const out = new QuadBuffer();
-  pushHealthBars(out, world, view, alpha);
+  pushHealthBars(out, world, view, alpha, art);
   return readQuads(out);
 }
 
@@ -70,6 +85,22 @@ describe("pushHealthBars", () => {
 
     const at = worldToScreen(view, CENTER);
     const spriteBottom = at.y + (TILE_PIXELS / 2) * scale;
+    expect(background.corners[0].y).toBeGreaterThan(spriteBottom - 1);
+  });
+
+  it("uses the art's true height for a large boss", () => {
+    const { world, view } = setup();
+    const e = addHurt(world, 100);
+    world.components.sprite.set(e, {
+      name: "boss",
+      layer: "enemy",
+      scale: 1.8,
+    });
+
+    const [background] = bars(world, view, 1, tallArt);
+
+    const at = worldToScreen(view, CENTER);
+    const spriteBottom = at.y + (16 / 2) * 1.8 * PIXEL;
     expect(background.corners[0].y).toBeGreaterThan(spriteBottom - 1);
   });
 

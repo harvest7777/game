@@ -29,6 +29,15 @@ export type Sprite = {
   scale?: number;
 };
 
+// A named clip and its simulation time. The action system owns this for
+// bosses; the renderer only samples it between ticks.
+export type Animation = {
+  clip: string;
+  time: number;
+  previousTime: number;
+  duration: number;
+};
+
 // The world direction the entity last moved in, as a unit vector. Kept when
 // it stops so it keeps facing the same way.
 export type Facing = Vec2;

@@ -10,6 +10,11 @@ function def(changes: Partial<ProjectileDef>): ProjectileDef {
     lifetime: 2,
     hitbox: { r: 0.1 },
     sprite: { name: "orb" },
+    sound: {
+      fire: "magicFire",
+      hitPlayer: "hitPlayer",
+      hitEnemy: "hitEnemy",
+    },
     ...changes,
   };
 }

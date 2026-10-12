@@ -278,7 +278,10 @@ describe("runTick", () => {
       runTick(world, DT);
 
       expect(world.components.enemy.get(king)!.phase!.name).toBe("enraged");
-      expect(world.components.shooter.get(king)!.weapon).toBe("kingRing");
+      expect(world.components.bossAction.get(king)).toMatchObject({
+        sequence: "charge",
+        rotationIndex: 0,
+      });
     });
 
     it("leave the player alone out of range", () => {

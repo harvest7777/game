@@ -106,11 +106,15 @@ describe("floatingTextSystem", () => {
     const { world, target, texts } = setup();
     world.events.damaged.push({ target, amount: 5 });
     damageTextSystem(world, 0.05);
+    const [[text]] = [...world.components.floatingText];
+    world.components.previousPosition.set(text, { x: 4, y: 6 });
 
     world.components.position.delete(target);
     floatingTextSystem(world, 0.05);
 
     expect(texts()[0].at).toEqual({ x: 5, y: 6 });
+    expect(world.components.previousPosition.get(text)).toEqual({ x: 5, y: 6 });
+    expect(world.components.floatingText.get(text)!.follows).toBeUndefined();
   });
 
   it("queues text for removal once its lifetime is up", () => {

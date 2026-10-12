@@ -2,7 +2,11 @@ import type { Color } from "../ecs/sprite/components";
 import type { World } from "../ecs/world";
 import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
-import { interpolatedPosition, SPRITE_PIXELS_PER_TILE } from "./sprites";
+import {
+  interpolatedPosition,
+  SPRITE_PIXELS_PER_TILE,
+  spritePixels,
+} from "./sprites";
 import { GLYPH_CELL, pushText } from "./textLayout";
 import { worldToScreen, type View } from "./view";
 
@@ -27,7 +31,15 @@ export function pushFloatingText(
   const tall = GLYPH_CELL * pixel;
 
   for (const [entity, text] of world.components.floatingText) {
-    const position = interpolatedPosition(world, entity, alpha);
+    // Follow the target's own interpolated path directly. Keeping a copied
+    // position on the text is still useful once its target disappears, but
+    // using it while the target lives can leave the two interpolation tracks
+    // out of step when an enemy changes direction.
+    const position =
+      (text.follows === undefined
+        ? undefined
+        : interpolatedPosition(world, text.follows, alpha)) ??
+      interpolatedPosition(world, entity, alpha);
     if (!position) continue;
     const age = text.previousAge + (text.age - text.previousAge) * alpha;
 
@@ -35,7 +47,12 @@ export function pushFloatingText(
     const progress = Math.min(1, age / text.lifetime);
     const eased = 1 - (1 - progress) * (1 - progress);
     const raised = (text.lift + text.rise * eased) * view.pixelsPerTile;
-    const bottom = center.y - view.pixelsPerTile / 2 - raised;
+    const anchor = text.follows ?? entity;
+    const spriteHeight = spritePixels(world, anchor, art).height;
+    const bottom =
+      center.y -
+      (spriteHeight / 2) * (view.pixelsPerTile / SPRITE_PIXELS_PER_TILE) -
+      raised;
     const top = bottom - tall;
     if (bottom < 0 || top > view.height) continue;
     // Generous horizontal check; text is never wider than a few tiles.

@@ -1,4 +1,6 @@
 import type { SlotRef } from "./inventory/components";
+import type { Vec2 } from "./shared/physics/math";
+import type { SoundId } from "../audio/assets";
 import type { Entity, World } from "./world";
 
 // What the simulation tells the world outside it: things like sound, network
@@ -6,7 +8,15 @@ import type { Entity, World } from "./world";
 // it isn't cleared every tick; whoever is listening drains it after running
 // the ticks for a frame, so nothing from an earlier tick in the same frame is
 // missed.
-export type OutboxMessage = { kind: "itemMoved"; entity: Entity; to: SlotRef };
+export type ItemMovedMessage = {
+  kind: "itemMoved";
+  entity: Entity;
+  to: SlotRef;
+};
+
+export type SoundMessage = { kind: "sound"; sound: SoundId; at: Vec2 };
+
+export type OutboxMessage = ItemMovedMessage | SoundMessage;
 
 // Copies this tick's events that the outside world cares about into the
 // outbox. Runs at the end of the tick.

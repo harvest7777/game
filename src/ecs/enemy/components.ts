@@ -1,6 +1,7 @@
 import type { Position } from "../movement/components";
 import type { BehaviorMemory, Quirks } from "./behaviors";
 import type { EnemyId } from "./definitions";
+import type { BossAction } from "./sequences";
 
 // An enemy: which kind, where it was spawned (which behaviors like
 // wandering and returning home are anchored to), and for kinds with phases,
@@ -16,3 +17,6 @@ export type Enemy = {
 // Which of its behaviors an enemy is running and what that behavior
 // remembers. Switching behavior starts it with a fresh memory.
 export type Brain = { mode: "idle" | "aggro"; memory: BehaviorMemory };
+
+// Runtime state for an authored boss sequence. Regular enemies do not get it.
+export type { BossAction };

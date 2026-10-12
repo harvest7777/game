@@ -8,15 +8,15 @@ import type {
   WallResponse,
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
-import type { Health, Invulnerable } from "./combat/components";
-import type { Brain, Enemy } from "./enemy/components";
+import type { Health, Invulnerable, Vulnerable } from "./combat/components";
+import type { BossAction, Brain, Enemy } from "./enemy/components";
 import type { Equipment, Inventory } from "./inventory/components";
 import { createEvents, type Events } from "./events";
 import type { OutboxMessage } from "./outbox";
 import type { Input } from "./input/actions";
-import type { PlayerControlled, Speed } from "./input/components";
+import type { AutoFire, PlayerControlled, Speed } from "./input/components";
 import type { Projectile, Shooter, Team } from "./projectile/components";
-import type { Facing, Rotation, Sprite } from "./sprite/components";
+import type { Animation, Facing, Rotation, Sprite } from "./sprite/components";
 import type { FloatingText } from "./text/components";
 import type { Tiles } from "./tiles";
 
@@ -42,8 +42,10 @@ export type Components = {
   wallResponse: Store<WallResponse>;
   blocked: Store<Blocked>;
   playerControlled: Store<PlayerControlled>;
+  autoFire: Store<AutoFire>;
   speed: Store<Speed>;
   sprite: Store<Sprite>;
+  animation: Store<Animation>;
   facing: Store<Facing>;
   rotation: Store<Rotation>;
   projectile: Store<Projectile>;
@@ -53,6 +55,8 @@ export type Components = {
   invulnerable: Store<Invulnerable>;
   enemy: Store<Enemy>;
   brain: Store<Brain>;
+  bossAction: Store<BossAction>;
+  vulnerable: Store<Vulnerable>;
   // Who this entity is after, e.g. what an enemy aims at.
   target: Store<Entity>;
   floatingText: Store<FloatingText>;
@@ -96,8 +100,10 @@ export function createWorld(
       wallResponse: createStore(),
       blocked: createStore(),
       playerControlled: createStore(),
+      autoFire: createStore(),
       speed: createStore(),
       sprite: createStore(),
+      animation: createStore(),
       facing: createStore(),
       rotation: createStore(),
       projectile: createStore(),
@@ -107,6 +113,8 @@ export function createWorld(
       invulnerable: createStore(),
       enemy: createStore(),
       brain: createStore(),
+      bossAction: createStore(),
+      vulnerable: createStore(),
       target: createStore(),
       floatingText: createStore(),
       equipment: createStore(),

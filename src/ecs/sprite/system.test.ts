@@ -62,4 +62,20 @@ describe("facingSystem", () => {
 
     expect(facingOf()).toEqual({ x: -1, y: 0 });
   });
+
+  it("uses movement instead of cursor aim while player autofire is off", () => {
+    const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
+    const [[entity]] = [...world.components.facing];
+    world.components.playerControlled.set(entity, true);
+    world.components.autoFire.set(entity, false);
+    world.components.shooter.set(entity, {
+      weapon: "bolt",
+      cooldown: 0,
+      aim: { x: 0, y: -1 },
+    });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: -1, y: 0 });
+  });
 });

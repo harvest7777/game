@@ -249,6 +249,111 @@ const SPRITES = {
   ],
 };
 
+// Slime King's 16px clips. The encounter system chooses a named clip and
+// stage progress picks its frame; these poses are intentionally broad so
+// players can read tells at a glance.
+const KING_CLIPS = [
+  "idle",
+  "ringTell",
+  "ringCast",
+  "aimTell",
+  "sprayCast",
+  "chargeTell",
+  "chargeDash",
+  "recover",
+  "frenzyTell",
+  "frenzyCast",
+  "collapse",
+  "exposed",
+];
+
+function kingFrame(clip, frame) {
+  const grid = Array.from({ length: 16 }, () => Array(16).fill("."));
+  const put = (x, y, color) => {
+    if (x >= 0 && x < 16 && y >= 0 && y < 16) grid[y][x] = color;
+  };
+  const squashed = clip === "chargeTell" || clip === "collapse";
+  const top = squashed ? 7 : clip === "chargeDash" ? 5 : 3;
+  const bottom = clip === "collapse" ? 13 : 14;
+  const left = clip === "chargeDash" ? 0 : 1;
+  const right = clip === "chargeDash" ? 15 : 14;
+
+  for (let y = top; y <= bottom; y++) {
+    const inset = y === top || y === bottom ? 2 : 0;
+    for (let x = left + inset; x <= right - inset; x++) {
+      const edge = x === left + inset || x === right - inset || y === bottom;
+      put(x, y, edge ? "D" : "l");
+    }
+  }
+
+  // A small fixed shine gives the slime volume without a busy checker or
+  // diagonal pattern that can be mistaken for missing texture pixels.
+  for (let i = 0; i < 3; i++) put(left + 3 + i, top + 2 - i, "L");
+
+  if (clip !== "collapse") {
+    put(5, top + 4, "e");
+    put(10, top + 4, "e");
+  }
+  if (
+    ["ringTell", "ringCast", "frenzyTell", "frenzyCast", "exposed"].includes(
+      clip,
+    )
+  ) {
+    for (let x = 4; x <= 11; x++) put(x, top - 1, "y");
+    put(5, top - 2, "y");
+    put(8, top - 3, "y");
+    put(11, top - 2, "y");
+  }
+  if (["ringTell", "frenzyTell"].includes(clip)) {
+    const reach = 2 + frame;
+    for (let x = left - reach; x <= right + reach; x++) {
+      if (x < left || x > right) put(x, top + 5, "y");
+    }
+  }
+  if (["ringCast", "frenzyCast", "sprayCast"].includes(clip)) {
+    // Gold edge sparks are a cast signal; the actual bright projectiles are
+    // spawned by the matching gameplay cue, outside the boss sprite.
+    put(0, top + 4 + frame, "y");
+    put(15, top + 4 - frame, "y");
+  }
+  if (clip === "aimTell") {
+    for (let x = 12; x < 16; x++) put(x, top + 4, frame === 2 ? "w" : "y");
+  }
+  if (clip === "chargeTell") {
+    for (let x = 2; x < 14; x += 3) put(x, bottom + 1, "y");
+  }
+  if (clip === "chargeDash") {
+    for (let x = 0; x < 5 + frame * 2; x++) put(x, 11, "L");
+  }
+  if (["collapse", "exposed"].includes(clip)) {
+    // An opaque, faceted core. Avoid a checker pattern here: at game scale
+    // it reads as an accidental transparency grid rather than a weak point.
+    put(8, 6, "y");
+    put(7, 7, "y");
+    put(8, 7, "w");
+    put(9, 7, "y");
+    for (let x = 6; x <= 10; x++) put(x, 8, "y");
+    put(7, 8, "w");
+    put(8, 8, "w");
+    put(9, 8, "w");
+    for (let x = 6; x <= 10; x++) put(x, 9, "y");
+    put(7, 9, "w");
+    put(8, 9, "w");
+    put(9, 9, "w");
+    put(7, 10, "y");
+    put(8, 10, "w");
+    put(9, 10, "y");
+    put(8, 11, "y");
+  }
+  return grid.map((row) => row.join(""));
+}
+
+for (const clip of KING_CLIPS) {
+  for (let frame = 0; frame < 3; frame++) {
+    SPRITES[`enemies/slime-king/${clip}-${frame}`] = kingFrame(clip, frame);
+  }
+}
+
 // Fonts, drawn white ("F") so the renderer can tint them. Each glyph sits at
 // the left of an 8x8 cell; the renderer measures how wide it is from the
 // art, so glyphs can be any width. Capitals and digits use rows 0-6, and

@@ -11,7 +11,8 @@
     "prepare": "git config core.hooksPath .githooks",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "sprites": "node scripts/generate-sprites.mjs"
+    "sprites": "node scripts/generate-sprites.mjs",
+    "sounds": "node scripts/generate-sounds.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.9",

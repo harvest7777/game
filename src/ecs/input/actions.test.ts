@@ -6,6 +6,7 @@ import {
   wasdKeybinds,
   type Keybinds,
 } from "./actions";
+import { commandHotkeys } from "./commands";
 
 describe("actionsFromKeys", () => {
   const keybinds: Keybinds = { KeyW: Action.Up, KeyD: Action.Right };
@@ -51,5 +52,11 @@ describe("keybind presets", () => {
       for (const action of needed)
         expect(bound.has(action), `${name} ${action}`).toBe(true);
     }
+  });
+});
+
+describe("command hotkeys", () => {
+  it("maps Tab to toggling autofire", () => {
+    expect(commandHotkeys.Tab).toEqual({ kind: "toggleAutoFire" });
   });
 });

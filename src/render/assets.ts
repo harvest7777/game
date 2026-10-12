@@ -20,7 +20,14 @@ export type WalkerArt = Facings & {
 
 export type StaticArt = { kind: "static"; file: SpriteFile };
 
-export type SpriteArt = WalkerArt | StaticArt;
+// Explicit clips for authored animations. Stage duration determines playback;
+// clip frame counts are visual-only and can change without touching gameplay.
+export type AnimatedArt = {
+  kind: "animated";
+  clips: Record<string, SpriteFile[]>;
+};
+
+export type SpriteArt = WalkerArt | StaticArt | AnimatedArt;
 
 export type Manifest = {
   // Each font maps characters to their glyph files.
@@ -96,6 +103,28 @@ export const manifest: Manifest = {
     slime: { kind: "static", file: "enemies/slime" },
     archer: { kind: "static", file: "enemies/archer" },
     boar: { kind: "static", file: "enemies/boar" },
+    slimeKing: {
+      kind: "animated",
+      clips: Object.fromEntries(
+        [
+          "idle",
+          "ringTell",
+          "ringCast",
+          "aimTell",
+          "sprayCast",
+          "chargeTell",
+          "chargeDash",
+          "recover",
+          "frenzyTell",
+          "frenzyCast",
+          "collapse",
+          "exposed",
+        ].map((clip) => [
+          clip,
+          [0, 1, 2].map((frame) => `enemies/slime-king/${clip}-${frame}`),
+        ]),
+      ),
+    },
     bolt: { kind: "static", file: "projectiles/bolt" },
     orb: { kind: "static", file: "projectiles/orb" },
     star: { kind: "static", file: "projectiles/star" },
@@ -117,7 +146,10 @@ export function manifestFiles(m: Manifest): SpriteFile[] {
   const files = new Set<SpriteFile>();
   for (const art of Object.values(m.sprites)) {
     if (art.kind === "static") files.add(art.file);
-    else {
+    else if (art.kind === "animated") {
+      for (const clip of Object.values(art.clips))
+        clip.forEach((f) => files.add(f));
+    } else {
       for (const set of [art, art.attack]) {
         if (!set) continue;
         for (const f of [...set.front, ...set.back, ...set.side]) files.add(f);

@@ -19,6 +19,7 @@ import {
 import { createView, TILE_PIXELS, worldToScreen, type View } from "./view";
 
 const frames = (facing: string) => [0, 1, 2].map((i) => `${facing}-${i}`);
+const bossFrames = (clip: string) => [0, 1, 2].map((i) => `boss-${clip}-${i}`);
 const manifest: Manifest = {
   sprites: {
     hero: {
@@ -38,6 +39,10 @@ const manifest: Manifest = {
       back: frames("back"),
       side: frames("side"),
     },
+    boss: {
+      kind: "animated",
+      clips: { idle: bossFrames("idle"), cast: bossFrames("cast") },
+    },
     orb: { kind: "static", file: "orb" },
   },
   fonts: { bold: {}, regular: {} },
@@ -51,6 +56,8 @@ const files = [
   ...frames("front-attack"),
   ...frames("back-attack"),
   ...frames("side-attack"),
+  ...bossFrames("idle"),
+  ...bossFrames("cast"),
   "orb",
   "top",
   "side",
@@ -457,6 +464,20 @@ describe("pushSprites", () => {
       const [quad] = draw(world, view);
       expect(fileOf(quad)).toBe("orb");
       expect(quad.flipX).toBe(false);
+    });
+
+    it("samples named animation clips from simulation progress", () => {
+      const { world, view } = setup();
+      const e = addAt(world, CENTER, { name: "boss" });
+      world.components.animation.set(e, {
+        clip: "cast",
+        previousTime: 0,
+        time: 1,
+        duration: 1,
+      });
+
+      expect(fileOf(draw(world, view, 0)[0])).toBe("boss-cast-0");
+      expect(fileOf(draw(world, view, 1)[0])).toBe("boss-cast-2");
     });
   });
 

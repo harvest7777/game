@@ -77,8 +77,11 @@ export function separation(world: World): Map<Entity, Vec2> {
           const reach = rs[i] + rs[j] + SPACING;
           const ox = xs[i] - xs[j];
           const oy = ys[i] - ys[j];
-          const distance = Math.hypot(ox, oy);
-          if (distance >= reach) continue;
+          // Squared first: most neighbors in nearby cells aren't close
+          // enough, and skipping their square root adds up over thousands.
+          const squared = ox * ox + oy * oy;
+          if (squared >= reach * reach) continue;
+          const distance = Math.sqrt(squared);
           const closeness = 1 - distance / reach;
           if (distance === 0) {
             // Exactly on top of each other: split along a direction set by

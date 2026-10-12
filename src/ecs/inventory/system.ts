@@ -24,7 +24,7 @@ export function inventorySystem(world: World, _dt: number): void {
         const to = equipFromInventory(h, command.index);
         if (to)
           moved(world, entity, to, { in: "inventory", index: command.index });
-      } else {
+      } else if (command.kind === "give") {
         const index = giveItem(h, { def: command.item });
         if (index !== undefined)
           moved(world, entity, { in: "inventory", index });

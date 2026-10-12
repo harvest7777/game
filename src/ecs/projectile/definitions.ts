@@ -1,6 +1,7 @@
 import type { Speed } from "../input/components";
 import type { Hitbox, WallResponse } from "../movement/components";
 import type { Sprite } from "../sprite/components";
+import type { SoundId } from "../../audio/assets";
 
 // What a kind of projectile is. Shared by every shot of that kind; each
 // projectile entity only keeps where and which way it was fired and how old
@@ -24,6 +25,11 @@ export type ProjectileDef = {
   // Rotated art points right. Drawn at DEFAULT_PROJECTILE_SCALE unless it
   // sets its own scale.
   sprite: Pick<Sprite, "name" | "outline" | "scale">;
+  sound: {
+    fire: SoundId;
+    hitPlayer: SoundId;
+    hitEnemy: SoundId;
+  };
   // What hitting a wall does; "pass" flies through. Defaults to "stop".
   walls?: WallResponse | "pass";
   // Tiles/s², negative to slow down.
@@ -52,6 +58,12 @@ export type ProjectileDef = {
 export const DEFAULT_PROJECTILE_SCALE = 0.8;
 
 const SMALL = { r: 0.15 };
+const MAGIC_SOUND = {
+  fire: "magicFire",
+  hitPlayer: "hitPlayer",
+  hitEnemy: "hitEnemy",
+} as const;
+const ARROW_SOUND = { ...MAGIC_SOUND, fire: "arrowFire" } as const;
 
 export const projectiles = {
   bolt: {
@@ -60,6 +72,7 @@ export const projectiles = {
     lifetime: 0.6,
     hitbox: SMALL,
     sprite: { name: "bolt" },
+    sound: MAGIC_SOUND,
     faceDirection: true,
   },
   // Covers far more than a tile per tick, to check it still stops at walls.
@@ -69,6 +82,7 @@ export const projectiles = {
     lifetime: 0.35,
     hitbox: { r: 0.12 },
     sprite: { name: "bolt" },
+    sound: MAGIC_SOUND,
     faceDirection: true,
   },
   wavy: {
@@ -77,6 +91,7 @@ export const projectiles = {
     lifetime: 1,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },
+    sound: MAGIC_SOUND,
     wave: { amplitude: 0.5, frequency: 2 },
   },
   tightWave: {
@@ -85,6 +100,7 @@ export const projectiles = {
     lifetime: 0.8,
     hitbox: SMALL,
     sprite: { name: "bolt" },
+    sound: MAGIC_SOUND,
     wave: { amplitude: 0.25, frequency: 6 },
     faceDirection: true,
   },
@@ -94,6 +110,7 @@ export const projectiles = {
     lifetime: 1,
     hitbox: SMALL,
     sprite: { name: "bolt" },
+    sound: MAGIC_SOUND,
     acceleration: 40,
     maxSpeed: 20,
     faceDirection: true,
@@ -105,6 +122,7 @@ export const projectiles = {
     lifetime: 2,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },
+    sound: MAGIC_SOUND,
     acceleration: -20,
     minSpeed: 1,
   },
@@ -114,6 +132,7 @@ export const projectiles = {
     lifetime: 2,
     hitbox: SMALL,
     sprite: { name: "bolt" },
+    sound: MAGIC_SOUND,
     turnRate: Math.PI,
     faceDirection: true,
   },
@@ -123,6 +142,7 @@ export const projectiles = {
     lifetime: 1.2,
     hitbox: { r: 0.25 },
     sprite: { name: "star" },
+    sound: MAGIC_SOUND,
     boomerang: true,
     spin: 4 * Math.PI,
   },
@@ -132,6 +152,7 @@ export const projectiles = {
     lifetime: 1.2,
     hitbox: { r: 0.25 },
     sprite: { name: "star" },
+    sound: MAGIC_SOUND,
     spin: 3 * Math.PI,
   },
   // Flies through walls, glowing so it's easy to follow behind them.
@@ -147,6 +168,7 @@ export const projectiles = {
         glow: { radius: 1.5, pulseHz: 3 },
       },
     },
+    sound: MAGIC_SOUND,
     walls: "pass",
   },
   // Extreme Prejudice's shard: speeds up while curving, weaving and
@@ -163,6 +185,7 @@ export const projectiles = {
         glow: { radius: 1.5, pulseHz: 6 },
       },
     },
+    sound: MAGIC_SOUND,
     acceleration: 8,
     maxSpeed: 13,
     turnRate: 0.75 * Math.PI,
@@ -180,6 +203,7 @@ export const projectiles = {
       scale: 1,
       outline: { color: [0.9, 0.15, 0.15, 1] },
     },
+    sound: MAGIC_SOUND,
   },
   arrow: {
     speed: 10,
@@ -187,6 +211,7 @@ export const projectiles = {
     lifetime: 1,
     hitbox: SMALL,
     sprite: { name: "bolt", outline: { color: [0.9, 0.15, 0.15, 1] } },
+    sound: ARROW_SOUND,
     faceDirection: true,
   },
   // Goes through everything it hits.
@@ -196,6 +221,7 @@ export const projectiles = {
     lifetime: 0.7,
     hitbox: SMALL,
     sprite: { name: "bolt", scale: 1.2 },
+    sound: MAGIC_SOUND,
     pierces: true,
     faceDirection: true,
   },
@@ -206,6 +232,7 @@ export const projectiles = {
     lifetime: 1.5,
     hitbox: { r: 0.2 },
     sprite: { name: "orb" },
+    sound: MAGIC_SOUND,
     walls: "slide",
   },
 } satisfies Record<string, ProjectileDef>;

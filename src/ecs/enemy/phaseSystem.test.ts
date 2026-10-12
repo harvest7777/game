@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { brainSystem } from "./brain";
+import { bossActionSystem } from "./actionSystem";
 import { phaseSystem } from "./phaseSystem";
 import { spawnEnemy } from "./spawn";
 
@@ -12,21 +13,27 @@ function setup() {
   const king = spawnEnemy(world, "slimeKing", { x: 10, y: 10 });
   const c = world.components;
   const phase = () => c.enemy.get(king)!.phase!;
-  const weapon = () => c.shooter.get(king)?.weapon;
+  const action = () => c.bossAction.get(king)!;
   const hurtTo = (fraction: number) => {
     c.health.get(king)!.hp = 1500 * fraction;
   };
   const tick = (ticks = 1) => {
     for (let i = 0; i < ticks; i++) phaseSystem(world, DT);
   };
-  return { world, king, c, phase, weapon, hurtTo, tick };
+  return { world, king, c, phase, action, hurtTo, tick };
 }
 
 describe("spawning an enemy with phases", () => {
-  it("starts in its first phase with that phase's weapon", () => {
-    const { phase, weapon } = setup();
+  it("starts its first phase at the first sequence in its rotation", () => {
+    const { phase, action, c, king } = setup();
     expect(phase()).toEqual({ name: "awake", time: 0 });
-    expect(weapon()).toBe("kingSpray");
+    expect(action()).toMatchObject({
+      sequence: "crownRing",
+      rotationIndex: 0,
+      stageIndex: 0,
+      active: false,
+    });
+    expect(c.shooter.has(king)).toBe(false);
   });
 });
 
@@ -37,14 +44,19 @@ describe("phaseSystem", () => {
     expect(phase().time).toBeCloseTo(4 * DT);
   });
 
-  it("moves on when its health drops low enough, swapping weapons", () => {
-    const { phase, weapon, hurtTo, tick } = setup();
+  it("moves on when its health drops low enough, resetting its rotation", () => {
+    const { phase, action, hurtTo, tick } = setup();
     hurtTo(0.6);
 
     tick();
 
     expect(phase()).toEqual({ name: "enraged", time: 0 });
-    expect(weapon()).toBe("kingRing");
+    expect(action()).toMatchObject({
+      sequence: "charge",
+      rotationIndex: 0,
+      stageIndex: 0,
+      active: false,
+    });
   });
 
   it("switches at most once a tick", () => {
@@ -57,31 +69,18 @@ describe("phaseSystem", () => {
     expect(phase().name).toBe("desperate");
   });
 
-  it("puts its weapon away for a phase that holds fire, and takes it back out", () => {
-    const { phase, weapon, hurtTo, tick } = setup();
+  it("resets an active sequence when health enters a new phase", () => {
+    const { world, king, c, phase, action, hurtTo, tick } = setup();
+    const player = spawn(world);
+    c.position.set(player, { x: 15, y: 10 });
+    c.target.set(king, player);
+    bossActionSystem(world, DT);
+    expect(action().active).toBe(true);
+
     hurtTo(0.1);
     tick(2);
     expect(phase().name).toBe("desperate");
-
-    // Desperate lasts 6 s before resting.
-    tick(6 / DT + 1);
-    expect(phase().name).toBe("resting");
-    expect(weapon()).toBeUndefined();
-
-    // Resting lasts 2.5 s.
-    tick(2.5 / DT + 1);
-    expect(phase().name).toBe("desperate");
-    expect(weapon()).toBe("kingFrenzy");
-  });
-
-  it("keeps the cooldown when swapping weapons", () => {
-    const { c, king, hurtTo, tick } = setup();
-    c.shooter.get(king)!.cooldown = 0.4;
-    hurtTo(0.6);
-
-    tick();
-
-    expect(c.shooter.get(king)!.cooldown).toBe(0.4);
+    expect(action()).toMatchObject({ sequence: "frenzy", active: false });
   });
 
   it("starts the brain's behavior fresh on a switch", () => {

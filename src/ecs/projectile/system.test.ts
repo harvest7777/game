@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { cleanupSystem } from "../cleanup";
 import { movementSystem } from "../movement/system";
 import { createTiles, setWall } from "../tiles";
 import { createWorld, spawn, type Entity, type World } from "../world";
@@ -6,6 +7,7 @@ import { projectiles, type ProjectileId } from "./definitions";
 import { pathPoint } from "./path";
 import { fireProjectile } from "./spawn";
 import { projectileSystem } from "./system";
+import { projectileWallHitSystem } from "./walls";
 
 const DT = 0.05;
 const FROM = { x: 2.5, y: 10.5 };
@@ -29,6 +31,8 @@ function step(world: World, ticks = 1) {
   for (let i = 0; i < ticks; i++) {
     projectileSystem(world, DT);
     movementSystem(world, DT);
+    projectileWallHitSystem(world, DT);
+    cleanupSystem(world, DT);
   }
 }
 
@@ -90,13 +94,14 @@ describe("projectileSystem", () => {
   });
 
   describe("walls", () => {
-    it("stops at a wall and is removed the tick after", () => {
+    it("stops at a wall and is removed", () => {
       const { world, entity } = setup("bolt");
       setWall(world.tiles, 5, 10);
 
       let ticks = 0;
       while (!world.components.blocked.has(entity) && ticks < 20) {
-        step(world);
+        projectileSystem(world, DT);
+        movementSystem(world, DT);
         ticks++;
       }
 
@@ -104,7 +109,8 @@ describe("projectileSystem", () => {
       const at = world.components.position.get(entity)!;
       expect(at.x).toBeCloseTo(5 - projectiles.bolt.hitbox.r, 3);
       expect(alive(world, entity)).toBe(true);
-      step(world);
+      projectileWallHitSystem(world, DT);
+      cleanupSystem(world, DT);
       expect(alive(world, entity)).toBe(false);
     });
 

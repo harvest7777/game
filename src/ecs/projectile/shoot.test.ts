@@ -67,6 +67,16 @@ describe("shootSystem", () => {
     expect(shot.def).toBe("bolt");
   });
 
+  it("does not fire while player autofire is off", () => {
+    const { world, shooter } = setup();
+    world.components.autoFire.set(shooter, false);
+
+    tick(world);
+
+    expect(shots(world)).toEqual([]);
+    expect(world.components.shooter.get(shooter)!.cooldown).toBe(0);
+  });
+
   describe("aim", () => {
     it("aims the player's shots at the cursor", () => {
       const { world } = setup();
@@ -174,6 +184,10 @@ describe("shootSystem", () => {
       for (let i = 1; i < angles.length; i++) {
         expect(angles[i] - angles[i - 1]).toBeCloseTo((2 * Math.PI) / 10);
       }
+      expect(world.events.shotsFired).toHaveLength(1);
+      expect(world.events.shotsFired[0]).toMatchObject({
+        projectile: "prejudice",
+      });
     });
   });
 

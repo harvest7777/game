@@ -36,6 +36,7 @@ export function addControllable(
   { speed }: ControllableOptions,
 ): void {
   world.components.playerControlled.set(entity, true);
+  world.components.autoFire.set(entity, true);
   world.components.speed.set(entity, speed);
 }
 

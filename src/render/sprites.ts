@@ -40,6 +40,36 @@ export function interpolatedPosition(
   };
 }
 
+// The art's true pixel dimensions after visual scale. Most sprites are 8px,
+// but bosses can use larger clips; UI anchored to a sprite must not assume a
+// one-tile body.
+export function spritePixels(
+  world: World,
+  entity: Entity,
+  art?: Art,
+): { width: number; height: number } {
+  const sprite = world.components.sprite.get(entity);
+  const scale = sprite?.scale ?? 1;
+  const fallback = {
+    width: SPRITE_PIXELS_PER_TILE * scale,
+    height: SPRITE_PIXELS_PER_TILE * scale,
+  };
+  if (!sprite || !art) return fallback;
+  const spriteArt = art.manifest.sprites[sprite.name];
+  if (!spriteArt) return fallback;
+  const file =
+    spriteArt.kind === "static"
+      ? spriteArt.file
+      : spriteArt.kind === "animated"
+        ? spriteArt.clips[
+            world.components.animation.get(entity)?.clip ?? "idle"
+          ]?.[0]
+        : spriteArt.front[0];
+  if (!file) return fallback;
+  const region = regionOf(art, file);
+  return { width: region.w * scale, height: region.h * scale };
+}
+
 type Placed = {
   entity: Entity;
   layer: number;
@@ -73,7 +103,15 @@ export function pushSprites(
     const position = interpolatedPosition(world, entity, alpha);
     if (!position) continue;
     const center = worldToScreen(view, position);
-    const { file, flipX } = pickFrame(world, entity, sprite, art, view, time);
+    const { file, flipX } = pickFrame(
+      world,
+      entity,
+      sprite,
+      art,
+      view,
+      alpha,
+      time,
+    );
     const region = regionOf(art, file);
     const margin = marginOf(sprite);
     const pixel = basePixel * (sprite.scale ?? 1);
@@ -159,12 +197,30 @@ function pickFrame(
   sprite: Sprite,
   art: Art,
   view: View,
+  alpha: number,
   time: number,
 ): { file: SpriteFile; flipX: boolean } {
   const spriteArt = art.manifest.sprites[sprite.name];
   if (!spriteArt) throw new Error(`no art for sprite "${sprite.name}"`);
   if (spriteArt.kind === "static")
     return { file: spriteArt.file, flipX: false };
+  if (spriteArt.kind === "animated") {
+    const animation = world.components.animation.get(entity);
+    const clip = spriteArt.clips[animation?.clip ?? "idle"];
+    if (!clip)
+      throw new Error(`no clip "${animation?.clip}" for "${sprite.name}"`);
+    const elapsed = animation
+      ? animation.previousTime +
+        (animation.time - animation.previousTime) * alpha
+      : 0;
+    const progress = animation
+      ? Math.max(0, Math.min(1, elapsed / animation.duration))
+      : 0;
+    return {
+      file: clip[Math.min(clip.length - 1, Math.floor(progress * clip.length))],
+      flipX: false,
+    };
+  }
 
   const facing = world.components.facing.get(entity) ?? { x: 0, y: 1 };
   const cos = Math.cos(view.angle);

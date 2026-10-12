@@ -18,6 +18,8 @@ export type Phase = {
   idle?: Behavior;
   aggro?: Behavior;
   weapon?: WeaponId | null;
+  // Completed boss sequences advance through this deterministic loop.
+  rotation?: string[];
   // Checked in order each tick; the first whose condition holds wins.
   next?: { to: string; when: Condition }[];
 };

@@ -3,6 +3,7 @@ import { freshMemory } from "./behaviors";
 import { enemyDef, phaseOf } from "./definitions";
 import { nextPhase } from "./phases";
 import { armForPhase } from "./spawn";
+import { resetBossAction } from "./actionSystem";
 
 // Moves enemies through their phases. Times the current phase, and when one
 // of its transitions holds, switches: the new phase starts its clock at 0,
@@ -34,6 +35,7 @@ export function phaseSystem(world: World, dt: number): void {
 
     e.phase = { name: to, time: 0 };
     armForPhase(world, entity);
+    resetBossAction(world, entity);
     const mind = brain.get(entity);
     if (mind) mind.memory = freshMemory();
   }

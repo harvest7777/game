@@ -5,14 +5,17 @@ import { hitSystem } from "./combat/hits";
 import { aggroSystem } from "./enemy/aggro";
 import { brainSystem } from "./enemy/brain";
 import { phaseSystem } from "./enemy/phaseSystem";
+import { bossActionSystem } from "./enemy/actionSystem";
 import { damageTextSystem, floatingTextSystem } from "./text/system";
 import { clearEvents } from "./events";
 import { outboxSystem } from "./outbox";
-import { playerInputSystem } from "./input/system";
+import { autoFireSystem, playerInputSystem } from "./input/system";
 import { inventorySystem } from "./inventory/system";
 import { movementSystem } from "./movement/system";
 import { shootSystem } from "./projectile/shoot";
 import { projectileSystem } from "./projectile/system";
+import { projectileWallHitSystem } from "./projectile/walls";
+import { soundSystem } from "./sound/system";
 import { facingSystem } from "./sprite/system";
 import type { System, World } from "./world";
 
@@ -29,22 +32,26 @@ import type { System, World } from "./world";
 // each step of hit, damage, death and removal reads the events the step
 // before it recorded. Floating text ages before new damage numbers are
 // spawned, so a new number starts at age 0.
-const systems: System[] = [
+export const tickSystems: System[] = [
   cameraSystem,
   playerInputSystem,
   inventorySystem,
+  autoFireSystem,
   aggroSystem,
   phaseSystem,
+  bossActionSystem,
   brainSystem,
   shootSystem,
   facingSystem,
   projectileSystem,
   movementSystem,
   hitSystem,
+  projectileWallHitSystem,
   damageSystem,
   floatingTextSystem,
   damageTextSystem,
   deathSystem,
+  soundSystem,
   outboxSystem,
   cleanupSystem,
 ];
@@ -52,5 +59,5 @@ const systems: System[] = [
 // Events only last the tick they happen in.
 export function runTick(world: World, dt: number): void {
   clearEvents(world.events);
-  for (const system of systems) system(world, dt);
+  for (const system of tickSystems) system(world, dt);
 }

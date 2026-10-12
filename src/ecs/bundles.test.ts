@@ -61,6 +61,7 @@ describe("addControllable", () => {
     addControllable(world, e, { speed: 5 });
 
     expect(world.components.playerControlled.has(e)).toBe(true);
+    expect(world.components.autoFire.get(e)).toBe(true);
     expect(world.components.speed.get(e)).toBe(5);
   });
 });

@@ -37,7 +37,14 @@ export function damageTextSystem(world: World, _dt: number): void {
 // lifetime is up.
 export function floatingTextSystem(world: World, dt: number): void {
   for (const [entity, text] of world.components.floatingText) {
-    if (text.follows !== undefined) stayOver(world, entity, text.follows);
+    if (text.follows !== undefined && !stayOver(world, entity, text.follows)) {
+      // Its target was removed after the last tick. Freeze both ends of the
+      // text's interpolation segment at its last position so alpha cannot
+      // replay the target's final movement every frame.
+      text.follows = undefined;
+      const at = world.components.position.get(entity);
+      if (at) world.components.previousPosition.set(entity, { ...at });
+    }
     text.previousAge = text.age;
     text.age += dt;
     if (text.age >= text.lifetime) world.events.despawns.push(entity);
@@ -47,11 +54,12 @@ export function floatingTextSystem(world: World, dt: number): void {
 // Moves `text` onto `target`, previous position included so it's drawn
 // moving with it between ticks. Does nothing once the target is gone, so
 // the text stays where it last was.
-function stayOver(world: World, text: Entity, target: Entity): void {
+function stayOver(world: World, text: Entity, target: Entity): boolean {
   const { position, previousPosition } = world.components;
   const at = position.get(target);
-  if (!at) return;
+  if (!at) return false;
   const before = previousPosition.get(target) ?? at;
   position.set(text, { x: at.x, y: at.y });
   previousPosition.set(text, { x: before.x, y: before.y });
+  return true;
 }

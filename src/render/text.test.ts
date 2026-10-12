@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCamera } from "../ecs/camera/resource";
 import type { FloatingText } from "../ecs/text/components";
-import { DAMAGE_TEXT } from "../ecs/text/system";
+import { DAMAGE_TEXT, floatingTextSystem } from "../ecs/text/system";
 import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
 import type { Art } from "./art";
@@ -14,7 +14,7 @@ const digits = [..."0123456789"];
 // Each digit gets its own x so a quad's region says which digit it is.
 const art: Art = {
   manifest: {
-    sprites: {},
+    sprites: { boss: { kind: "static", file: "boss" } },
     ground: {},
     walls: { top: "top", side: "side" },
     fonts: {
@@ -22,9 +22,12 @@ const art: Art = {
       regular: {},
     },
   },
-  regions: new Map(
-    digits.map((d, i) => [`font/${d}`, { x: i * 10, y: 0, w: 8, h: 8 }]),
-  ),
+  regions: new Map([
+    ...digits.map(
+      (d, i) => [`font/${d}`, { x: i * 10, y: 0, w: 8, h: 8 }] as const,
+    ),
+    ["boss", { x: 100, y: 0, w: 16, h: 16 }],
+  ]),
   // Bold digits are 6 wide from the left of their cell, except a narrow 1.
   glyphs: new Map(
     digits.map((d) => [`font/${d}`, { left: 0, width: d === "1" ? 4 : 6 }]),
@@ -106,6 +109,23 @@ describe("pushFloatingText", () => {
     expect(bottomOf(glyph)).toBeCloseTo(spriteTop + 0.2 * FONT, 3);
   });
 
+  it("starts above a large followed boss rather than inside it", () => {
+    const { world, view } = setup();
+    const boss = spawn(world);
+    world.components.position.set(boss, { ...CENTER });
+    world.components.sprite.set(boss, {
+      name: "boss",
+      layer: "enemy",
+      scale: 1.8,
+    });
+    addText(world, { follows: boss });
+
+    const bottom = bottomOf(draw(world, view)[0]);
+    const bossTop =
+      worldToScreen(view, CENTER).y - (16 * 1.8 * (TILE_PIXELS / 8)) / 2;
+    expect(bottom).toBeLessThan(bossTop + 1);
+  });
+
   it("rises as it ages, smoothly between ticks", () => {
     const { world, view } = setup();
     const e = addText(world, { age: 0.2, previousAge: 0.1 });
@@ -119,6 +139,40 @@ describe("pushFloatingText", () => {
     const progress = 0.15 / 0.8;
     const eased = 1 - (1 - progress) ** 2;
     expect(start - halfway).toBeCloseTo(1.25 * eased * TILE_PIXELS, 3);
+  });
+
+  it("uses its moving target's interpolated position directly", () => {
+    const { world, view } = setup();
+    const target = spawn(world);
+    world.components.previousPosition.set(target, { x: 8, y: 10 });
+    world.components.position.set(target, { x: 12, y: 10 });
+    const text = addText(world, { follows: target });
+    // Deliberately give the text a stale copy: its drawing anchor must still
+    // be exactly halfway along the target's own path at alpha 0.5.
+    world.components.previousPosition.set(text, { x: 0, y: 0 });
+    world.components.position.set(text, { x: 0, y: 0 });
+
+    const [first, second] = draw(world, view, 0.5);
+    const firstInk = first.corners[0].x + 0.2 * FONT;
+    const lastInk = second.corners[0].x + (0.2 + 6) * FONT;
+    const center = (firstInk + lastInk) / 2;
+    expect(center).toBeCloseTo(worldToScreen(view, CENTER).x, 3);
+  });
+
+  it("holds still after its target disappears", () => {
+    const { world, view } = setup();
+    const target = spawn(world);
+    world.components.position.set(target, { x: 12, y: 10 });
+    const text = addText(world, { follows: target });
+    world.components.previousPosition.set(text, { x: 8, y: 10 });
+    world.components.position.set(text, { x: 12, y: 10 });
+    world.components.position.delete(target);
+    floatingTextSystem(world, 0.05);
+
+    const atStart = draw(world, view, 0)[0].corners[0].x;
+    const atEnd = draw(world, view, 1)[0].corners[0].x;
+
+    expect(atStart).toBeCloseTo(atEnd, 3);
   });
 
   it("rises its full distance by the end of its life", () => {

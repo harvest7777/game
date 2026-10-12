@@ -6,7 +6,7 @@ import {
   keybindPresets,
   type KeybindPreset,
 } from "./ecs/input/actions";
-import { slotHotkeys, type Command } from "./ecs/input/commands";
+import { commandHotkeys, type Command } from "./ecs/input/commands";
 import { addHoldings } from "./ecs/inventory/bundle";
 import { itemIds, items, type ItemId } from "./ecs/inventory/items";
 import type { Vec2 } from "./ecs/shared/physics/math";
@@ -25,6 +25,8 @@ import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
 import { QuadBuffer } from "./render/quads";
 import { screenToWorld, type View } from "./render/view";
+import { createSoundPlayer } from "./audio/player";
+import type { SoundMessage } from "./ecs/outbox";
 
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
@@ -127,6 +129,18 @@ const renderer = createRenderer(gl, art.canvas.canvas, {
   width: art.width,
   height: art.height,
 });
+const audioContext = new AudioContext();
+const soundPlayer = await createSoundPlayer(
+  audioContext,
+  import.meta.env.BASE_URL,
+);
+
+function unlockAudio() {
+  void soundPlayer.resume();
+}
+
+window.addEventListener("keydown", unlockAudio);
+window.addEventListener("pointerdown", unlockAudio);
 
 // Debug renders, toggled from the overlay.
 const renderDebug = createRenderDebug();
@@ -237,8 +251,11 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   inputs.add(event.code);
-  const command = slotHotkeys[event.code];
-  if (command && !event.repeat) pendingCommands.push(command);
+  const command = commandHotkeys[event.code];
+  if (command && !event.repeat) {
+    pendingCommands.push(command);
+    event.preventDefault();
+  }
 });
 
 window.addEventListener("keyup", (event) => {
@@ -337,14 +354,19 @@ function callback() {
 // Reacts to what the simulation reported this frame: an item landing in one
 // of the player's slots makes that slot flash.
 function takeOutbox(time: number) {
+  const sounds: SoundMessage[] = [];
   for (const message of world.outbox.splice(0)) {
     if (message.kind === "itemMoved" && message.entity === player) {
       hudState.flashes.push({ ref: message.to, at: time });
+    } else if (message.kind === "sound") {
+      sounds.push(message);
     }
   }
   hudState.flashes = hudState.flashes.filter(
     (flash) => time - flash.at < FLASH_SECONDS,
   );
+  const at = world.components.position.get(player);
+  if (at) soundPlayer.play(sounds, { at, angle: world.camera.angle });
 }
 
 // Draws between the last two ticks: alpha is how far into the next tick the

@@ -7,16 +7,16 @@ import { pathPoint } from "./path";
 // movement does the actual moving, so walls are swept no matter how fast or
 // wavy the path is.
 //
-// Projectiles past their lifetime, or that hit something on the last
-// movement step (Blocked), are removed. Spinning sprites turn by their spin;
+// Projectiles past their lifetime are removed. Wall impacts are resolved after
+// movement by projectileWallHitSystem. Spinning sprites turn by their spin;
 // ones that face their path point along this tick's movement.
 export function projectileSystem(world: World, dt: number): void {
-  const { projectile, blocked, velocity, rotation } = world.components;
+  const { projectile, velocity, rotation } = world.components;
   const finished: Entity[] = [];
 
   for (const [entity, p] of projectile) {
     const def = projectileDef(p.def);
-    if (blocked.has(entity) || p.age >= def.lifetime) {
+    if (p.age >= def.lifetime) {
       finished.push(entity);
       continue;
     }

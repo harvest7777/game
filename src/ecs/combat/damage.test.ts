@@ -44,6 +44,18 @@ describe("applyDamage", () => {
     expect(world.events.deaths).toHaveLength(0);
   });
 
+  it("multiplies damage while a weak point is exposed", () => {
+    const { world, target, attacker, hpOf } = setup(50);
+    world.components.vulnerable.set(target, { multiplier: 2 });
+
+    applyDamage(world, target, 15, attacker);
+
+    expect(hpOf()).toBe(20);
+    expect(world.events.damaged).toEqual([
+      { target, amount: 30, source: attacker },
+    ]);
+  });
+
   it("records nothing once it's at 0", () => {
     const { world, target } = setup(10);
     applyDamage(world, target, 25);

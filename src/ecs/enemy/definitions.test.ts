@@ -16,6 +16,9 @@ describe("enemy definitions", () => {
         expect(names).toContain(def.phases.start);
         for (const phase of Object.values(def.phases.list)) {
           for (const { to } of phase.next ?? []) expect(names).toContain(to);
+          for (const sequence of phase.rotation ?? []) {
+            expect(def.sequences?.[sequence]).toBeDefined();
+          }
         }
       });
 

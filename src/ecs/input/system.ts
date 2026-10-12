@@ -5,6 +5,19 @@ import { Action } from "./actions";
 // Fraction of normal speed while Crouch (shift) is held.
 export const CROUCH_SPEED = 0.5;
 
+// Applies one-shot autofire toggles before shooting runs later in the tick.
+export function autoFireSystem(world: World, _dt: number): void {
+  const toggles = world.input.commands.filter(
+    (command) => command.kind === "toggleAutoFire",
+  ).length;
+  if (toggles % 2 === 0) return;
+
+  for (const [entity] of world.components.playerControlled) {
+    const enabled = world.components.autoFire.get(entity) ?? true;
+    world.components.autoFire.set(entity, !enabled);
+  }
+}
+
 // Sets the velocity of every player-controlled entity from the held movement
 // keys.
 //

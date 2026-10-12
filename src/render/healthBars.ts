@@ -1,10 +1,12 @@
 import type { Color } from "../ecs/sprite/components";
 import type { World } from "../ecs/world";
+import type { Art } from "./art";
 import type { QuadBuffer } from "./quads";
 import {
   interpolatedPosition,
   marginOf,
   SPRITE_PIXELS_PER_TILE,
+  spritePixels,
 } from "./sprites";
 import { depthOf, worldToScreen, type View } from "./view";
 
@@ -42,6 +44,7 @@ export function pushHealthBars(
   world: World,
   view: View,
   alpha: number,
+  art?: Art,
 ): void {
   const pixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
   for (const [entity, health] of world.components.health) {
@@ -54,7 +57,8 @@ export function pushHealthBars(
     const sprite = world.components.sprite.get(entity);
     const scale = sprite?.scale ?? 1;
     const margin = sprite ? marginOf(sprite) : 0;
-    const spriteHalf = (SPRITE_PIXELS_PER_TILE / 2 + margin) * pixel * scale;
+    const spriteHalf =
+      (spritePixels(world, entity, art).height / 2 + margin * scale) * pixel;
     const left = center.x - (WIDTH / 2) * pixel;
     const right = center.x + (WIDTH / 2) * pixel;
     const top = center.y + spriteHalf + GAP * pixel;

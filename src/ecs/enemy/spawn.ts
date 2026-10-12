@@ -3,6 +3,7 @@ import type { Vec2 } from "../shared/physics/math";
 import { isWall } from "../tiles";
 import { spawn, type Entity, type World } from "../world";
 import { freshMemory } from "./behaviors";
+import { resetBossAction } from "./actionSystem";
 import { enemyDef, phaseOf, type EnemyId } from "./definitions";
 
 // Creates an enemy from its definition at `at`, which becomes its origin.
@@ -37,6 +38,7 @@ export function spawnEnemy(world: World, id: EnemyId, at: Vec2): Entity {
     ...(def.phases && { phase: { name: def.phases.start, time: 0 } }),
   });
   components.brain.set(entity, { mode: "idle", memory: freshMemory() });
+  resetBossAction(world, entity);
   armForPhase(world, entity);
   return entity;
 }
@@ -87,6 +89,12 @@ export function armForPhase(world: World, entity: Entity): void {
   const enemy = world.components.enemy.get(entity);
   if (!enemy) return;
   const def = enemyDef(enemy.def);
+  // Authored action timelines fire their weapons from timed cues, never from
+  // generic Shooter autofire.
+  if (phaseOf(def, enemy.phase?.name)?.rotation) {
+    world.components.shooter.delete(entity);
+    return;
+  }
   const phaseWeapon = phaseOf(def, enemy.phase?.name)?.weapon;
   const weapon = phaseWeapon === undefined ? def.weapon : phaseWeapon;
 
