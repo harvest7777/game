@@ -4,7 +4,8 @@
     "floor": "abyssBrick",
     "corridor": "charredStone",
     "liquid": "lava",
-    "accent": "cooledLava"
+    "accent": "cooledLava",
+    "wall": "abyssBrick"
   },
   "graph": {
     "mainPath": [8, 11],

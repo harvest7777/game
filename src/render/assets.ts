@@ -65,7 +65,9 @@ export function manifestFiles(m: Manifest): SpriteFile[] {
   const files = new Set<SpriteFile>();
   for (const art of m.sprites) {
     if (art.kind === "static") files.add(art.file);
-    else if (art.kind === "animated") {
+    else if (art.kind === "creature") {
+      [...art.idle, ...art.attack].forEach((f) => files.add(f));
+    } else if (art.kind === "animated") {
       for (const clip of Object.values(art.clips))
         clip.forEach((f) => files.add(f));
     } else {

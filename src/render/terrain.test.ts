@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createCamera } from "../ecs/camera/resource";
 import type { Vec2 } from "../ecs/shared/physics/math";
-import { createTiles, setGround, setWall, type Tiles } from "../ecs/tiles";
+import {
+  createTiles,
+  setGround,
+  setVoid,
+  setWall,
+  type Tiles,
+} from "../ecs/tiles";
 import type { Art } from "./art";
 import type { Manifest } from "./assets";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
@@ -18,7 +24,7 @@ const manifest: Manifest = {
   walls: { top: "top", side: "side" },
 };
 // Each file gets its own x so a quad's region says which file it is.
-const files = ["floor", "lava", "top", "side"];
+const files = ["floor", "lava", "top", "side", "brick-top", "brick-side"];
 const art: Art = {
   manifest,
   regions: new Map(files.map((f, i) => [f, { x: i * 10, y: 0, w: 8, h: 8 }])),
@@ -99,6 +105,12 @@ describe("pushGround", () => {
 
     expect(quads.filter((q) => fileOf(q) === "lava")).toHaveLength(1);
     expect(quads.filter((q) => fileOf(q) === "floor")).toHaveLength(35);
+  });
+
+  it("leaves void tiles undrawn, so they show as the black background", () => {
+    const tiles = createTiles(20, 20, GROUNDS);
+    setVoid(tiles, 10, 10);
+    expect(ground(tiles, viewAt({ x: 10, y: 10 }))).toHaveLength(35);
   });
 
   it("refuses a ground type with no definition", () => {
@@ -217,5 +229,32 @@ describe("pushWalls", () => {
     const quads = walls(tiles, viewAt({ x: 10, y: 10 }));
 
     expect(quads.map(fileOf)).toEqual(["side", "top"]);
+  });
+});
+
+describe("pushWalls styles and void", () => {
+  const BRICK = { top: "brick-top", side: "brick-side" };
+
+  it("draws each wall in its own style, and unstyled ones the default way", () => {
+    const tiles = createTiles(20, 20, GROUNDS, [undefined, BRICK]);
+    setWall(tiles, 9, 10);
+    setWall(tiles, 11, 10, true, 1);
+
+    const files = walls(tiles, viewAt({ x: 10.5, y: 10.5 })).map(fileOf);
+
+    expect(files).toContain("top");
+    expect(files).toContain("brick-top");
+    expect(files).toContain("brick-side");
+  });
+
+  it("raises nothing for void, and shows the faces of walls next to it", () => {
+    const tiles = createTiles(20, 20, GROUNDS);
+    setWall(tiles, 10, 10);
+    setVoid(tiles, 10, 11);
+
+    const quads = walls(tiles, viewAt({ x: 10.5, y: 10.5 }));
+
+    // The wall's top and its south face, looking out at the void.
+    expect(quads.map(fileOf).sort()).toEqual(["side", "top"]);
   });
 });

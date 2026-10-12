@@ -3,13 +3,13 @@ import { STAT, stat } from "../../ecs/stats/components";
 import { bruteLoot } from "../loot/pools";
 import { bruteRing } from "../weapons/bruteRing";
 import { bruteShotgun } from "../weapons/bruteShotgun";
-import { OUTLINED } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 
 // A brute in a helmet that won't stay put: pounds away up close, then
 // charges and lands in a ring of blasts.
 export const bruteWarrior = defineEnemy({
   sprite: {
-    art: { kind: "static", file: "enemies/brute-warrior" },
+    art: creatureArt("brute-warrior"),
     outline: OUTLINED,
   },
   hitbox: { r: 0.45 },

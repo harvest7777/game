@@ -14,6 +14,7 @@ import type { Manifest } from "./assets";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
 import { MAX_REACH } from "./distance";
 import {
+  attackProgress,
   interpolatedPosition,
   marginOf,
   OUTLINE_THICKNESS,
@@ -46,8 +47,13 @@ const BOSS: SpriteArt = {
   clips: { idle: bossFrames("idle"), cast: bossFrames("cast") },
 };
 const ORB: SpriteArt = { kind: "static", file: "orb" };
+const IMP: SpriteArt = {
+  kind: "creature",
+  idle: ["imp-idle-0", "imp-idle-1"],
+  attack: ["imp-windup", "imp-release"],
+};
 const manifest: Manifest = {
-  sprites: [HERO, PLAIN_WALKER, BOSS, ORB],
+  sprites: [HERO, PLAIN_WALKER, BOSS, ORB, IMP],
   fonts: { bold: {}, regular: {} },
   walls: { top: "top", side: "side" },
 };
@@ -61,6 +67,10 @@ const files = [
   ...bossFrames("idle"),
   ...bossFrames("cast"),
   "orb",
+  "imp-idle-0",
+  "imp-idle-1",
+  "imp-windup",
+  "imp-release",
   "top",
   "side",
 ];
@@ -546,5 +556,66 @@ describe("marginOf", () => {
       },
     };
     expect(marginOf(sprite)).toBe(MAX_REACH);
+  });
+});
+
+describe("creature art", () => {
+  // The test weapon fires 4 times a second: 0.25 s between shots, so the
+  // swing reaches 0.1 s (40% of that) either side of each shot.
+  function creature(cooldown: number, hunting = true) {
+    const { world, view } = setup();
+    const e = addAt(world, CENTER, { art: IMP, layer: "enemy" });
+    world.components.shooter.set(e, { weapon: testWeapon(), cooldown });
+    if (hunting) world.components.target.set(e, spawn(world));
+    return { world, view, e };
+  }
+
+  it("loops its idle frames between shots", () => {
+    const { world, view } = creature(0.15);
+    const at = (time: number) => fileOf(draw(world, view, 1, time)[0]);
+    // Entity 0 has no offset, so frames turn over every third of a second.
+    expect(at(0)).toBe("imp-idle-0");
+    expect(at(0.4)).toBe("imp-idle-1");
+  });
+
+  it("winds up just before a shot", () => {
+    const { world, view } = creature(0.05);
+    expect(fileOf(draw(world, view)[0])).toBe("imp-windup");
+  });
+
+  it("releases just after a shot", () => {
+    const { world, view } = creature(0.2);
+    expect(fileOf(draw(world, view)[0])).toBe("imp-release");
+  });
+
+  it("without a target, just idles", () => {
+    const { world, view } = creature(0, false);
+    expect(fileOf(draw(world, view)[0])).toBe("imp-idle-0");
+  });
+});
+
+describe("attackProgress", () => {
+  function shooter(cooldown: number, rate: number) {
+    const world = createWorld(createTiles(1, 1));
+    const e = spawn(world);
+    world.components.shooter.set(e, {
+      weapon: testWeapon({ rate }),
+      cooldown,
+    });
+    world.components.target.set(e, spawn(world));
+    return { world, e };
+  }
+
+  it("is half way at the moment of the shot", () => {
+    const { world, e } = shooter(1, 1);
+    // Cooldown 1 at 1 shot a second: it just fired.
+    expect(attackProgress(world, e)).toBeCloseTo(0.5);
+  });
+
+  it("reaches at most 0.3 s either side of a slow shooter's shots", () => {
+    const { world, e } = shooter(0.3, 1);
+    expect(attackProgress(world, e)).toBeCloseTo(0);
+    const later = shooter(0.31, 1);
+    expect(attackProgress(later.world, later.e)).toBeUndefined();
   });
 });

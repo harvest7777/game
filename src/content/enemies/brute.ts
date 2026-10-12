@@ -2,11 +2,11 @@ import { defineEnemy } from "../../ecs/enemy/definitions";
 import { STAT, stat } from "../../ecs/stats/components";
 import { bruteLoot } from "../loot/pools";
 import { bruteShotgun } from "../weapons/bruteShotgun";
-import { OUTLINED } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 
 // A hulk that walks right up to you and blasts point-blank.
 export const brute = defineEnemy({
-  sprite: { art: { kind: "static", file: "enemies/brute" }, outline: OUTLINED },
+  sprite: { art: creatureArt("brute"), outline: OUTLINED },
   hitbox: { r: 0.45 },
   stats: {
     [STAT.HEALTH]: stat(1000),

@@ -11,9 +11,12 @@ const LAVA = { art: "lava", hazard: { damage: 10, every: 1 } };
 const IMP = testEnemy();
 const BOSS = testEnemy();
 
+const BRICK = { top: "brick-top", side: "brick-side" };
+
 const REGISTRIES: DungeonRegistries = {
   enemies: { imp: IMP, boss: BOSS },
   grounds: { stone: STONE, planks: PLANKS, lava: LAVA },
+  walls: { brick: BRICK },
 };
 
 const DEF: DungeonDef = {
@@ -100,6 +103,26 @@ describe("dungeonLevel", () => {
     const { world, spawn } = loadLevel(dungeonLevel(DEF, 2, REGISTRIES));
     expect(groundUnder(world.tiles, spawn)).toBe(STONE);
     expect(world.components.enemy.size).toBeGreaterThan(0);
+  });
+
+  it("fills the rock around the dungeon with void, not wall", () => {
+    const level = dungeonLevel(DEF, 1, REGISTRIES);
+    expect(level.legend[" "]).toEqual({ void: true });
+    expect(level.map[0].trim()).toBe("");
+  });
+
+  it("without a themed wall, raises the default wall", () => {
+    expect(dungeonLevel(DEF, 1, REGISTRIES).legend["#"]).toEqual({
+      wall: true,
+    });
+  });
+
+  it("raises the theme's wall", () => {
+    const def = { ...DEF, theme: { ...DEF.theme, wall: "brick" } };
+    expect(dungeonLevel(def, 1, REGISTRIES).legend["#"]).toEqual({
+      wall: true,
+      style: BRICK,
+    });
   });
 
   it("throws on an id the registries don't have", () => {

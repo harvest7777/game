@@ -2,12 +2,12 @@ import { defineEnemy } from "../../ecs/enemy/definitions";
 import { STAT, stat } from "../../ecs/stats/components";
 import { demonLoot } from "../loot/pools";
 import { demonSlash } from "../weapons/demonSlash";
-import { OUTLINED } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 
 // Dashes in and sweeps its blade: deadly up close, harmless at range.
 export const demonWarrior = defineEnemy({
   sprite: {
-    art: { kind: "static", file: "enemies/demon-warrior" },
+    art: creatureArt("demon-warrior"),
     outline: OUTLINED,
   },
   hitbox: { r: 0.4 },

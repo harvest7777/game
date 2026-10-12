@@ -1,7 +1,15 @@
 import { spawnEnemy } from "../enemy/spawn";
 import { spawnPortal } from "../portal/spawn";
 import type { Vec2 } from "../shared/physics/math";
-import { createTiles, setGround, setWall, type Tiles } from "../tiles";
+import {
+  createTiles,
+  setGround,
+  setVoid,
+  setWall,
+  type GroundDef,
+  type Tiles,
+  type WallDef,
+} from "../tiles";
 import { createWorld, type World } from "../world";
 import type { LevelDef } from "./definitions";
 import type { LootRuntime } from "../loot/runtime";
@@ -11,13 +19,24 @@ import type { LootRuntime } from "../loot/runtime";
 export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
   const { map, legend } = level;
   const width = map[0]?.length ?? 0;
-  // Each ground in the legend becomes a ground type, numbered in order.
+  // Each ground in the legend becomes a ground type, numbered in order, and
+  // each wall style a wall style, after the default.
   const grounds = [
     ...new Set(
-      Object.values(legend).flatMap((tile) => (tile.wall ? [] : [tile.ground])),
+      Object.values(legend).flatMap((tile): GroundDef[] =>
+        "ground" in tile ? [tile.ground] : [],
+      ),
     ),
   ];
-  const tiles = createTiles(width, map.length, grounds);
+  const styles = [
+    undefined,
+    ...new Set(
+      Object.values(legend).flatMap((tile): WallDef[] =>
+        tile.wall && tile.style ? [tile.style] : [],
+      ),
+    ),
+  ];
+  const tiles = createTiles(width, map.length, grounds, styles);
   const spawns: Vec2[] = [];
 
   map.forEach((row, y) => {
@@ -28,7 +47,11 @@ export function levelTiles(level: LevelDef): { tiles: Tiles; spawn: Vec2 } {
       const tile = legend[char];
       if (!tile) throw new Error(`${level.name}: unknown tile "${char}"`);
       if (tile.wall) {
-        setWall(tiles, x, y);
+        setWall(tiles, x, y, true, styles.indexOf(tile.style));
+        return;
+      }
+      if (tile.void) {
+        setVoid(tiles, x, y);
         return;
       }
       setGround(tiles, x, y, grounds.indexOf(tile.ground));

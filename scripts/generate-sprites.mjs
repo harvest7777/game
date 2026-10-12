@@ -815,6 +815,43 @@ SPRITES["tiles/cooled-lava"] = {
   },
 };
 
+// Abyss of Demons walls: a capstone top and a face of big bright bricks, so
+// they read apart from the darker, smaller-bricked floor.
+SPRITES["tiles/abyss-wall-top"] = {
+  rows: [
+    "cccccccc",
+    "cCCcccCc",
+    "cCccccCc",
+    "ccccCccc",
+    "cccCCccc",
+    "cCcccccc",
+    "cCcccCCc",
+    "cccccccc",
+  ],
+  colors: {
+    c: [150, 52, 40, 255], // capstone
+    C: [182, 76, 58, 255], // capstone highlight
+  },
+};
+SPRITES["tiles/abyss-wall-side"] = {
+  rows: [
+    "RRRRmRRR",
+    "rrrrmrrr",
+    "rrrrmrrr",
+    "mmmmmmmm",
+    "RRmRRRRR",
+    "rrmrrrrr",
+    "ddmddddd",
+    "mmmmmmmm",
+  ],
+  colors: {
+    R: [206, 74, 52, 255], // lit brick top
+    r: [176, 56, 40, 255], // brick
+    d: [130, 38, 28, 255], // brick in shadow
+    m: [40, 10, 10, 255], // mortar
+  },
+};
+
 // Abyss of Demons enemies, all facing the viewer.
 const DEMON_COLORS = {
   r: [196, 48, 40, 255], // demon skin
@@ -910,12 +947,174 @@ const DEMONS = {
     "RRR..RRR",
   ],
 };
-for (const [name, rows] of Object.entries(DEMONS)) {
-  SPRITES[name] = { rows, colors: DEMON_COLORS };
+// Each demon idles (a breath or a flap) and swings at each shot: a
+// wind-up glow, then the release. Frames are the base with a few pixels
+// changed, so the poses stay recognisably the same creature.
+function withPixels(rows, pixels) {
+  const grid = rows.map((row) => [...row]);
+  for (const [x, y, color] of pixels) grid[y][x] = color;
+  return grid.map((row) => row.join(""));
 }
-// A small living flame Malphas calls in.
-SPRITES["enemies/malphas-flamer"] = {
-  rows: [
+
+// Breathing: everything above the legs sinks a pixel.
+function breathe(rows) {
+  const blank = ".".repeat(rows[0].length);
+  return [blank, ...rows.slice(0, rows.length - 3), ...rows.slice(-2)];
+}
+
+const DEMON_POSES = {
+  "enemies/imp": {
+    idle: [
+      "........",
+      "w.h..h.w",
+      "wwrrrrww",
+      ".wryryw.",
+      "..rrrr..",
+      "...RR...",
+      "..r..r..",
+      "........",
+    ],
+    windup: [
+      [3, 3, "F"],
+      [5, 3, "F"],
+      [3, 4, "f"],
+      [4, 4, "f"],
+    ],
+    release: [
+      [3, 4, "F"],
+      [4, 4, "F"],
+      [2, 5, "f"],
+      [3, 5, "F"],
+      [4, 5, "F"],
+      [5, 5, "f"],
+    ],
+  },
+  "enemies/demon": {
+    windup: [
+      [0, 3, "f"],
+      [7, 3, "f"],
+    ],
+    release: [
+      [0, 2, "f"],
+      [7, 2, "f"],
+      [0, 3, "F"],
+      [7, 3, "F"],
+      [0, 5, "."],
+      [7, 5, "."],
+    ],
+  },
+  "enemies/demon-warrior": {
+    windup: [
+      [7, 0, "F"],
+      [7, 1, "f"],
+      [7, 2, "f"],
+    ],
+    release: [
+      [7, 0, "."],
+      [7, 1, "."],
+      [7, 2, "."],
+      [7, 3, "."],
+      [7, 4, "n"],
+      [7, 5, "s"],
+      [6, 6, "s"],
+      [5, 7, "F"],
+      [6, 7, "f"],
+    ],
+  },
+  "enemies/demon-mage": {
+    idle: [
+      [7, 2, "."],
+      [7, 1, "o"],
+    ],
+    windup: [
+      [6, 1, "o"],
+      [7, 1, "o"],
+      [7, 2, "O"],
+      [6, 3, "o"],
+      [7, 3, "o"],
+    ],
+    release: [
+      [3, 1, "O"],
+      [4, 1, "O"],
+      [7, 0, "O"],
+      [5, 2, "O"],
+      [7, 2, "O"],
+      [7, 4, "O"],
+      [6, 1, "o"],
+      [6, 3, "o"],
+    ],
+  },
+  "enemies/brute": {
+    windup: [
+      [0, 4, "G"],
+      [0, 5, "G"],
+      [7, 4, "G"],
+      [7, 5, "G"],
+      [0, 1, "g"],
+      [0, 2, "g"],
+      [7, 1, "g"],
+      [7, 2, "g"],
+    ],
+    release: [
+      [0, 5, "F"],
+      [7, 5, "F"],
+      [0, 6, "f"],
+      [7, 6, "f"],
+      [1, 7, "f"],
+      [6, 7, "f"],
+    ],
+  },
+  "enemies/malphas-protector": {
+    windup: [
+      [2, 2, "F"],
+      [5, 2, "F"],
+      [0, 4, "f"],
+      [7, 4, "f"],
+    ],
+    release: [
+      [3, 3, "F"],
+      [4, 3, "F"],
+      [0, 3, "f"],
+      [7, 3, "f"],
+      [0, 4, "F"],
+      [7, 4, "F"],
+    ],
+  },
+};
+// Brute warriors swing like brutes.
+DEMON_POSES["enemies/brute-warrior"] = DEMON_POSES["enemies/brute"];
+
+const POSE_COLORS = {
+  ...DEMON_COLORS,
+  f: [255, 140, 40, 255], // fire winding up
+  F: [255, 228, 120, 255], // fire let loose
+  O: [255, 200, 250, 255], // mage burst
+};
+
+function writePoses(name, rows, poses, colors) {
+  const idle = Array.isArray(poses.idle?.[0])
+    ? withPixels(rows, poses.idle)
+    : (poses.idle ?? breathe(rows));
+  const frames = {
+    "idle-0": rows,
+    "idle-1": idle,
+    "attack-0": withPixels(rows, poses.windup),
+    "attack-1": withPixels(rows, poses.release),
+  };
+  for (const [frame, frameRows] of Object.entries(frames)) {
+    SPRITES[`${name}/${frame}`] = { rows: frameRows, colors };
+  }
+}
+
+for (const [name, rows] of Object.entries(DEMONS)) {
+  writePoses(name, rows, DEMON_POSES[name], POSE_COLORS);
+}
+
+// A small living flame Malphas calls in. It flickers, swells as it winds
+// up, and bursts as it breathes.
+writePoses(
+  "enemies/malphas-flamer",
+  [
     "...y....",
     "..yoy...",
     ".yoOoy..",
@@ -925,13 +1124,35 @@ SPRITES["enemies/malphas-flamer"] = {
     "...o....",
     "........",
   ],
-  colors: {
+  {
+    idle: [
+      [3, 0, "."],
+      [4, 0, "y"],
+      [2, 1, "."],
+      [5, 1, "y"],
+    ],
+    windup: [
+      [3, 2, "w"],
+      [2, 3, "w"],
+      [4, 3, "w"],
+      [3, 4, "w"],
+    ],
+    release: [
+      [0, 3, "y"],
+      [6, 3, "y"],
+      [1, 6, "y"],
+      [5, 6, "y"],
+      [3, 7, "y"],
+      [3, 3, "y"],
+    ],
+  },
+  {
     o: [240, 110, 30, 255], // flame
     O: [255, 170, 60, 255], // bright flame
     y: [255, 220, 90, 255], // tip
     w: [255, 250, 230, 255], // core
   },
-};
+);
 
 // Abyss shots. Projectile art points right.
 SPRITES["projectiles/fireball"] = {

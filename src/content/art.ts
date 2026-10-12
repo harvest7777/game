@@ -6,6 +6,7 @@ import { projectiles } from "./projectiles";
 import { items } from "./items";
 import { lootBags } from "./loot/bags";
 import { portals } from "./portals";
+import { walls } from "./walls";
 
 // Every piece of art the game's content shows, each once, for the atlas to
 // load.
@@ -29,6 +30,10 @@ export function contentArt(): SpriteArt[] {
       })),
       ...lootBags.map((bag) => bag.art),
       ...Object.values(portals).map((portal) => portal.sprite.art),
+      ...Object.values(walls).flatMap((wall): SpriteArt[] => [
+        { kind: "static", file: wall.top },
+        { kind: "static", file: wall.side },
+      ]),
     ]),
   ];
 }

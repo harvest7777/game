@@ -5,7 +5,10 @@ import {
   groundSpeedScale,
   isWall,
   setGround,
+  setVoid,
   setWall,
+  isVoid,
+  wallStyleAt,
   wallsInBox,
 } from "./tiles";
 
@@ -78,5 +81,30 @@ describe("groundSpeedScale", () => {
     setGround(tiles, 1, 0, 1);
     expect(groundSpeedScale(tiles, { x: 0.5, y: 0.5 })).toBe(1);
     expect(groundSpeedScale(tiles, { x: 1.9, y: 0.2 })).toBe(0.8);
+  });
+});
+
+describe("void", () => {
+  it("blocks like a wall but isn't a raised wall", () => {
+    const tiles = createTiles(3, 3);
+    setVoid(tiles, 1, 1);
+    expect(isWall(tiles, 1, 1)).toBe(true);
+    expect(isVoid(tiles, 1, 1)).toBe(true);
+    expect(wallStyleAt(tiles, 1, 1)).toBe(-1);
+  });
+
+  it("doesn't count off the map, which isn't drawn at all", () => {
+    expect(isVoid(createTiles(3, 3), -1, 0)).toBe(false);
+  });
+});
+
+describe("wallStyleAt", () => {
+  it("is the style a wall was raised with", () => {
+    const tiles = createTiles(3, 3);
+    setWall(tiles, 0, 0);
+    setWall(tiles, 1, 0, true, 2);
+    expect(wallStyleAt(tiles, 0, 0)).toBe(0);
+    expect(wallStyleAt(tiles, 1, 0)).toBe(2);
+    expect(wallStyleAt(tiles, 2, 0)).toBe(-1);
   });
 });

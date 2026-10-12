@@ -1,4 +1,5 @@
 import { defineEnemy } from "../../ecs/enemy/definitions";
+import { creatureArt } from "./shared";
 import { STAT, stat } from "../../ecs/stats/components";
 import { protectorLoot } from "../loot/pools";
 import { demonVolley } from "../weapons/demonVolley";
@@ -9,7 +10,7 @@ import { protectorPinwheel } from "../weapons/protectorPinwheel";
 // to hurl fireballs straight at you.
 export const malphasProtector = defineEnemy({
   sprite: {
-    art: { kind: "static", file: "enemies/malphas-protector" },
+    art: creatureArt("malphas-protector"),
     scale: 2,
     outline: { color: [0, 0, 0, 1], glow: { radius: 1, pulseHz: 0.6 } },
   },

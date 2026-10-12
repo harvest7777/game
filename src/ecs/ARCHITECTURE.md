@@ -26,7 +26,7 @@ To add something, add its file and list it in its folder's index.
 
 # Levels
 
-A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile, and its `legend` says what each character is: a wall, or a `GroundDef` to walk on, which can be the spawn (exactly one). Levels share the standard legend in `content/levels/legend.ts`: `#` wall, `,` grass, `=` wood, `~` water, `P` the wood characters spawn on. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
+A `LevelDef` (one file each under `src/content/levels/`) draws its map as text, one character per tile, and its `legend` says what each character is: a wall (optionally in its own `WallDef` style, a top and side image), void (black, flat, and as solid as a wall), or a `GroundDef` to walk on, which can be the spawn (exactly one). Levels share the standard legend in `content/levels/legend.ts`: `#` wall, `,` grass, `=` wood, `~` water, `P` the wood characters spawn on. A level can also list enemies to place. `loadLevel` builds a fresh world on the map, places the enemies and returns the spawn point; a map that breaks the rules throws as it loads.
 
 A `GroundDef` (one file each under `src/content/grounds/`) is its tile art, an optional `speedScale` and an optional `hazard`. The tiles keep the level's grounds (`tiles.grounds`, indexed by each tile's ground type), so the renderer draws each tile's own art and walking speed is scaled by the ground underfoot: water slows the player and enemies to half speed. Projectiles don't care.
 
@@ -58,7 +58,7 @@ A stage that can't satisfy its spec fails the attempt, and the next attempt star
 
 Every variable piece is a table keyed by `kind` (`LOOPS`, `SHAPES`, `PLACERS`, `ROUTERS`, `FEATURES`, `PLACEMENTS`), so a new kind is a new entry. `parseDungeonDef` checks a definition field by field against matching tables of checks, so a new kind without a check doesn't compile, and reports every problem with its path (`rooms.normal[1].shape.w: min is more than max`), unknown fields and unknown ids included. Content indexes check their files as they load (`dungeonDef`), and content tests build each dungeon from many seeds.
 
-`dungeonLevel(def, seed, registries)` (`ecs/level/dungeon.ts`) is the only place dungeons meet the game: it generates the dungeon and turns it into an ordinary `LevelDef`, drawing each cell kind as the theme's ground (liquid and accent fall back to floor) and resolving enemy ids through the registries. `loadLevel` takes it from there.
+`dungeonLevel(def, seed, registries)` (`ecs/level/dungeon.ts`) is the only place dungeons meet the game: it generates the dungeon and turns it into an ordinary `LevelDef`, drawing each cell kind as the theme's ground (liquid and accent fall back to floor), raising walls in the theme's `wall` style (or the default), leaving the rock around everything as void, and resolving enemy, ground and wall ids through the registries. `loadLevel` takes it from there.
 
 # Debug panel
 
@@ -243,7 +243,7 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 ## Draw order and depth
 
 1. Ground tiles: rotate with the camera, farthest back. Tiles outside the map aren't drawn.
-2. Walls: cubes one tile tall. Each wall draws the side faces that face the viewer after rotation and don't touch another wall in the map, then its raised top. Walls are sorted back to front by screen y.
+2. Walls: cubes one tile tall, each in its own style (the default wall unless its legend gave one). Each wall draws the side faces that face the viewer after rotation and don't touch another wall in the map, then its raised top; faces looking out at void show. Walls are sorted back to front by screen y. Void tiles draw nothing, leaving the black background.
 3. Sprites: enemies, then projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
 
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
@@ -251,6 +251,8 @@ Every quad carries a depth from how far down the screen it stands (a wall's tile
 Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. `Sprite.scale` draws the art bigger or smaller, outline included.
 
 Walkers with `attack` art thrust their weapon for the first half of each shot interval, so the attack pulses with the fire rate. Only the body changes: the legs keep the walk cycle, so attacking while walking works in every direction. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+
+`creature` art is for things that only face the viewer, like the Abyss demons: an `idle` loop (3 frames a second, offset per entity so a pack doesn't move in step) and an `attack` swing played around each shot while it has a target, its first half winding up to the shot and the rest releasing after, up to 0.3 s each way (40% of the shot interval for fast shooters). It's worked out from the shooter's cooldown alone, so the simulation knows nothing about it.
 
 ## Health bars
 

@@ -27,7 +27,13 @@ describe("parseDungeonDef", () => {
 
   it("accepts every optional field", () => {
     const value = minimal();
-    value.theme = { floor: "a", corridor: "b", liquid: "c", accent: "d" };
+    value.theme = {
+      floor: "a",
+      corridor: "b",
+      liquid: "c",
+      accent: "d",
+      wall: "e",
+    };
     value.rooms = {
       ...(value.rooms as object),
       deadEnd: [
@@ -144,6 +150,14 @@ describe("parseDungeonDef", () => {
     expect(errorsOf(value, { enemies: ["imp"], grounds: ["stone"] })).toEqual([
       'rooms.goal[0].spawns[0].pick[0].enemy: unknown id "malphas"',
     ]);
+  });
+
+  it("checks the theme's wall against known walls, not grounds", () => {
+    const value = minimal();
+    value.theme = { floor: "stone", corridor: "stone", wall: "brick" };
+    expect(
+      errorsOf(value, { grounds: ["stone", "brick"], walls: ["marble"] }),
+    ).toEqual(['theme.wall: unknown id "brick"']);
   });
 
   it("only lets features paint cells something can stand on", () => {

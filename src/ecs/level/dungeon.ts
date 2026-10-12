@@ -2,7 +2,7 @@ import type { DungeonDef, ThemedCell } from "../../dungeon/definition";
 import { generateDungeon } from "../../dungeon/generate";
 import { kindAt, type CellKind } from "../../dungeon/grid";
 import type { EnemyDef } from "../enemy/definitions";
-import type { GroundDef } from "../tiles";
+import type { GroundDef, WallDef } from "../tiles";
 import type { LevelDef, TileDef } from "./definitions";
 
 // Turns a generated dungeon into a level: the one place dungeon ids meet
@@ -13,12 +13,13 @@ import type { LevelDef, TileDef } from "./definitions";
 export type DungeonRegistries = {
   enemies: Readonly<Record<string, EnemyDef>>;
   grounds: Readonly<Record<string, GroundDef>>;
+  walls: Readonly<Record<string, WallDef>>;
 };
 
 // The map character each kind of cell is drawn with. Rock nothing reaches
-// is wall too.
+// is void: black, and as solid as a wall.
 const CHARS: Record<CellKind, string> = {
-  void: "#",
+  void: " ",
   wall: "#",
   floor: ".",
   corridor: ",",
@@ -40,7 +41,10 @@ export function dungeonLevel(
     lookup(registries.grounds, def.theme[cell] ?? def.theme.floor, "ground");
 
   const legend: Record<string, TileDef> = {
-    [CHARS.wall]: { wall: true },
+    [CHARS.void]: { void: true },
+    [CHARS.wall]: def.theme.wall
+      ? { wall: true, style: lookup(registries.walls, def.theme.wall, "wall") }
+      : { wall: true },
     [CHARS.floor]: { ground: ground("floor") },
     [CHARS.corridor]: { ground: ground("corridor") },
     [CHARS.liquid]: { ground: ground("liquid") },

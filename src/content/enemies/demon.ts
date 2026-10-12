@@ -2,11 +2,11 @@ import { defineEnemy } from "../../ecs/enemy/definitions";
 import { STAT, stat } from "../../ecs/stats/components";
 import { demonLoot } from "../loot/pools";
 import { demonVolley } from "../weapons/demonVolley";
-import { OUTLINED } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 
 // Walks you down and lobs fans of heavy fireballs.
 export const demon = defineEnemy({
-  sprite: { art: { kind: "static", file: "enemies/demon" }, outline: OUTLINED },
+  sprite: { art: creatureArt("demon"), outline: OUTLINED },
   hitbox: { r: 0.4 },
   stats: {
     [STAT.HEALTH]: stat(700),

@@ -29,8 +29,17 @@ export type AnimatedArt<Clip extends string = string> = {
   clips: Record<Clip, SpriteFile[]>;
 };
 
+// A creature that loops `idle` frames, and plays `attack` around each
+// shot: the first half of the frames winding up before it, the rest
+// releasing after, so the swing lands with the shot.
+export type CreatureArt = {
+  kind: "creature";
+  idle: SpriteFile[];
+  attack: SpriteFile[];
+};
+
 export type SpriteArt<Clip extends string = string> =
-  WalkerArt | StaticArt | AnimatedArt<Clip>;
+  WalkerArt | StaticArt | AnimatedArt<Clip> | CreatureArt;
 
 // The clip an animated sprite shows when nothing is playing.
 export const IDLE_CLIP = "idle";

@@ -4,7 +4,11 @@ import type { Color, Sprite, SpriteLayer } from "../ecs/sprite/components";
 import type { Vec2 } from "../ecs/shared/physics/math";
 import { lerpAngle } from "./angle";
 import { regionOf, type Art } from "./art";
-import { IDLE_CLIP, type SpriteFile } from "../ecs/sprite/art";
+import {
+  IDLE_CLIP,
+  type CreatureArt,
+  type SpriteFile,
+} from "../ecs/sprite/art";
 import type { QuadBuffer } from "./quads";
 import { depthOf, worldToScreen, type View } from "./view";
 import { shotsPerSecond } from "../ecs/stats/runtime";
@@ -89,11 +93,13 @@ export function spritePixels(
   const file =
     spriteArt.kind === "static"
       ? spriteArt.file
-      : spriteArt.kind === "animated"
-        ? spriteArt.clips[
-            world.components.animation.get(entity)?.clip ?? IDLE_CLIP
-          ]?.[0]
-        : spriteArt.front[0];
+      : spriteArt.kind === "creature"
+        ? spriteArt.idle[0]
+        : spriteArt.kind === "animated"
+          ? spriteArt.clips[
+              world.components.animation.get(entity)?.clip ?? IDLE_CLIP
+            ]?.[0]
+          : spriteArt.front[0];
   if (!file) return fallback;
   const region = regionOf(art, file);
   return { width: region.w * scale, height: region.h * scale };
@@ -227,6 +233,12 @@ function pickFrame(
   const spriteArt = sprite.art;
   if (spriteArt.kind === "static")
     return { file: spriteArt.file, flipX: false };
+  if (spriteArt.kind === "creature") {
+    return {
+      file: creatureFrame(world, entity, spriteArt, time),
+      flipX: false,
+    };
+  }
   if (spriteArt.kind === "animated") {
     const animation = world.components.animation.get(entity);
     const clip = spriteArt.clips[animation?.clip ?? IDLE_CLIP];
@@ -269,6 +281,49 @@ function pickFrame(
   }
   const frames = sy < 0 ? set.back : set.front;
   return { file: frames[frame], flipX: false };
+}
+
+// Frames per second of a creature's idle loop.
+const IDLE_FPS = 3;
+
+// The longest a creature's attack winds up before a shot, and lingers
+// after it, in seconds. Fast shooters use less: at most 40% of the time
+// between shots each way.
+const ATTACK_REACH = 0.3;
+
+// A creature's frame: its attack while a shot is near, if it's after
+// something, otherwise its idle loop, offset per entity so a pack doesn't
+// flap in step.
+function creatureFrame(
+  world: World,
+  entity: Entity,
+  art: CreatureArt,
+  time: number,
+): SpriteFile {
+  const progress = attackProgress(world, entity);
+  if (progress !== undefined && art.attack.length) {
+    const i = Math.floor(progress * art.attack.length);
+    return art.attack[Math.min(art.attack.length - 1, i)];
+  }
+  const step = Math.floor(time * IDLE_FPS + entity * 0.37);
+  return art.idle[step % art.idle.length];
+}
+
+// How far through its attack swing a shooter with a target is: 0 to 0.5
+// winding up to the shot, 0.5 to 1 after it. Undefined between swings.
+export function attackProgress(
+  world: World,
+  entity: Entity,
+): number | undefined {
+  const shooter = world.components.shooter.get(entity);
+  if (!shooter || !world.components.target.has(entity)) return undefined;
+  const interval = 1 / shotsPerSecond(world, entity, shooter.weapon.rate);
+  const reach = Math.min(ATTACK_REACH, interval * 0.4);
+  const untilShot = shooter.cooldown;
+  const sinceShot = interval - shooter.cooldown;
+  if (untilShot <= reach) return 0.5 - (untilShot / reach) * 0.5;
+  if (sinceShot < reach) return 0.5 + (sinceShot / reach) * 0.5;
+  return undefined;
 }
 
 // A shooter thrusts its weapon for the first half of each shot interval, so

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { testEnemy } from "../../testing/defs";
-import { groundUnder, isWall } from "../tiles";
+import { groundUnder, isVoid, isWall, wallStyleAt } from "../tiles";
 import type { LevelDef } from "./definitions";
 import { levelTiles, loadLevel } from "./load";
 
@@ -98,5 +98,35 @@ describe("loadLevel portals", () => {
     const [[entity, { def }]] = [...world.components.portal];
     expect(def).toBe(portal);
     expect(world.components.position.get(entity)).toEqual({ x: 1.5, y: 1.5 });
+  });
+});
+
+describe("levelTiles walls and void", () => {
+  const BRICK = { top: "brick-top", side: "brick-side" };
+  const level: LevelDef = {
+    name: "styled",
+    legend: {
+      ...LEGEND,
+      b: { wall: true, style: BRICK },
+      " ": { void: true },
+    },
+    map: [
+      " ####", //
+      " b.Pb",
+      " bbbb",
+    ],
+  };
+
+  it("keeps each wall's style, with plain walls drawn the default way", () => {
+    const { tiles } = levelTiles(level);
+    expect(tiles.wallDefs[wallStyleAt(tiles, 1, 0)]).toBeUndefined();
+    expect(tiles.wallDefs[wallStyleAt(tiles, 1, 1)]).toBe(BRICK);
+  });
+
+  it("makes void that blocks but isn't a raised wall", () => {
+    const { tiles } = levelTiles(level);
+    expect(isWall(tiles, 0, 1)).toBe(true);
+    expect(isVoid(tiles, 0, 1)).toBe(true);
+    expect(wallStyleAt(tiles, 0, 1)).toBe(-1);
   });
 });

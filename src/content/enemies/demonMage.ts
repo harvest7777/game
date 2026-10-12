@@ -2,12 +2,12 @@ import { defineEnemy } from "../../ecs/enemy/definitions";
 import { STAT, stat } from "../../ecs/stats/components";
 import { demonLoot } from "../loot/pools";
 import { mageRing } from "../weapons/mageRing";
-import { OUTLINED } from "./shared";
+import { creatureArt, OUTLINED } from "./shared";
 
 // Keeps its distance, casting slow rings of orbs that speed up.
 export const demonMage = defineEnemy({
   sprite: {
-    art: { kind: "static", file: "enemies/demon-mage" },
+    art: creatureArt("demon-mage"),
     outline: OUTLINED,
   },
   hitbox: { r: 0.35 },

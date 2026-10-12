@@ -19,14 +19,22 @@ export type ThemedCell = (typeof THEMED_CELLS)[number];
 export type DungeonDef = DungeonSpec & {
   name: string;
   // The ground id each kind of cell is drawn as. Liquid and accent cells
-  // are plain floor unless the theme says otherwise.
-  theme: { floor: string; corridor: string; liquid?: string; accent?: string };
+  // are plain floor unless the theme says otherwise. `wall` is a wall id;
+  // without one, walls are the default wall.
+  theme: {
+    floor: string;
+    corridor: string;
+    liquid?: string;
+    accent?: string;
+    wall?: string;
+  };
 };
 
 // Ids the dungeon may name, when they're known.
 export type KnownIds = {
   enemies?: readonly string[];
   grounds?: readonly string[];
+  walls?: readonly string[];
 };
 
 export type ParseResult =
@@ -329,11 +337,12 @@ function checkDungeon(c: Checker, value: unknown): void {
     "theme",
     f.theme,
     ["floor", "corridor"],
-    ["liquid", "accent"],
+    ["liquid", "accent", "wall"],
   );
   if (theme) {
     for (const [cell, id] of Object.entries(theme)) {
-      c.id(`theme.${cell}`, id, c.known.grounds);
+      const known = cell === "wall" ? c.known.walls : c.known.grounds;
+      c.id(`theme.${cell}`, id, known);
     }
   }
 

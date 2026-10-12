@@ -1,12 +1,15 @@
 import type { EnemyDef } from "../enemy/definitions";
 import type { Vec2 } from "../shared/physics/math";
-import type { GroundDef } from "../tiles";
+import type { GroundDef, WallDef } from "../tiles";
 import type { PortalDef } from "../portal/definitions";
 
-// What one map character stands for: a wall, or a ground to walk on, which
-// can be where characters spawn.
+// What one map character stands for: a wall (drawn as `style`, or the
+// default wall), empty void that blocks like a wall but lies flat and black,
+// or a ground to walk on, which can be where characters spawn.
 export type TileDef =
-  { wall: true } | { wall?: false; ground: GroundDef; spawn?: boolean };
+  | { wall: true; style?: WallDef }
+  | { void: true; wall?: false }
+  | { wall?: false; void?: false; ground: GroundDef; spawn?: boolean };
 
 // A place to play: its map, drawn as text, and anything that starts in it.
 // Each level is its own file under src/content/levels.

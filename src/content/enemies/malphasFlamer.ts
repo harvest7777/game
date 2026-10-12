@@ -1,4 +1,5 @@
 import { defineEnemy } from "../../ecs/enemy/definitions";
+import { creatureArt } from "./shared";
 import { STAT, stat } from "../../ecs/stats/components";
 import { flamerBreath } from "../weapons/flamerBreath";
 
@@ -6,7 +7,7 @@ import { flamerBreath } from "../weapons/flamerBreath";
 // fire. Drops nothing.
 export const malphasFlamer = defineEnemy({
   sprite: {
-    art: { kind: "static", file: "enemies/malphas-flamer" },
+    art: creatureArt("malphas-flamer"),
     outline: { color: [0.4, 0.05, 0, 1], glow: { radius: 1, pulseHz: 3 } },
   },
   hitbox: { r: 0.3 },

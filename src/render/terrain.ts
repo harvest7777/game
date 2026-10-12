@@ -1,4 +1,4 @@
-import { groundAt, isWall, type Tiles } from "../ecs/tiles";
+import { groundAt, isVoid, wallStyleAt, type Tiles } from "../ecs/tiles";
 import { regionOf, type Art } from "./art";
 import type { PackedRect } from "./atlas";
 import type { QuadBuffer } from "./quads";
@@ -15,8 +15,9 @@ import {
 export const WALL_HEIGHT = 1;
 
 // Ground tiles inside the map that are on screen. Tiles outside the map
-// aren't drawn (they still block movement). Ground rotates with the camera
-// and sits at the farthest depth, under everything.
+// and void tiles aren't drawn (they still block movement), leaving the
+// black background. Ground rotates with the camera and sits at the farthest
+// depth, under everything.
 export function pushGround(
   out: QuadBuffer,
   tiles: Tiles,
@@ -28,6 +29,7 @@ export function pushGround(
 
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
+      if (isVoid(tiles, x, y)) continue;
       const type = groundAt(tiles, x, y);
       const ground = tiles.grounds[type];
       if (!ground) throw new Error(`no definition for ground type ${type}`);
@@ -39,8 +41,9 @@ export function pushGround(
 // Raised walls on screen, drawn back to front (top of the screen first) so
 // nearer walls cover farther ones. Each wall draws its visible side faces,
 // then its top. A side face shows only if it faces the viewer after rotation
-// and isn't against another wall. Faces toward the void past the map edge
-// still show, even though that void blocks movement.
+// and isn't against another wall. Faces toward void, in the map or past its
+// edge, still show, even though void blocks movement. Each wall is drawn in
+// its own style.
 export function pushWalls(
   out: QuadBuffer,
   tiles: Tiles,
@@ -59,23 +62,33 @@ export function pushWalls(
     tiles,
   );
 
-  const walls: { x: number; y: number; depth: number }[] = [];
+  const walls: { x: number; y: number; style: number; depth: number }[] = [];
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
-      if (!isWall(tiles, x, y)) continue;
+      const style = wallStyleAt(tiles, x, y);
+      if (style < 0) continue;
       const depth = worldToScreen(view, { x: x + 0.5, y: y + 0.5 }).y;
-      walls.push({ x, y, depth });
+      walls.push({ x, y, style, depth });
     }
   }
   walls.sort((a, b) => a.depth - b.depth);
 
   const basis = screenBasis(view);
   const lift = WALL_HEIGHT * view.pixelsPerTile;
-  const side = regionOf(art, art.manifest.walls.side);
-  const top = regionOf(art, art.manifest.walls.top);
+  // Each style's art, looked up once; styles without a definition use the
+  // default wall.
+  const looks = tiles.wallDefs.map((def) => {
+    const { top, side } = def ?? art.manifest.walls;
+    return { top: regionOf(art, top), side: regionOf(art, side) };
+  });
+  const fallback = {
+    top: regionOf(art, art.manifest.walls.top),
+    side: regionOf(art, art.manifest.walls.side),
+  };
 
   for (const wall of walls) {
     const { x, y } = wall;
+    const { top, side } = looks[wall.style] ?? fallback;
     // The whole wall sits at its tile center's depth; a sprite standing in
     // front of that is drawn over it, one behind is hidden by it.
     const depth = depthOf(view, wall.depth);
@@ -175,11 +188,10 @@ function pushTile(
   );
 }
 
-// Unlike isWall, the void outside the map doesn't count: it isn't drawn, so
-// a wall face looking out at it must be.
+// Only a raised wall hides a face: one looking out at void or past the map
+// edge, neither of which is drawn, must show.
 function isWallInMap(tiles: Tiles, x: number, y: number): boolean {
-  const inMap = x >= 0 && y >= 0 && x < tiles.width && y < tiles.height;
-  return inMap && isWall(tiles, x, y);
+  return wallStyleAt(tiles, x, y) >= 0;
 }
 
 function clampToMap(rect: Rect, tiles: Tiles): Rect {
