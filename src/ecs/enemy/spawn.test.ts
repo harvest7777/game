@@ -29,6 +29,11 @@ describe("spawnEnemy", () => {
     });
   });
 
+  it("starts out idle with a fresh memory", () => {
+    const { entity, c } = spawnAt("slime");
+    expect(c.brain.get(entity)).toEqual({ mode: "idle", memory: { time: 0 } });
+  });
+
   it("draws on the enemy layer", () => {
     const { entity, c } = spawnAt("slime");
     expect(c.sprite.get(entity)).toMatchObject({

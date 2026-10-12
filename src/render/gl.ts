@@ -159,8 +159,8 @@ void main() {
 
 export type Renderer = {
   // Draws a frame from one upload in up to three instanced calls (see
-  // buildFrame): terrain writes depth, sprites test against it, and UI and
-  // debug overlays ignore it. Width/height are the canvas's pixel size; time
+  // buildFrame): terrain writes depth, the sprite section tests against it,
+  // and debug overlays ignore it. Width/height are the canvas's pixel size; time
   // is seconds, for glow pulsing.
   draw(
     quads: QuadBuffer,
@@ -256,27 +256,27 @@ export function createRenderer(
         gl.DYNAMIC_DRAW,
       );
 
-      const { terrain, sprites, ui, debug } = sections;
+      const { terrain, sprites, debug } = sections;
 
       // Ground and walls, back to front, recording how near each pixel is.
       gl.enable(gl.DEPTH_TEST);
       startAt(0);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, terrain);
 
-      // Sprites in layer order, hidden only where a nearer wall covers them.
-      // They don't write depth so they never hide each other that way.
+      // Health bars then sprites in layer order, hidden only where a nearer
+      // wall covers them. They don't write depth so they never hide each
+      // other that way.
       if (sprites > 0) {
         gl.depthMask(false);
         startAt(terrain);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sprites);
       }
 
-      // UI and debug overlays over everything, in one call since they
-      // follow each other in the buffer.
-      if (ui + debug > 0) {
+      // Debug overlays over everything.
+      if (debug > 0) {
         gl.disable(gl.DEPTH_TEST);
         startAt(terrain + sprites);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, ui + debug);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, debug);
       }
       gl.bindVertexArray(null);
     },

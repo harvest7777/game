@@ -35,6 +35,9 @@ const PALETTE = {
   L: [170, 240, 170, 255], // slime shine
   D: [50, 130, 60, 255], // slime shadow
   O: [230, 225, 210, 255], // bone
+  u: [140, 90, 60, 255], // boar hide
+  U: [100, 60, 40, 255], // boar shadow
+  i: [245, 240, 225, 255], // boar tusk
   k: [230, 60, 220, 255], // prejudice shard
   K: [255, 190, 250, 255], // prejudice core
   g: [74, 107, 58, 255], // floor
@@ -147,6 +150,17 @@ const SPRITES = {
     "llllllll",
     "DllllllD",
     ".DDDDDD.",
+  ],
+  // A boar facing the viewer, tusks out.
+  "enemies/boar": [
+    "........",
+    ".U....U.",
+    ".uuuuuu.",
+    "uueuueuu",
+    "uuuUUuuu",
+    "iuUddUui",
+    ".uuuuuu.",
+    ".UU..UU.",
   ],
   // A skeleton with its bow drawn on the right.
   "enemies/archer": [

@@ -76,7 +76,7 @@ describe("cameraAngle", () => {
 });
 
 describe("buildFrame", () => {
-  it("puts terrain, sprites, UI, then debug overlays, and counts each", () => {
+  it("puts terrain, health bars, sprites, then debug overlays, and counts each", () => {
     const { world, player } = worldWithPlayer();
     world.components.health.set(player, { hp: 50, max: 100 });
     setWall(world.tiles, 11, 9);
@@ -92,14 +92,13 @@ describe("buildFrame", () => {
     const take = (n: number) => quads.slice(at, (at += n));
     const terrain = take(sections.terrain);
     const sprites = take(sections.sprites);
-    const ui = take(sections.ui);
     const debug = take(sections.debug);
     expect(at).toBe(out.count);
     expect(terrain.map(fileOf)).toContain("top");
-    expect(sprites.map(fileOf)).toEqual(["orb"]);
-    // Health bar: background and fill.
-    expect(ui).toHaveLength(2);
-    expect(ui.every((q) => q.fill)).toBe(true);
+    // The health bar (background and fill) comes first so the sprite covers
+    // it.
+    expect(sprites.map((q) => q.fill)).toEqual([true, true, false]);
+    expect(fileOf(sprites[2])).toBe("orb");
     expect(debug).toHaveLength(1);
     expect(debug[0].ring).toBeGreaterThan(0);
   });

@@ -63,6 +63,19 @@ An enemy is an ordinary entity built from an `EnemyDef` in `src/ecs/enemy/defini
 
 The overlay's enemy picker spawns any kind 4 tiles from the player, toward where it's aiming.
 
+## Behaviors
+
+How an enemy moves is data too (`src/ecs/enemy/behaviors.ts`). Each definition has an `idle` behavior, used with no target, and an `aggro` behavior, used once it has one:
+
+- `stationary`: doesn't move.
+- `wander`: strolls between random points within `radius` of its origin, pausing at each, and gives up on points it can't reach.
+- `chase`: heads for its target, stopping `stopAt` tiles away.
+- `orbit`: circles its target `radius` tiles out.
+- `charge`: winds up, dashes at where the target was when the windup ended, then rests.
+- `returnHome`: walks back to its origin.
+
+Each behavior is a pure steering function from position, origin, target, speed and a small `BehaviorMemory` to a velocity. `brainSystem` picks idle or aggro, starts a fresh memory whenever that switches, and sets velocity, the way player input does. Movement then handles walls for enemies the same as for everything else.
+
 # Projectiles
 
 A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.
@@ -101,7 +114,7 @@ Rendering lives in `src/render/`, outside the ECS. It only reads the world; noth
 1. `alpha = accumulator / TICK_MS`: how far the leftover time reaches into the next tick.
 2. `frameView` works out where the camera looks (the followed entity's interpolated position) and builds a `View`.
 3. `buildFrame` fills a `QuadBuffer` with every quad to draw. It's pure: world + view + art in, flat quad data out. This is where all the rendering logic and its tests live.
-4. `renderer.draw` uploads that buffer once and draws it in up to **three instanced draw calls** (terrain, sprites, then UI and debug renders together) from **one atlas texture**.
+4. `renderer.draw` uploads that buffer once and draws it in up to **three instanced draw calls** (terrain, then health bars and sprites, then debug renders) from **one atlas texture**.
 
 Entities are drawn at `lerp(previousPosition, position, alpha)`, so the screen runs **up to one tick behind** the game (50 ms at 20 ticks/s). In exchange, movement is smooth at any monitor refresh rate.
 
@@ -125,7 +138,7 @@ Walkers with `attack` art thrust their weapon for the first half of each shot in
 
 ## Health bars
 
-Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: green, yellow below half, red below a quarter. Bars are solid quads (`fill`), so they need no art, and are drawn in the UI section, over everything.
+Everything with `Health` gets a bar centered just under its sprite, at its interpolated position, always level on screen. It's a dark frame with the remaining health filled from the left: green, yellow below half, red below a quarter. Bars are solid quads (`fill`), so they need no art. They're drawn at the start of the sprite section, so every sprite (enemies, projectiles, the player) covers them, and at their owner's depth, so a wall that hides an entity hides its bar too.
 
 ## Debug renders
 

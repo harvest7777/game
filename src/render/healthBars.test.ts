@@ -4,7 +4,7 @@ import { createTiles } from "../ecs/tiles";
 import { createWorld, spawn, type World } from "../ecs/world";
 import { BAR_COLORS, barColor, pushHealthBars } from "./healthBars";
 import { QuadBuffer, readQuads, type Quad } from "./quads";
-import { createView, TILE_PIXELS, worldToScreen } from "./view";
+import { createView, depthOf, TILE_PIXELS, worldToScreen } from "./view";
 
 const SIZE = 400;
 const CENTER = { x: 10, y: 10 };
@@ -76,6 +76,17 @@ describe("pushHealthBars", () => {
     const { world, view } = setup();
     addHurt(world, 0);
     expect(bars(world, view)).toHaveLength(1);
+  });
+
+  it("sits at its owner's depth so walls in front hide it", () => {
+    const { world, view } = setup();
+    addHurt(world, 100, { x: 10, y: 11 });
+
+    const [background, fill] = bars(world, view);
+
+    const depth = depthOf(view, worldToScreen(view, { x: 10, y: 11 }).y);
+    expect(background.depth).toBeCloseTo(depth);
+    expect(fill.depth).toBeCloseTo(depth);
   });
 
   it("stays level when the camera is rotated", () => {

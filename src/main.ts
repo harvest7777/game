@@ -75,6 +75,7 @@ for (const at of [
 }
 spawnEnemy(world, "slime", { x: 7, y: 26 });
 spawnEnemy(world, "archer", { x: 26, y: 26 });
+spawnEnemy(world, "boar", { x: 26, y: 6 });
 
 const art = await buildAtlas(
   manifest,

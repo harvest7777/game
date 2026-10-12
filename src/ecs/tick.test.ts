@@ -215,6 +215,18 @@ describe("runTick", () => {
       expect(hp()).toBeLessThan(500);
     });
 
+    it("come after the player once in range", () => {
+      const { world } = withPlayerHealth();
+      const slime = spawnEnemy(world, "slime", { x: START.x + 6, y: START.y });
+
+      for (let i = 0; i < 10; i++) runTick(world, DT);
+
+      // Chasing to 2.5 tiles away.
+      const at = world.components.position.get(slime)!;
+      expect(at.x).toBeLessThan(START.x + 6);
+      expect(at.x).toBeGreaterThanOrEqual(START.x + 2.5 - 1e-6);
+    });
+
     it("leave the player alone out of range", () => {
       const { world, hp } = withPlayerHealth();
       spawnEnemy(world, "slime", { x: START.x + 9, y: START.y });

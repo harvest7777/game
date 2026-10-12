@@ -2,7 +2,7 @@ import type { Color } from "../ecs/sprite/components";
 import type { World } from "../ecs/world";
 import type { QuadBuffer } from "./quads";
 import { interpolatedPosition, SPRITE_PIXELS_PER_TILE } from "./sprites";
-import { worldToScreen, type View } from "./view";
+import { depthOf, worldToScreen, type View } from "./view";
 
 // Bar size in sprite pixels: 7 wide (just inside the sprite) and 1 tall,
 // starting half a sprite pixel below the bottom of the sprite. It scales
@@ -31,7 +31,8 @@ const NO_REGION = { x: 0, y: 0, w: 0, h: 0 };
 
 // A health bar under everything with health, centered under its sprite at
 // its interpolated position and always level on screen. Drawn as a dark
-// background with the remaining health filled in from the left.
+// background with the remaining health filled in from the left. Each bar is
+// at its owner's depth, so a wall in front of the owner hides the bar too.
 export function pushHealthBars(
   out: QuadBuffer,
   world: World,
@@ -58,6 +59,7 @@ export function pushHealthBars(
     if (offScreen) continue;
 
     const fraction = Math.max(0, Math.min(1, health.hp / health.max));
+    const depth = depthOf(view, center.y);
     pushRect(
       out,
       left - BORDER,
@@ -65,10 +67,11 @@ export function pushHealthBars(
       right + BORDER,
       bottom + BORDER,
       BAR_COLORS.background,
+      depth,
     );
     if (fraction > 0) {
       const filled = left + (right - left) * fraction;
-      pushRect(out, left, top, filled, bottom, barColor(fraction));
+      pushRect(out, left, top, filled, bottom, barColor(fraction), depth);
     }
   }
 }
@@ -80,6 +83,7 @@ function pushRect(
   right: number,
   bottom: number,
   color: Color,
+  depth: number,
 ): void {
   out.push(
     left,
@@ -94,7 +98,7 @@ function pushRect(
     false,
     0,
     { color },
-    0,
+    depth,
     0,
     true,
   );

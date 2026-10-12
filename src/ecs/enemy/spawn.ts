@@ -1,6 +1,7 @@
 import { addMovable, addShooter, addSprite } from "../bundles";
 import type { Vec2 } from "../shared/physics/math";
 import { spawn, type Entity, type World } from "../world";
+import { freshMemory } from "./behaviors";
 import { enemyDef, type EnemyId } from "./definitions";
 
 // Creates an enemy from its definition at `at`, which becomes its origin.
@@ -24,6 +25,7 @@ export function spawnEnemy(world: World, id: EnemyId, at: Vec2): Entity {
   components.team.set(entity, "enemy");
   components.speed.set(entity, def.speed);
   components.enemy.set(entity, { def: id, origin: { x: at.x, y: at.y } });
+  components.brain.set(entity, { mode: "idle", memory: freshMemory() });
   if (def.weapon)
     addShooter(world, entity, { weapon: def.weapon, team: "enemy" });
   return entity;

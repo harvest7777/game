@@ -9,7 +9,7 @@ import type {
 } from "./movement/components";
 import { createCamera, type Camera } from "./camera/resource";
 import type { Health } from "./combat/components";
-import type { Enemy } from "./enemy/components";
+import type { Brain, Enemy } from "./enemy/components";
 import { createEvents, type Events } from "./events";
 import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
@@ -48,6 +48,7 @@ export type Components = {
   team: Store<Team>;
   health: Store<Health>;
   enemy: Store<Enemy>;
+  brain: Store<Brain>;
   // Who this entity is after, e.g. what an enemy aims at.
   target: Store<Entity>;
 };
@@ -95,6 +96,7 @@ export function createWorld(
       team: createStore(),
       health: createStore(),
       enemy: createStore(),
+      brain: createStore(),
       target: createStore(),
     },
   };
