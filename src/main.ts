@@ -9,6 +9,8 @@ import {
 import { actionsFromKeys, playerKeybinds } from "./ecs/input/actions";
 import { weaponIds, type WeaponId } from "./ecs/projectile/weapons";
 import type { Vec2 } from "./ecs/shared/physics/math";
+import { enemyIds, type EnemyId } from "./ecs/enemy/definitions";
+import { spawnEnemy } from "./ecs/enemy/spawn";
 import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
@@ -63,23 +65,16 @@ addShooter(world, player, { weapon: "bolt", team: "player" });
 world.components.health.set(player, { hp: 500, max: 500 });
 world.camera.target = player;
 
-// Training dummies to shoot at: they don't move or fight back.
+// Something to fight: dummies that just take hits, and enemies that shoot
+// back once you're close.
 for (const at of [
   { x: 20, y: 14 },
   { x: 22, y: 16 },
-  { x: 20, y: 18 },
-  { x: 24, y: 12 },
 ]) {
-  const dummy = spawn(world);
-  addMovable(world, dummy, { at, hitbox: { r: 0.4 } });
-  addSprite(world, dummy, {
-    name: "dummy",
-    layer: "enemy",
-    outline: { color: [0, 0, 0, 1] },
-  });
-  world.components.health.set(dummy, { hp: 300, max: 300 });
-  world.components.team.set(dummy, "enemy");
+  spawnEnemy(world, "dummy", at);
 }
+spawnEnemy(world, "slime", { x: 7, y: 26 });
+spawnEnemy(world, "archer", { x: 26, y: 26 });
 
 const art = await buildAtlas(
   manifest,
@@ -121,6 +116,20 @@ weaponPicker.value = world.components.shooter.get(player)!.weapon;
 weaponPicker.addEventListener("change", () => {
   world.components.shooter.get(player)!.weapon = weaponPicker.value as WeaponId;
   weaponPicker.blur();
+});
+
+// Enemy spawner: puts the picked enemy a few tiles from the player, toward
+// where it's aiming.
+const enemyPicker = document.getElementById("debugEnemy") as HTMLSelectElement;
+for (const id of enemyIds) enemyPicker.add(new Option(id, id));
+document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
+  const at = world.components.position.get(player)!;
+  const aim = world.components.shooter.get(player)!.aim ?? { x: 1, y: 0 };
+  spawnEnemy(world, enemyPicker.value as EnemyId, {
+    x: at.x + aim.x * 4,
+    y: at.y + aim.y * 4,
+  });
+  (event.currentTarget as HTMLButtonElement).blur();
 });
 
 const quads = new QuadBuffer();

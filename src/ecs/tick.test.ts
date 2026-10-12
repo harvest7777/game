@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
+import { spawnEnemy } from "./enemy/spawn";
 import { Action } from "./input/actions";
 import { CROUCH_SPEED } from "./input/system";
 import { runTick } from "./tick";
@@ -193,6 +194,36 @@ describe("runTick", () => {
 
     expect(world.components.health.has(dummy)).toBe(false);
     expect(world.components.position.has(dummy)).toBe(false);
+  });
+
+  describe("enemies", () => {
+    function withPlayerHealth() {
+      const result = setup();
+      const player = [...result.world.components.playerControlled][0][0];
+      result.world.components.health.set(player, { hp: 500, max: 500 });
+      result.world.components.team.set(player, "player");
+      const hp = () => result.world.components.health.get(player)!.hp;
+      return { ...result, hp };
+    }
+
+    it("shoot the player once in range, and it hurts", () => {
+      const { world, hp } = withPlayerHealth();
+      spawnEnemy(world, "slime", { x: START.x + 3, y: START.y });
+
+      for (let i = 0; i < 20; i++) runTick(world, DT);
+
+      expect(hp()).toBeLessThan(500);
+    });
+
+    it("leave the player alone out of range", () => {
+      const { world, hp } = withPlayerHealth();
+      spawnEnemy(world, "slime", { x: START.x + 9, y: START.y });
+
+      for (let i = 0; i < 20; i++) runTick(world, DT);
+
+      expect(world.components.projectile.size).toBe(0);
+      expect(hp()).toBe(500);
+    });
   });
 
   it("clears events from before the tick, queued removals included", () => {

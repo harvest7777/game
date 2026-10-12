@@ -1,0 +1,85 @@
+import { describe, expect, it } from "vitest";
+import type { Team } from "../projectile/components";
+import type { Vec2 } from "../shared/physics/math";
+import { createTiles } from "../tiles";
+import { createWorld, spawn, type World } from "../world";
+import { aggroSystem } from "./aggro";
+import { enemies } from "./definitions";
+import { spawnEnemy } from "./spawn";
+
+// The slime notices things within 7 tiles.
+const RANGE = enemies.slime.detectRange;
+const SLIME_AT = { x: 10, y: 10 };
+
+function setup() {
+  const world = createWorld(createTiles(40, 40));
+  const slime = spawnEnemy(world, "slime", SLIME_AT);
+  return { world, slime, targetOf: () => world.components.target.get(slime) };
+}
+
+function addLiving(world: World, at: Vec2, team: Team = "player", hp = 100) {
+  const e = spawn(world);
+  world.components.position.set(e, { ...at });
+  world.components.health.set(e, { hp, max: 100 });
+  world.components.team.set(e, team);
+  return e;
+}
+
+describe("aggroSystem", () => {
+  it("targets the player within detection range", () => {
+    const { world, targetOf } = setup();
+    const player = addLiving(world, { x: 10 + RANGE - 0.5, y: 10 });
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBe(player);
+  });
+
+  it("ignores things out of range", () => {
+    const { world, targetOf } = setup();
+    addLiving(world, { x: 10 + RANGE + 0.5, y: 10 });
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBeUndefined();
+  });
+
+  it("drops its target once it leaves range", () => {
+    const { world, targetOf } = setup();
+    const player = addLiving(world, { x: 12, y: 10 });
+    aggroSystem(world, 0.05);
+    world.components.position.set(player, { x: 30, y: 10 });
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBeUndefined();
+  });
+
+  it("picks the nearest of several", () => {
+    const { world, targetOf } = setup();
+    addLiving(world, { x: 15, y: 10 });
+    const near = addLiving(world, { x: 10, y: 12 });
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBe(near);
+  });
+
+  it("ignores its own team", () => {
+    const { world, targetOf } = setup();
+    addLiving(world, { x: 11, y: 10 }, "enemy");
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBeUndefined();
+  });
+
+  it("ignores anything at 0 health", () => {
+    const { world, targetOf } = setup();
+    addLiving(world, { x: 11, y: 10 }, "player", 0);
+
+    aggroSystem(world, 0.05);
+
+    expect(targetOf()).toBeUndefined();
+  });
+});

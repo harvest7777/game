@@ -169,6 +169,26 @@ export const projectiles = {
     wave: { amplitude: 0.4, frequency: 3 },
     spin: 6 * Math.PI,
   },
+  // Enemy shots, outlined red so they're easy to tell from the player's.
+  slimeBall: {
+    speed: 5,
+    damage: [15, 20],
+    lifetime: 1.6,
+    hitbox: { r: 0.25 },
+    sprite: {
+      name: "orb",
+      scale: 1,
+      outline: { color: [0.9, 0.15, 0.15, 1] },
+    },
+  },
+  arrow: {
+    speed: 10,
+    damage: [25, 35],
+    lifetime: 1,
+    hitbox: SMALL,
+    sprite: { name: "bolt", outline: { color: [0.9, 0.15, 0.15, 1] } },
+    faceDirection: true,
+  },
   // Goes through everything it hits.
   lance: {
     speed: 14,

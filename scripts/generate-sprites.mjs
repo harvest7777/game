@@ -31,6 +31,10 @@ const PALETTE = {
   n: [120, 80, 40, 255], // dummy wood
   x: [200, 40, 40, 255], // dummy target red
   X: [240, 240, 240, 255], // dummy target white
+  l: [90, 200, 90, 255], // slime
+  L: [170, 240, 170, 255], // slime shine
+  D: [50, 130, 60, 255], // slime shadow
+  O: [230, 225, 210, 255], // bone
   k: [230, 60, 220, 255], // prejudice shard
   K: [255, 190, 250, 255], // prejudice core
   g: [74, 107, 58, 255], // floor
@@ -133,6 +137,27 @@ const SPRITES = {
     "..XxxX..",
     "..xXXx..",
     "...nn...",
+  ],
+  "enemies/slime": [
+    "........",
+    "........",
+    "..llll..",
+    ".lLLlll.",
+    ".lelell.",
+    "llllllll",
+    "DllllllD",
+    ".DDDDDD.",
+  ],
+  // A skeleton with its bow drawn on the right.
+  "enemies/archer": [
+    "..OOO.n.",
+    ".OeOeOnX",
+    "..OOO.nX",
+    ".OOOOOOX",
+    "...O..nX",
+    "..OOO.n.",
+    "..O.O...",
+    ".OO.OO..",
   ],
   // Projectile art points right; the renderer turns it to face its path.
   "projectiles/bolt": [

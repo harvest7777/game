@@ -122,10 +122,38 @@ describe("shootSystem", () => {
     });
 
     it("ignores the cursor for anything not player controlled", () => {
-      const { world } = setup("bolt", false);
+      const { world, shooter } = setup("bolt", false);
+      const target = spawn(world);
+      world.components.position.set(target, { x: 10, y: 15 });
+      world.components.target.set(shooter, target);
       world.input.aim = { x: 0, y: 0 };
       tick(world);
       expectDirection(shots(world)[0].direction, 0, 1);
+    });
+
+    it("aims at its target when not player controlled", () => {
+      const { world, shooter } = setup("bolt", false);
+      const target = spawn(world);
+      world.components.position.set(target, { x: 13, y: 6 });
+      world.components.target.set(shooter, target);
+      tick(world);
+      expectDirection(shots(world)[0].direction, 0.6, -0.8);
+    });
+
+    it("holds fire without a target when not player controlled", () => {
+      const { world } = setup("bolt", false);
+      tick(world, 10);
+      expect(shots(world)).toHaveLength(0);
+    });
+
+    it("fires the moment it gets a target", () => {
+      const { world, shooter } = setup("bolt", false);
+      tick(world, 10);
+      const target = spawn(world);
+      world.components.position.set(target, { x: 10, y: 15 });
+      world.components.target.set(shooter, target);
+      tick(world);
+      expect(shots(world)).toHaveLength(1);
     });
   });
 

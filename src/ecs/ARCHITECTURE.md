@@ -53,6 +53,16 @@ Movement keys are always **screen-relative**: Up moves toward the top of the scr
 3. `deathSystem` queues the dead for removal. The player doesn't die yet: it stays at 0.
 4. `cleanupSystem` removes everything queued.
 
+# Enemies
+
+An enemy is an ordinary entity built from an `EnemyDef` in `src/ecs/enemy/definitions.ts`: sprite, hitbox, health, speed, an optional weapon, and a detection range. `spawnEnemy` gives it the movable bundle, a sprite on the enemy layer, `Health`, the `enemy` team, `Speed`, a `Shooter` if it's armed, and an `Enemy` component recording its kind and `origin` (where it spawned, which home-anchored behaviors use).
+
+- `aggroSystem` sets each enemy's `target` to the nearest living thing on another team within its `detectRange`, and clears it when nothing is.
+- Shooters the player doesn't control aim at their target and only fire while they have one, ready to shoot the moment they get one.
+- Enemy shots are ordinary projectiles on the `enemy` team, so the same hit, damage and death systems hurt the player.
+
+The overlay's enemy picker spawns any kind 4 tiles from the player, toward where it's aiming.
+
 # Projectiles
 
 A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.

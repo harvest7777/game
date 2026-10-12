@@ -47,6 +47,8 @@ export const manifest: Manifest = {
       },
     },
     dummy: { kind: "static", file: "enemies/dummy" },
+    slime: { kind: "static", file: "enemies/slime" },
+    archer: { kind: "static", file: "enemies/archer" },
     bolt: { kind: "static", file: "projectiles/bolt" },
     orb: { kind: "static", file: "projectiles/orb" },
     star: { kind: "static", file: "projectiles/star" },

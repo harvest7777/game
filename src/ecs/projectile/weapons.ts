@@ -30,6 +30,9 @@ export const weapons = {
     count: 10,
     arcGap: (2 * Math.PI) / 10,
   },
+  // Enemy weapons.
+  slimeSpit: { projectile: "slimeBall", rate: 0.8 },
+  archerVolley: { projectile: "arrow", rate: 0.7, count: 3, arcGap: 0.25 },
 } satisfies Record<string, WeaponDef>;
 
 export type WeaponId = keyof typeof weapons;
