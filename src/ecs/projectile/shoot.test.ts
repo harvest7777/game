@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { Vec2 } from "../shared/physics/math";
 import { createTiles } from "../tiles";
-import { createWorld, spawn, type Entity, type World } from "../world";
+import { createWorld, spawn, type World } from "../world";
 import { shootSystem } from "./shoot";
+import { weaponDef, type WeaponId } from "./weapons";
 
 const DT = 0.05;
 const AT = { x: 10, y: 10 };
 
-function setup(rate: number, player = true) {
+function setup(weapon: WeaponId = "bolt", player = true) {
   const world = createWorld(createTiles(20, 20));
   const shooter = spawn(world);
   const c = world.components;
   c.position.set(shooter, { ...AT });
+  c.velocity.set(shooter, { x: 0, y: 0 });
   c.facing.set(shooter, { x: 0, y: 1 });
   c.team.set(shooter, "player");
-  c.shooter.set(shooter, { projectile: "bolt", rate, cooldown: 0 });
+  c.shooter.set(shooter, { weapon, cooldown: 0 });
   if (player) c.playerControlled.set(shooter, true);
   return { world, shooter };
 }
@@ -23,80 +25,134 @@ function shots(world: World) {
   return [...world.components.projectile].map(([, p]) => p);
 }
 
-function directionOf(world: World): Vec2 {
-  return shots(world)[0].direction;
+function expectDirection(actual: Vec2, x: number, y: number) {
+  expect(actual.x).toBeCloseTo(x);
+  expect(actual.y).toBeCloseTo(y);
 }
 
-function tick(world: World, ticks = 1) {
-  for (let i = 0; i < ticks; i++) shootSystem(world, DT);
+function tick(world: World, ticks = 1, dt = DT) {
+  for (let i = 0; i < ticks; i++) shootSystem(world, dt);
 }
 
 describe("shootSystem", () => {
-  it("fires straight away, then at its rate", () => {
-    // 4 shots/s is one every 0.25 s: at 0, 0.25 and 0.5. Checked between
-    // shots so rounding at the exact moment of a shot doesn't matter.
-    const { world } = setup(4);
-    tick(world);
-    expect(shots(world)).toHaveLength(1);
-    tick(world, 3); // 0.2 s
-    expect(shots(world)).toHaveLength(1);
-    tick(world, 8); // 0.6 s
-    expect(shots(world)).toHaveLength(3);
-  });
+  describe("rate", () => {
+    it("fires straight away, then at the weapon's rate", () => {
+      // 4 shots/s is one every 0.25 s: at 0, 0.25 and 0.5. Checked between
+      // shots so rounding at the exact moment of a shot doesn't matter.
+      expect(weaponDef("bolt").rate).toBe(4);
+      const { world } = setup();
+      tick(world);
+      expect(shots(world)).toHaveLength(1);
+      tick(world, 3); // 0.2 s
+      expect(shots(world)).toHaveLength(1);
+      tick(world, 8); // 0.6 s
+      expect(shots(world)).toHaveLength(3);
+    });
 
-  it("fires several shots in a tick when faster than the tick rate", () => {
-    // 55 shots/s at 20 ticks/s for 0.5 s: shots at 0, 1/55, ... up to 0.49.
-    const { world } = setup(55);
-    tick(world, 10);
-    expect(shots(world)).toHaveLength(Math.floor(0.5 * 55) + 1);
+    it("fires several shots in a tick that's longer than a shot", () => {
+      // A 0.6 s tick at 4 shots/s covers shots at 0, 0.25 and 0.5.
+      const { world } = setup();
+      tick(world, 1, 0.6);
+      expect(shots(world)).toHaveLength(3);
+    });
   });
 
   it("fires from where the shooter stands, as its team, owned by it", () => {
-    const { world, shooter } = setup(1);
+    const { world, shooter } = setup();
     tick(world);
     const [shot] = shots(world);
     expect(shot.origin).toEqual(AT);
     expect(shot.owner).toBe(shooter);
     expect(shot.team).toBe("player");
+    expect(shot.def).toBe("bolt");
   });
 
-  it("aims the player's shots at the cursor", () => {
-    const { world } = setup(1);
-    world.input.aim = { x: 7, y: 6 };
-    tick(world);
-    const d = directionOf(world);
-    expect(d.x).toBeCloseTo(-0.6);
-    expect(d.y).toBeCloseTo(-0.8);
+  describe("aim", () => {
+    it("aims the player's shots at the cursor", () => {
+      const { world } = setup();
+      world.input.aim = { x: 7, y: 6 };
+      tick(world);
+      expectDirection(shots(world)[0].direction, -0.6, -0.8);
+    });
+
+    it("remembers the aim on the shooter, for facing", () => {
+      const { world, shooter } = setup();
+      world.input.aim = { x: 13, y: 14 };
+      tick(world);
+      expectDirection(world.components.shooter.get(shooter)!.aim!, 0.6, 0.8);
+    });
+
+    it("aims every tick, not just when firing", () => {
+      const { world, shooter } = setup();
+      tick(world);
+      world.input.aim = { x: 10, y: 0 };
+      tick(world);
+      expectDirection(world.components.shooter.get(shooter)!.aim!, 0, -1);
+    });
+
+    it("aims the way it moves before the cursor is over the game", () => {
+      const { world, shooter } = setup();
+      world.components.velocity.set(shooter, { x: -3, y: 0 });
+      tick(world);
+      expectDirection(shots(world)[0].direction, -1, 0);
+    });
+
+    it("turns its aim when it changes direction", () => {
+      const { world, shooter } = setup();
+      world.components.velocity.set(shooter, { x: -3, y: 0 });
+      tick(world);
+      world.components.velocity.set(shooter, { x: 0, y: -3 });
+      tick(world);
+      expectDirection(world.components.shooter.get(shooter)!.aim!, 0, -1);
+    });
+
+    it("keeps its last aim when standing still", () => {
+      const { world, shooter } = setup();
+      world.components.velocity.set(shooter, { x: -3, y: 0 });
+      tick(world);
+      world.components.velocity.set(shooter, { x: 0, y: 0 });
+      tick(world, 5);
+      expectDirection(shots(world)[1].direction, -1, 0);
+    });
+
+    it("starts out aiming the way it faces", () => {
+      const { world } = setup();
+      tick(world);
+      expectDirection(shots(world)[0].direction, 0, 1);
+    });
+
+    it("ignores the cursor for anything not player controlled", () => {
+      const { world } = setup("bolt", false);
+      world.input.aim = { x: 0, y: 0 };
+      tick(world);
+      expectDirection(shots(world)[0].direction, 0, 1);
+    });
   });
 
-  it("fires the way the player faces before the cursor is over the game", () => {
-    const { world } = setup(1);
-    tick(world);
-    expect(directionOf(world)).toEqual({ x: 0, y: 1 });
-  });
+  describe("patterns", () => {
+    it("fires Extreme Prejudice as ten shots in a full ring", () => {
+      const { world } = setup("extremePrejudice");
+      world.input.aim = { x: 20, y: 10 };
 
-  it("fires the way the player faces with the cursor right on them", () => {
-    const { world } = setup(1);
-    world.input.aim = { ...AT };
-    tick(world);
-    expect(directionOf(world)).toEqual({ x: 0, y: 1 });
-  });
+      tick(world);
 
-  it("ignores the cursor for anything not player controlled", () => {
-    const { world } = setup(1, false);
-    world.input.aim = { x: 0, y: 0 };
-    tick(world);
-    expect(directionOf(world)).toEqual({ x: 0, y: 1 });
+      const fired = shots(world);
+      expect(fired).toHaveLength(10);
+      expect(fired.every((p) => p.def === "prejudice")).toBe(true);
+      const angles = fired
+        .map((p) => Math.atan2(p.direction.y, p.direction.x))
+        .map((a) => (a + 2 * Math.PI) % (2 * Math.PI))
+        .sort((a, b) => a - b);
+      for (let i = 1; i < angles.length; i++) {
+        expect(angles[i] - angles[i - 1]).toBeCloseTo((2 * Math.PI) / 10);
+      }
+    });
   });
 
   it("skips shooters with no position", () => {
     const world = createWorld(createTiles(20, 20));
-    const shooter: Entity = spawn(world);
-    world.components.shooter.set(shooter, {
-      projectile: "bolt",
-      rate: 1,
-      cooldown: 0,
-    });
+    const shooter = spawn(world);
+    world.components.shooter.set(shooter, { weapon: "bolt", cooldown: 0 });
     tick(world);
     expect(shots(world)).toHaveLength(0);
   });

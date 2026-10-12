@@ -2,7 +2,11 @@ import { addMovable, addSprite } from "../bundles";
 import type { Vec2 } from "../shared/physics/math";
 import { spawn, type Entity, type World } from "../world";
 import type { Team } from "./components";
-import { projectileDef, type ProjectileId } from "./definitions";
+import {
+  DEFAULT_PROJECTILE_SCALE,
+  projectileDef,
+  type ProjectileId,
+} from "./definitions";
 
 export type FireOptions = {
   def: ProjectileId;
@@ -33,6 +37,7 @@ export function fireProjectile(world: World, options: FireOptions): Entity {
   addSprite(world, entity, {
     name: def.sprite.name,
     layer: "projectile",
+    scale: def.sprite.scale ?? DEFAULT_PROJECTILE_SCALE,
     ...(def.sprite.outline && {
       outline: structuredClone(def.sprite.outline),
     }),

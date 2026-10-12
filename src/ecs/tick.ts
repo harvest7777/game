@@ -10,13 +10,14 @@ import type { System, World } from "./world";
 // knows about all of them, so systems never need to import each other.
 // Camera turns before input so movement uses this tick's angle; input and
 // projectiles set velocity before movement applies it, and facing follows it.
-// Shots are fired before projectiles are steered, so a new shot already
+// Shooting aims before facing, so this tick's aim decides which way a shooter
+// faces, and fires before projectiles are steered, so a new shot already
 // moves on the tick it's fired.
 const systems: System[] = [
   cameraSystem,
   playerInputSystem,
-  facingSystem,
   shootSystem,
+  facingSystem,
   projectileSystem,
   movementSystem,
 ];

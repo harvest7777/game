@@ -24,6 +24,9 @@ export type Sprite = {
   name: string;
   layer: SpriteLayer;
   outline?: Outline;
+  // How big the art is drawn: 1 is one sprite pixel per 1/8 tile. Only
+  // changes the look, never the hitbox.
+  scale?: number;
 };
 
 // The world direction the entity last moved in, as a unit vector. Kept when

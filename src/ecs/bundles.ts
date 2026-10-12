@@ -1,6 +1,6 @@
 import type { Hitbox, WallResponse } from "./movement/components";
-import type { ProjectileId } from "./projectile/definitions";
 import type { Team } from "./projectile/components";
+import type { WeaponId } from "./projectile/weapons";
 import type { Sprite } from "./sprite/components";
 import type { Vec2 } from "./shared/physics/math";
 import type { Entity, World } from "./world";
@@ -45,14 +45,14 @@ export function addSprite(world: World, entity: Entity, sprite: Sprite): void {
   world.components.facing.set(entity, { x: 0, y: 1 });
 }
 
-type ShooterOptions = { projectile: ProjectileId; rate: number; team: Team };
+type ShooterOptions = { weapon: WeaponId; team: Team };
 
-// Autofires `projectile` `rate` times per second, starting right away.
+// Autofires `weapon`, starting right away.
 export function addShooter(
   world: World,
   entity: Entity,
-  { projectile, rate, team }: ShooterOptions,
+  { weapon, team }: ShooterOptions,
 ): void {
-  world.components.shooter.set(entity, { projectile, rate, cooldown: 0 });
+  world.components.shooter.set(entity, { weapon, cooldown: 0 });
   world.components.team.set(entity, team);
 }

@@ -131,11 +131,7 @@ describe("runTick", () => {
       const setupResult = setup();
       const { world } = setupResult;
       const player = [...world.components.playerControlled][0][0];
-      addShooter(world, player, {
-        projectile: "bolt",
-        rate: 2,
-        team: "player",
-      });
+      addShooter(world, player, { weapon: "bolt", team: "player" });
       const shots = () =>
         [...world.components.projectile].map(([e, p]) => ({
           ...p,
@@ -154,6 +150,16 @@ describe("runTick", () => {
       expect(shot.direction.x).toBeCloseTo(0);
       expect(shot.direction.y).toBeCloseTo(-1);
       expect(shot.at.y).toBeLessThan(START.y);
+    });
+
+    it("faces the cursor while walking the other way", () => {
+      const { world, facing } = shooting();
+      world.input.aim = { x: START.x + 5, y: START.y };
+      hold(world, Action.Left);
+
+      runTick(world, DT);
+
+      expect(facing()).toEqual({ x: 1, y: 0 });
     });
 
     it("aims at the cursor's world point whatever the camera angle", () => {

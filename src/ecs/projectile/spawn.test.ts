@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createTiles } from "../tiles";
 import { createWorld, spawn } from "../world";
-import { projectiles, type ProjectileId } from "./definitions";
+import {
+  DEFAULT_PROJECTILE_SCALE,
+  projectiles,
+  type ProjectileId,
+} from "./definitions";
 import { fireProjectile, type FireOptions } from "./spawn";
 
 function fire(def: ProjectileId, changes: Partial<FireOptions> = {}) {
@@ -38,7 +42,18 @@ describe("fireProjectile", () => {
     expect(c.position.get(entity)).toEqual({ x: 5, y: 6 });
     expect(c.velocity.get(entity)).toEqual({ x: 0, y: 0 });
     expect(c.hitbox.get(entity)).toEqual(projectiles.bolt.hitbox);
-    expect(c.sprite.get(entity)).toEqual({ name: "bolt", layer: "projectile" });
+    expect(c.sprite.get(entity)).toEqual({
+      name: "bolt",
+      layer: "projectile",
+      scale: DEFAULT_PROJECTILE_SCALE,
+    });
+  });
+
+  it("draws at 80% by default but keeps the definition's hitbox", () => {
+    const { entity, c } = fire("bolt");
+    expect(DEFAULT_PROJECTILE_SCALE).toBe(0.8);
+    expect(c.sprite.get(entity)!.scale).toBe(0.8);
+    expect(c.hitbox.get(entity)).toEqual(projectiles.bolt.hitbox);
   });
 
   it("stops at walls by default", () => {

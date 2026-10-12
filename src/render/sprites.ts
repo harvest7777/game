@@ -1,3 +1,4 @@
+import { weaponDef } from "../ecs/projectile/weapons";
 import type { Entity, World } from "../ecs/world";
 import type { Sprite, SpriteLayer } from "../ecs/sprite/components";
 import type { Vec2 } from "../ecs/shared/physics/math";
@@ -64,7 +65,7 @@ export function pushSprites(
   alpha: number,
   time: number,
 ): void {
-  const pixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
+  const basePixel = view.pixelsPerTile / SPRITE_PIXELS_PER_TILE;
   const placed: (Placed & { halfW: number; halfH: number })[] = [];
 
   for (const [entity, sprite] of world.components.sprite) {
@@ -74,6 +75,7 @@ export function pushSprites(
     const { file, flipX } = pickFrame(world, entity, sprite, art, view, time);
     const region = regionOf(art, file);
     const margin = marginOf(sprite);
+    const pixel = basePixel * (sprite.scale ?? 1);
     const halfW = (region.w / 2 + margin) * pixel;
     const halfH = (region.h / 2 + margin) * pixel;
     const rotation = world.components.rotation.get(entity);
@@ -143,8 +145,9 @@ function marginOf(sprite: Sprite): number {
 }
 
 // Which file to draw and whether to mirror it. Walkers pick a facing from the
-// direction they face *on screen* (so turning the camera turns them too) and
-// cycle walk frames while moving.
+// direction they face *on screen* (so turning the camera turns them too),
+// cycle walk frames while moving, and use their attack frames while
+// thrusting.
 function pickFrame(
   world: World,
   entity: Entity,
@@ -171,10 +174,25 @@ function pickFrame(
     ? WALK_CYCLE[Math.floor(time * WALK_FPS) % WALK_CYCLE.length]
     : 0;
 
+  // Thrust frames swap in for the body; the legs keep walking.
+  const set =
+    spriteArt.attack && isThrusting(world, entity)
+      ? spriteArt.attack
+      : spriteArt;
+
   // Diagonals show the side view.
   if (Math.abs(sx) >= Math.abs(sy)) {
-    return { file: spriteArt.side[frame], flipX: sx < 0 };
+    return { file: set.side[frame], flipX: sx < 0 };
   }
-  const frames = sy < 0 ? spriteArt.back : spriteArt.front;
+  const frames = sy < 0 ? set.back : set.front;
   return { file: frames[frame], flipX: false };
+}
+
+// A shooter thrusts its weapon for the first half of each shot interval, so
+// the attack animation pulses in time with its fire rate.
+function isThrusting(world: World, entity: Entity): boolean {
+  const shooter = world.components.shooter.get(entity);
+  if (!shooter) return false;
+  const interval = 1 / weaponDef(shooter.weapon).rate;
+  return shooter.cooldown > interval / 2;
 }

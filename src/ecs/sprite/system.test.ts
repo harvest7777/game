@@ -38,4 +38,28 @@ describe("facingSystem", () => {
 
     expect(facingOf()).toEqual({ x: 0, y: -1 });
   });
+
+  it("faces where a shooter is aiming rather than where it moves", () => {
+    const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
+    const [[entity]] = [...world.components.facing];
+    world.components.shooter.set(entity, {
+      weapon: "bolt",
+      cooldown: 0,
+      aim: { x: 0, y: -1 },
+    });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: 0, y: -1 });
+  });
+
+  it("faces its movement while a shooter hasn't aimed yet", () => {
+    const { world, facingOf } = setup({ x: -1, y: 0 }, { x: 0, y: 1 });
+    const [[entity]] = [...world.components.facing];
+    world.components.shooter.set(entity, { weapon: "bolt", cooldown: 0 });
+
+    facingSystem(world, 1);
+
+    expect(facingOf()).toEqual({ x: -1, y: 0 });
+  });
 });

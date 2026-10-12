@@ -83,11 +83,10 @@ describe("addShooter", () => {
     const world = createWorld(createTiles(1, 1));
     const e = spawn(world);
 
-    addShooter(world, e, { projectile: "wavy", rate: 3, team: "player" });
+    addShooter(world, e, { weapon: "wavy", team: "player" });
 
     expect(world.components.shooter.get(e)).toEqual({
-      projectile: "wavy",
-      rate: 3,
+      weapon: "wavy",
       cooldown: 0,
     });
     expect(world.components.team.get(e)).toBe("player");

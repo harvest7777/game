@@ -24,6 +24,17 @@ const manifest: Manifest = {
       front: frames("front"),
       back: frames("back"),
       side: frames("side"),
+      attack: {
+        front: frames("front-attack"),
+        back: frames("back-attack"),
+        side: frames("side-attack"),
+      },
+    },
+    plainWalker: {
+      kind: "walker",
+      front: frames("front"),
+      back: frames("back"),
+      side: frames("side"),
     },
     orb: { kind: "static", file: "orb" },
   },
@@ -34,6 +45,9 @@ const files = [
   ...frames("front"),
   ...frames("back"),
   ...frames("side"),
+  ...frames("front-attack"),
+  ...frames("back-attack"),
+  ...frames("side-attack"),
   "orb",
   "top",
   "side",
@@ -226,6 +240,34 @@ describe("pushSprites", () => {
     });
   });
 
+  describe("scale", () => {
+    it("draws the art at its scale, outline included", () => {
+      const { world, view } = setup();
+      addAt(world, CENTER, {
+        name: "orb",
+        scale: 0.8,
+        outline: { color: [0, 0, 0, 1] },
+      });
+
+      const [quad] = draw(world, view);
+
+      const pixel = (TILE_PIXELS / 8) * 0.8;
+      const width = quad.corners[1].x - quad.corners[0].x;
+      expect(width).toBeCloseTo((8 + 2 * OUTLINE_THICKNESS) * pixel, 3);
+    });
+
+    it("stays centered on the entity", () => {
+      const { world, view } = setup();
+      addAt(world, { x: 11, y: 9 }, { name: "orb", scale: 0.5 });
+
+      const [quad] = draw(world, view);
+
+      const c = worldToScreen(view, { x: 11, y: 9 });
+      expect((quad.corners[0].x + quad.corners[2].x) / 2).toBeCloseTo(c.x, 3);
+      expect((quad.corners[0].y + quad.corners[2].y) / 2).toBeCloseTo(c.y, 3);
+    });
+  });
+
   describe("outline", () => {
     it("grows the quad by the outline thickness and carries its color", () => {
       const { world, view } = setup();
@@ -359,6 +401,50 @@ describe("pushSprites", () => {
       const e = addAt(world, CENTER);
       world.components.velocity.set(e, { x: 0, y: 0 });
       expect(fileOf(draw(world, view, 1, 0.2)[0])).toBe("front-0");
+    });
+
+    describe("attacking", () => {
+      // The bolt weapon fires 4 times a second: 0.25 s between shots, so
+      // it thrusts while more than 0.125 s of cooldown is left.
+      function shooting(cooldown: number, facing: Vec2, name = "hero") {
+        const { world, view } = setup();
+        const e = addAt(world, CENTER, { name }, facing);
+        world.components.shooter.set(e, { weapon: "bolt", cooldown });
+        return { world, view, e };
+      }
+
+      it("thrusts just after a shot", () => {
+        const { world, view } = shooting(0.24, { x: 0, y: 1 });
+        expect(fileOf(draw(world, view)[0])).toBe("front-attack-0");
+      });
+
+      it("pulls back for the second half of the interval", () => {
+        const { world, view } = shooting(0.05, { x: 0, y: 1 });
+        expect(fileOf(draw(world, view)[0])).toBe("front-0");
+      });
+
+      it("thrusts in every direction, mirrored to the left", () => {
+        const left = shooting(0.24, { x: -1, y: 0 });
+        const [quad] = draw(left.world, left.view);
+        expect(fileOf(quad)).toBe("side-attack-0");
+        expect(quad.flipX).toBe(true);
+
+        const up = shooting(0.24, { x: 0, y: -1 });
+        expect(fileOf(draw(up.world, up.view)[0])).toBe("back-attack-0");
+      });
+
+      it("keeps walking while it thrusts", () => {
+        const { world, view, e } = shooting(0.24, { x: 1, y: 0 });
+        world.components.velocity.set(e, { x: 1, y: 0 });
+        const step = 1 / WALK_FPS;
+        // First step frame of the walk cycle.
+        expect(fileOf(draw(world, view, 1, step / 2)[0])).toBe("side-attack-1");
+      });
+
+      it("uses its normal frames when it has no attack art", () => {
+        const { world, view } = shooting(0.24, { x: 0, y: 1 }, "plainWalker");
+        expect(fileOf(draw(world, view)[0])).toBe("front-0");
+      });
     });
 
     it("draws static art regardless of facing", () => {

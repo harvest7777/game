@@ -55,9 +55,15 @@ A projectile's path is a **pure function of its age** (`pathOffset`), in a local
 
 Each tick, `projectileSystem` sets velocity to exactly cover this tick's stretch of the path, and the movement system does the moving. So walls are swept for projectiles too: nothing tunnels, however fast or wavy. Projectiles past their lifetime, or that hit a wall last step (`Blocked`), are removed. `spin` turns the sprite at a fixed rate, and `faceDirection` points it along its movement.
 
-## Shooting
+## Weapons and shooting
 
-A `Shooter` autofires its projectile at its `rate` (shots per second, several per tick if needed). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Before the cursor has been over the game, and for anything not player controlled, shots go the way the shooter faces. The overlay's projectile picker switches the player's projectile.
+A **weapon** (`src/ecs/projectile/weapons.ts`) decides what a shooter fires and in what pattern: which projectile, `rate` (shots per second), `count` (projectiles per shot) and `arcGap` (radians between them, centered on the aim). Every projectile automatically gets a single-shot weapon so each can be tried alone. `extremePrejudice` fires ten `prejudice` shards in a full ring.
+
+A `Shooter` autofires its weapon at its rate, several shots per tick if needed. Every tick it also records where it's aiming (`Shooter.aim`). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Otherwise it aims the way it's moving, or keeps its last aim when still. The overlay's weapon picker switches the player's weapon.
+
+Shooters **face where they aim**, RotMG style, so you can walk one way while shooting another. `facingSystem` owns facing, and runs after shooting so each tick's aim decides that tick's facing.
+
+Projectile art is drawn at 80% (`DEFAULT_PROJECTILE_SCALE`) unless a definition sets `sprite.scale`. Scale only changes the look, never the hitbox.
 
 # Rendering
 
@@ -86,7 +92,9 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 
-Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. `Sprite.scale` draws the art bigger or smaller, outline included.
+
+Walkers with `attack` art thrust their weapon for the first half of each shot interval, so the attack pulses with the fire rate. Only the body changes: the legs keep the walk cycle, so attacking while walking works in every direction. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
 
 ## Debug renders
 

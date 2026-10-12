@@ -7,7 +7,7 @@ import {
   addSprite,
 } from "./ecs/bundles";
 import { actionsFromKeys, playerKeybinds } from "./ecs/input/actions";
-import { projectileIds, type ProjectileId } from "./ecs/projectile/definitions";
+import { weaponIds, type WeaponId } from "./ecs/projectile/weapons";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
@@ -59,7 +59,7 @@ addSprite(world, player, {
   layer: "player",
   outline: { color: [0, 0, 0, 1] },
 });
-addShooter(world, player, { projectile: "bolt", rate: 4, team: "player" });
+addShooter(world, player, { weapon: "bolt", team: "player" });
 world.camera.target = player;
 
 const art = await buildAtlas(
@@ -93,16 +93,15 @@ hitboxToggle.addEventListener("change", () => {
   hitboxToggle.blur();
 });
 
-// Projectile picker, for trying each kind of projectile.
-const projectilePicker = document.getElementById(
-  "debugProjectile",
+// Weapon picker, for trying each kind of projectile and pattern.
+const weaponPicker = document.getElementById(
+  "debugWeapon",
 ) as HTMLSelectElement;
-for (const id of projectileIds) projectilePicker.add(new Option(id, id));
-projectilePicker.value = world.components.shooter.get(player)!.projectile;
-projectilePicker.addEventListener("change", () => {
-  world.components.shooter.get(player)!.projectile =
-    projectilePicker.value as ProjectileId;
-  projectilePicker.blur();
+for (const id of weaponIds) weaponPicker.add(new Option(id, id));
+weaponPicker.value = world.components.shooter.get(player)!.weapon;
+weaponPicker.addEventListener("change", () => {
+  world.components.shooter.get(player)!.weapon = weaponPicker.value as WeaponId;
+  weaponPicker.blur();
 });
 
 const quads = new QuadBuffer();

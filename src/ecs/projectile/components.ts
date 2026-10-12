@@ -2,6 +2,7 @@ import type { Position } from "../movement/components";
 import type { Vec2 } from "../shared/physics/math";
 import type { Entity } from "../world";
 import type { ProjectileId } from "./definitions";
+import type { WeaponId } from "./weapons";
 
 // Which side something is on. Decides what a projectile can hit, so it's
 // copied onto the projectile when fired: the owner may be gone before the
@@ -22,10 +23,11 @@ export type Projectile = {
   age: number;
 };
 
-// Fires `projectile` automatically, `rate` times per second. `cooldown` is
-// seconds until the next shot.
+// Fires its weapon automatically at the weapon's rate. `cooldown` is seconds
+// until the next shot. `aim` is the direction it's aiming (unit vector),
+// updated every tick, which is also the way it faces while shooting.
 export type Shooter = {
-  projectile: ProjectileId;
-  rate: number;
+  weapon: WeaponId;
   cooldown: number;
+  aim?: Vec2;
 };

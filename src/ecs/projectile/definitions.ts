@@ -19,8 +19,9 @@ export type ProjectileDef = {
   // Seconds before it disappears.
   lifetime: number;
   hitbox: Hitbox;
-  // Rotated art points right.
-  sprite: Pick<Sprite, "name" | "outline">;
+  // Rotated art points right. Drawn at DEFAULT_PROJECTILE_SCALE unless it
+  // sets its own scale.
+  sprite: Pick<Sprite, "name" | "outline" | "scale">;
   // What hitting a wall does; "pass" flies through. Defaults to "stop".
   walls?: WallResponse | "pass";
   // Tiles/s², negative to slow down.
@@ -41,6 +42,10 @@ export type ProjectileDef = {
   // Radians per second; overrides faceDirection.
   spin?: number;
 };
+
+// Projectile art is drawn at 80% of its pixel size unless a definition says
+// otherwise. Looks only; hitboxes are set separately.
+export const DEFAULT_PROJECTILE_SCALE = 0.8;
 
 const SMALL = { r: 0.15 };
 
@@ -129,6 +134,25 @@ export const projectiles = {
       },
     },
     walls: "pass",
+  },
+  // Extreme Prejudice's shard: speeds up while curving, weaving and
+  // spinning, glowing and pulsing, so a full ring of them swirls outward.
+  prejudice: {
+    speed: 6,
+    lifetime: 1.4,
+    hitbox: { r: 0.2 },
+    sprite: {
+      name: "prejudice",
+      outline: {
+        color: [1, 0.3, 0.9, 1],
+        glow: { radius: 1.5, pulseHz: 6 },
+      },
+    },
+    acceleration: 8,
+    maxSpeed: 13,
+    turnRate: 0.75 * Math.PI,
+    wave: { amplitude: 0.4, frequency: 3 },
+    spin: 6 * Math.PI,
   },
   // Skids along walls instead of stopping.
   skidding: {

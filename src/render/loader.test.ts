@@ -81,12 +81,15 @@ describe("the real manifest", () => {
     }
   });
 
-  it("gives every walker three frames per facing", () => {
+  it("gives every walker three frames per facing, attacks included", () => {
     for (const art of Object.values(manifest.sprites)) {
       if (art.kind !== "walker") continue;
-      expect(art.front).toHaveLength(3);
-      expect(art.back).toHaveLength(3);
-      expect(art.side).toHaveLength(3);
+      for (const set of [art, art.attack]) {
+        if (!set) continue;
+        expect(set.front).toHaveLength(3);
+        expect(set.back).toHaveLength(3);
+        expect(set.side).toHaveLength(3);
+      }
     }
   });
 });

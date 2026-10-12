@@ -26,6 +26,8 @@ const PALETTE = {
   b: [60, 120, 255, 255], // bolt tail
   B: [120, 180, 255, 255], // bolt body
   V: [230, 245, 255, 255], // bolt head
+  k: [230, 60, 220, 255], // prejudice shard
+  K: [255, 190, 250, 255], // prejudice core
   g: [74, 107, 58, 255], // floor
   G: [92, 127, 72, 255], // floor highlight
   q: [61, 90, 48, 255], // floor shadow
@@ -76,6 +78,45 @@ const BODY = {
   ],
 };
 
+// Attack frames thrust the staff forward. The staff isn't at the edge here,
+// so the feet rows are drawn without it.
+const ATTACK_LEGS = {
+  front: [".d...d..", ".d......", ".....d.."],
+  back: ["..d...d.", "..d.....", "......d."],
+  side: ["..d.d...", ".d...d..", "..dd...."],
+};
+
+const ATTACK_BODY = {
+  front: [
+    "..PPP.c.",
+    ".PPPyPo.",
+    "rrrrrro.",
+    ".seseso.",
+    ".WWWWWs.",
+    "PPWWWPP.",
+    "PPPPPPP.",
+  ],
+  back: [
+    ".c.PPP..",
+    ".oPPPPP.",
+    ".orrrrrr",
+    ".oWWWWW.",
+    ".sPWWWP.",
+    "PPPPPPPP",
+    ".PPPPPPP",
+  ],
+  // Faces right, staff thrust straight out in front.
+  side: [
+    "..PP....",
+    ".PPPP...",
+    "rrrrrr..",
+    ".Wsse...",
+    ".WWWW...",
+    "..PPsooc",
+    ".PPPPP..",
+  ],
+};
+
 const SPRITES = {
   // Projectile art points right; the renderer turns it to face its path.
   "projectiles/bolt": [
@@ -98,6 +139,17 @@ const SPRITES = {
     "...yy...",
     "...yy...",
     "...y....",
+  ],
+  // Extreme Prejudice's shard: a magenta pinwheel.
+  "projectiles/prejudice": [
+    "....k...",
+    "...kk...",
+    "...kk...",
+    "kkkKKkk.",
+    ".kkKKkkk",
+    "...kk...",
+    "...kk...",
+    "...k....",
   ],
   "projectiles/orb": [
     "........",
@@ -144,6 +196,12 @@ const SPRITES = {
 for (const facing of ["front", "back", "side"]) {
   LEGS[facing].forEach((feet, frame) => {
     SPRITES[`player/${facing}-${frame}`] = [...BODY[facing], feet];
+  });
+  ATTACK_LEGS[facing].forEach((feet, frame) => {
+    SPRITES[`player/${facing}-attack-${frame}`] = [
+      ...ATTACK_BODY[facing],
+      feet,
+    ];
   });
 }
 
