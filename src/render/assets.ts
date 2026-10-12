@@ -1,3 +1,4 @@
+import { itemDef, itemIds } from "../ecs/inventory/items";
 import type { GroundType } from "../ecs/tiles";
 
 // Paths are relative to public/sprites, without the .png extension.
@@ -59,6 +60,13 @@ export const manifest: Manifest = {
     orb: { kind: "static", file: "projectiles/orb" },
     star: { kind: "static", file: "projectiles/star" },
     prejudice: { kind: "static", file: "projectiles/prejudice" },
+    // Item icons, one file per item under items/.
+    ...Object.fromEntries(
+      itemIds.map((id) => [
+        itemDef(id).sprite,
+        { kind: "static" as const, file: `items/${id}` },
+      ]),
+    ),
   },
   ground: { 0: "tiles/floor" },
   walls: { top: "tiles/wall-top", side: "tiles/wall-side" },

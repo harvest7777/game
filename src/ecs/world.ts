@@ -10,6 +10,7 @@ import type {
 import { createCamera, type Camera } from "./camera/resource";
 import type { Health } from "./combat/components";
 import type { Brain, Enemy } from "./enemy/components";
+import type { Equipment, Inventory } from "./inventory/components";
 import { createEvents, type Events } from "./events";
 import type { Input } from "./input/actions";
 import type { PlayerControlled, Speed } from "./input/components";
@@ -53,6 +54,8 @@ export type Components = {
   // Who this entity is after, e.g. what an enemy aims at.
   target: Store<Entity>;
   floatingText: Store<FloatingText>;
+  equipment: Store<Equipment>;
+  inventory: Store<Inventory>;
 };
 
 export type World = {
@@ -76,7 +79,7 @@ export function createWorld(
   return {
     nextEntity: 0,
     tiles,
-    input: { held: new Set() },
+    input: { held: new Set(), commands: [] },
     camera: createCamera(),
     events: createEvents(),
     random,
@@ -101,6 +104,8 @@ export function createWorld(
       brain: createStore(),
       target: createStore(),
       floatingText: createStore(),
+      equipment: createStore(),
+      inventory: createStore(),
     },
   };
 }

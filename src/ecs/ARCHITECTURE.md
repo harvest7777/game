@@ -85,6 +85,19 @@ Each behavior is a pure steering function from position, origin, target, speed a
 
 A definition can add `phases`: a starting phase and a list of named phases. Each phase can override the enemy's `idle`, `aggro` and `weapon` (`weapon: null` holds fire), and lists transitions checked in order: `healthBelow` (fraction of max), `after` (seconds in the phase), `targetWithin` and `targetBeyond` (tiles). `phaseSystem` runs before the brain, times the phase and takes the first transition that holds, at most one per tick. Switching restarts the phase clock, swaps the weapon (keeping its cooldown) and gives the brain a fresh memory. The `slimeKing` boss shows all of it: it circles and sprays fans, chases and fires rings below 66%, charges with shard rings below 30%, and rests for 2.5 s every 6 s of that.
 
+# Items and inventory
+
+Items are data (`src/ecs/inventory/items.ts`): a name, a `kind` (`weapon`, `ability`, `armor` or `ring`), an icon, and for weapons the weapon they fire. What someone owns is an `Item` (`{ def }`, an object so per-copy data can be added later) in one of two components:
+
+- `Equipment`: one slot per kind. Only weapons exist so far, so the other three stay empty.
+- `Inventory`: 8 slots that take anything.
+
+A `SlotRef` names any slot (`{ in: "equipment", slot }` or `{ in: "inventory", index }`). The rules are pure functions in `slots.ts`: moving onto an occupied slot swaps, an equipment slot only takes its own kind, and a swap only happens if _both_ items fit where they land.
+
+**Commands.** The player's one-off requests (`move`, `equip`, debug `give`) arrive as `world.input.commands`, from number keys today and the HUD later, so neither source touches the world. `inventorySystem` applies them in order early in the tick, records an `itemsMoved` event for each move that happened, and keeps the player's `Shooter` firing the equipped weapon (keeping its cooldown, or removing it when no weapon is worn). The equipped weapon is the one source of truth; enemies still use `Shooter` directly.
+
+Number keys 1–8 equip that inventory slot in every control layout. The overlay's item picker gives any item.
+
 # Projectiles
 
 A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.
@@ -108,7 +121,7 @@ Each tick, `projectileSystem` sets velocity to exactly cover this tick's stretch
 
 A **weapon** (`src/ecs/projectile/weapons.ts`) decides what a shooter fires and in what pattern: which projectile, `rate` (shots per second), `count` (projectiles per shot) and `arcGap` (radians between them, centered on the aim). Every projectile automatically gets a single-shot weapon so each can be tried alone. `extremePrejudice` fires ten `prejudice` shards in a full ring.
 
-A `Shooter` autofires its weapon at its rate, several shots per tick if needed. Every tick it also records where it's aiming (`Shooter.aim`). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Otherwise it aims the way it's moving, or keeps its last aim when still. The overlay's weapon picker switches the player's weapon.
+A `Shooter` autofires its weapon at its rate, several shots per tick if needed. Every tick it also records where it's aiming (`Shooter.aim`). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Otherwise it aims the way it's moving, or keeps its last aim when still. The player's weapon comes from what they have equipped (see Items and inventory).
 
 Shooters **face where they aim**, RotMG style, so you can walk one way while shooting another. `facingSystem` owns facing, and runs after shooting so each tick's aim decides that tick's facing.
 

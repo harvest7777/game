@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enemyDef, enemyIds } from "../ecs/enemy/definitions";
+import { itemDef, itemIds } from "../ecs/inventory/items";
 import { projectileDef, projectileIds } from "../ecs/projectile/definitions";
 import { manifest, manifestFiles, type Manifest } from "./assets";
 import { buildAtlas } from "./loader";
@@ -80,6 +81,13 @@ describe("the real manifest", () => {
     for (const id of projectileIds) {
       const { name } = projectileDef(id).sprite;
       expect(manifest.sprites[name], `${id} uses "${name}"`).toBeDefined();
+    }
+  });
+
+  it("has an icon for every item", () => {
+    for (const id of itemIds) {
+      const { sprite } = itemDef(id);
+      expect(manifest.sprites[sprite], `${id} uses "${sprite}"`).toBeDefined();
     }
   });
 

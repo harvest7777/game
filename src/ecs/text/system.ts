@@ -5,7 +5,7 @@ export const DAMAGE_COLOR: Color = [0.95, 0.15, 0.15, 1];
 export const DAMAGE_TEXT = { lifetime: 0.8, rise: 0.95 };
 // Each extra number on the same target in one tick starts this many tiles
 // higher than the last.
-export const STACK_GAP = 0.3;
+export const STACK_GAP = 0.15;
 
 // A red damage number for every Damaged event, floating over the target.
 export function damageTextSystem(world: World, _dt: number): void {

@@ -1,17 +1,14 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
-import {
-  addControllable,
-  addMovable,
-  addShooter,
-  addSprite,
-} from "./ecs/bundles";
+import { addControllable, addMovable, addSprite } from "./ecs/bundles";
 import {
   actionsFromKeys,
   keybindPresets,
   type KeybindPreset,
 } from "./ecs/input/actions";
-import { weaponIds, type WeaponId } from "./ecs/projectile/weapons";
+import { slotHotkeys, type Command } from "./ecs/input/commands";
+import { addHoldings } from "./ecs/inventory/bundle";
+import { itemIds, items, type ItemId } from "./ecs/inventory/items";
 import type { Vec2 } from "./ecs/shared/physics/math";
 import { enemyIds, type EnemyId } from "./ecs/enemy/definitions";
 import { spawnEnemy } from "./ecs/enemy/spawn";
@@ -65,7 +62,20 @@ addSprite(world, player, {
   layer: "player",
   outline: { color: [0, 0, 0, 1] },
 });
-addShooter(world, player, { weapon: "bolt", team: "player" });
+world.components.team.set(player, "player");
+addHoldings(world, player, {
+  weapon: "apprenticeStaff",
+  carrying: [
+    "hasteStaff",
+    "serpentStaff",
+    "cometStaff",
+    "mireStaff",
+    "spiralStaff",
+    "boomerang",
+    "lance",
+    "prejudiceStaff",
+  ],
+});
 world.components.health.set(player, { hp: 500, max: 500 });
 world.camera.target = player;
 
@@ -112,15 +122,15 @@ hitboxToggle.addEventListener("change", () => {
   hitboxToggle.blur();
 });
 
-// Weapon picker, for trying each kind of projectile and pattern.
-const weaponPicker = document.getElementById(
-  "debugWeapon",
-) as HTMLSelectElement;
-for (const id of weaponIds) weaponPicker.add(new Option(id, id));
-weaponPicker.value = world.components.shooter.get(player)!.weapon;
-weaponPicker.addEventListener("change", () => {
-  world.components.shooter.get(player)!.weapon = weaponPicker.value as WeaponId;
-  weaponPicker.blur();
+// One-off requests (number keys, debug buttons) waiting for the next tick.
+const pendingCommands: Command[] = [];
+
+// Debug item giver: puts the picked item in the first empty slot.
+const itemPicker = document.getElementById("debugItem") as HTMLSelectElement;
+for (const id of itemIds) itemPicker.add(new Option(items[id].name, id));
+document.getElementById("debugGive")!.addEventListener("click", (event) => {
+  pendingCommands.push({ kind: "give", item: itemPicker.value as ItemId });
+  (event.currentTarget as HTMLButtonElement).blur();
 });
 
 // Enemy spawner: puts the picked enemy a few tiles from the player, toward
@@ -129,7 +139,8 @@ const enemyPicker = document.getElementById("debugEnemy") as HTMLSelectElement;
 for (const id of enemyIds) enemyPicker.add(new Option(id, id));
 document.getElementById("debugSpawn")!.addEventListener("click", (event) => {
   const at = world.components.position.get(player)!;
-  const aim = world.components.shooter.get(player)!.aim ?? { x: 1, y: 0 };
+  const aim = world.components.shooter.get(player)?.aim ??
+    world.components.facing.get(player) ?? { x: 1, y: 0 };
   spawnEnemy(world, enemyPicker.value as EnemyId, {
     x: at.x + aim.x * 4,
     y: at.y + aim.y * 4,
@@ -174,6 +185,8 @@ const frameTimesInTheLastSecond: Array<Array<number>> = [];
 
 window.addEventListener("keydown", (event) => {
   inputs.add(event.code);
+  const command = slotHotkeys[event.code];
+  if (command && !event.repeat) pendingCommands.push(command);
 });
 
 window.addEventListener("keyup", (event) => {
@@ -216,6 +229,7 @@ function callback() {
   accumulator += deltaTime;
   while (accumulator >= TIME_PER_TICK_MS) {
     world.input.held = actionsFromKeys(inputs, keybinds);
+    world.input.commands = pendingCommands.splice(0);
     world.input.aim = cursorInWorld();
     runTick(world, TICK_SECONDS);
     accumulator -= TIME_PER_TICK_MS;

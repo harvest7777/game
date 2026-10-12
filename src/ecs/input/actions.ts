@@ -1,4 +1,5 @@
 import type { Vec2 } from "../shared/physics/math";
+import type { Command } from "./commands";
 
 export const Action = {
   Up: "UP",
@@ -50,8 +51,8 @@ export type KeybindPreset = keyof typeof keybindPresets;
 
 // What the player is asking for this tick, as actions rather than keys.
 // `aim` is the world point under the cursor, once the cursor has been over
-// the game.
-export type Input = { held: Set<Action>; aim?: Vec2 };
+// the game. `commands` are this tick's one-off requests, in order.
+export type Input = { held: Set<Action>; aim?: Vec2; commands: Command[] };
 
 export function actionsFromKeys(
   keys: Iterable<string>,

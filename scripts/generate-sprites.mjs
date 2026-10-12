@@ -290,7 +290,7 @@ function chunk(type, data) {
 }
 
 // Minimal RGBA PNG: one IHDR, one IDAT with every row unfiltered, one IEND.
-function encodePng(rows) {
+function encodePng(rows, palette = PALETTE) {
   const height = rows.length;
   const width = rows[0].length;
   const raw = Buffer.alloc(height * (1 + width * 4));
@@ -299,7 +299,7 @@ function encodePng(rows) {
     const offset = y * (1 + width * 4);
     raw[offset] = 0; // filter: none
     [...row].forEach((key, x) => {
-      const color = PALETTE[key];
+      const color = palette[key];
       if (!color) throw new Error(`unknown palette key "${key}"`);
       raw.set(color, offset + 1 + x * 4);
     });
@@ -318,9 +318,95 @@ function encodePng(rows) {
   ]);
 }
 
-for (const [name, rows] of Object.entries(SPRITES)) {
+// Sprites that recolor a shared template: their own colors for some keys.
+const RECOLORED = {};
+
+// Item icons. Staves share one template, told apart by their gem: "1" is the
+// gem, "2" its shine, "o" the wooden shaft.
+const STAFF = [
+  ".....11.",
+  "....1211",
+  "....o11.",
+  "...oo...",
+  "..oo....",
+  ".oo.....",
+  "oo......",
+  "o.......",
+];
+const STAFF_GEMS = {
+  apprenticeStaff: [
+    [70, 120, 230],
+    [170, 200, 255],
+  ],
+  hasteStaff: [
+    [60, 210, 230],
+    [200, 250, 255],
+  ],
+  serpentStaff: [
+    [60, 180, 70],
+    [170, 240, 160],
+  ],
+  currentStaff: [
+    [40, 160, 150],
+    [150, 230, 220],
+  ],
+  cometStaff: [
+    [240, 130, 40],
+    [255, 210, 140],
+  ],
+  mireStaff: [
+    [120, 110, 50],
+    [190, 180, 110],
+  ],
+  spiralStaff: [
+    [140, 70, 200],
+    [210, 170, 250],
+  ],
+  phantomStaff: [
+    [190, 220, 240],
+    [255, 255, 255],
+  ],
+  prejudiceStaff: [
+    [230, 60, 220],
+    [255, 190, 250],
+  ],
+};
+for (const [item, [gem, shine]] of Object.entries(STAFF_GEMS)) {
+  RECOLORED[`items/${item}`] = {
+    rows: STAFF,
+    colors: { 1: [...gem, 255], 2: [...shine, 255] },
+  };
+}
+
+SPRITES["items/boomerang"] = [
+  "........",
+  ".nnn....",
+  ".nZZn...",
+  "..nZZn..",
+  "...nZn..",
+  "..nZZn..",
+  ".nZZn...",
+  ".nnn....",
+];
+// A long spear with a steel head.
+SPRITES["items/lance"] = [
+  "......TT",
+  ".....TtT",
+  "....oTT.",
+  "...oo...",
+  "..oo....",
+  ".oo.....",
+  "oo......",
+  "o.......",
+];
+
+for (const [name, sprite] of Object.entries({ ...SPRITES, ...RECOLORED })) {
+  const rows = Array.isArray(sprite) ? sprite : sprite.rows;
+  const palette = Array.isArray(sprite)
+    ? PALETTE
+    : { ...PALETTE, ...sprite.colors };
   const path = join(OUT, `${name}.png`);
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, encodePng(rows));
+  writeFileSync(path, encodePng(rows, palette));
   console.log(`wrote ${path}`);
 }

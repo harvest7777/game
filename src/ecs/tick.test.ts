@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
 import { spawnEnemy } from "./enemy/spawn";
+import { addHoldings } from "./inventory/bundle";
 import { Action } from "./input/actions";
 import { CROUCH_SPEED } from "./input/system";
 import { runTick } from "./tick";
@@ -151,6 +152,23 @@ describe("runTick", () => {
       expect(shot.direction.x).toBeCloseTo(0);
       expect(shot.direction.y).toBeCloseTo(-1);
       expect(shot.at.y).toBeLessThan(START.y);
+    });
+
+    it("fires a newly equipped weapon on the same tick", () => {
+      const { world } = setup();
+      const player = [...world.components.playerControlled][0][0];
+      world.components.team.set(player, "player");
+      addHoldings(world, player, {
+        weapon: "apprenticeStaff",
+        carrying: ["lance"],
+      });
+      world.input.aim = { x: START.x + 5, y: START.y };
+      world.input.commands = [{ kind: "equip", index: 0 }];
+
+      runTick(world, DT);
+
+      const shots = [...world.components.projectile].map(([, p]) => p.def);
+      expect(shots).toEqual(["lance"]);
     });
 
     it("faces the cursor while walking the other way", () => {
