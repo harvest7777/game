@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateDungeon, type DungeonSpec } from "./generate";
+import {
+  generateDungeon,
+  type DungeonSpec,
+  type StageTimings,
+} from "./generate";
 import { dungeonAscii, isSafe, kindAt, reachable } from "./grid";
 import { key } from "./mask";
 
@@ -122,6 +126,23 @@ describe("generateDungeon", () => {
     };
     expect(() => generateDungeon(cramped, 1, 3)).toThrow(
       /seed 1 in 3 attempts: \{.*"corridors":\d/,
+    );
+  });
+
+  it("when given timings, records how long each stage took", () => {
+    const timings: StageTimings = {};
+    generateDungeon(SPEC, 1, undefined, timings);
+    expect(Object.keys(timings).sort()).toEqual(
+      [
+        "corridors",
+        "features",
+        "graph",
+        "placement",
+        "populate",
+        "rasterize",
+        "reachability",
+        "shapes",
+      ].sort(),
     );
   });
 });

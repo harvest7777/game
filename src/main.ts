@@ -1,5 +1,11 @@
 import "./style.css";
-import { drawDebugStats } from "./observability";
+import {
+  createErrorLog,
+  createPerfMeter,
+  drawDebugStats,
+  drawPerfMeter,
+  sample,
+} from "./observability";
 import { Action, actionsFromKeys } from "./ecs/input/actions";
 import type { Command } from "./ecs/input/commands";
 import type { Vec2 } from "./ecs/shared/physics/math";
@@ -150,6 +156,7 @@ let lastFrameTime: number = performance.now();
 const inputs = new Set<string>();
 
 const frameTimesInTheLastSecond: Array<Array<number>> = [];
+const perf = createPerfMeter();
 
 window.addEventListener("keydown", (event) => {
   // Typing into a debug field isn't playing.
@@ -242,7 +249,21 @@ function cursorInWorld(): Vec2 | undefined {
   return screenToWorld(lastView, { x: cursor.x * dpr, y: cursor.y * dpr });
 }
 
+// An error in one frame, in a tick or while drawing, is logged and the game
+// carries on with the next, instead of the whole loop stopping.
+const reportError = createErrorLog();
+
 function callback() {
+  // Asked for first, so the next frame comes even if this one throws.
+  requestAnimationFrame(callback);
+  try {
+    frame();
+  } catch (error) {
+    reportError(error);
+  }
+}
+
+function frame() {
   const currentTime: number = performance.now();
 
   // We only care about the stats in the last second because
@@ -255,9 +276,13 @@ function callback() {
   }
 
   const deltaTime: number = currentTime - lastFrameTime;
+  // Set now, so a frame that throws doesn't leave the next one with a
+  // backlog of ticks to catch up on.
+  lastFrameTime = currentTime;
   frameTimesInTheLastSecond.push([deltaTime, currentTime]);
 
   drawDebugStats(frameTimesInTheLastSecond);
+  drawPerfMeter(perf);
 
   // Carry leftover time between frames so ticks average out to exactly
   // TICKS_PER_SECOND regardless of frame timing.
@@ -267,7 +292,9 @@ function callback() {
     if (shooting) world.input.held.add(Action.Shoot);
     world.input.commands = pendingCommands.splice(0);
     world.input.aim = cursorInWorld();
+    const tickStart = performance.now();
     runTick(world, TICK_SECONDS);
+    sample(perf, "tick", performance.now() - tickStart);
     accumulator -= TIME_PER_TICK_MS;
   }
   takeOutbox(currentTime / 1000);
@@ -275,9 +302,6 @@ function callback() {
   respawnButton.hidden = world.components.character.has(player);
 
   render(currentTime / 1000);
-
-  lastFrameTime = currentTime;
-  requestAnimationFrame(callback);
 }
 
 // Dungeons are built off the main thread, so entering one never stalls a
@@ -343,6 +367,7 @@ function render(time: number) {
   const view = frameView(world, alpha, width, height, dpr);
   lastView = view;
   const frameArt = { manifest, regions: art.regions, glyphs: art.glyphs };
+  const buildStart = performance.now();
   const sections = buildFrame(
     quads,
     world,
@@ -376,6 +401,8 @@ function render(time: number) {
       );
     },
   );
+  sample(perf, "build", performance.now() - buildStart);
+  sample(perf, "quads", quads.count);
   renderer.draw(quads, sections, width, height, time);
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { testEnemy } from "../../testing/defs";
-import { createTiles } from "../tiles";
+import { createTiles, setWall } from "../tiles";
 import { createWorld, spawn } from "../world";
 import { brainSystem } from "./brain";
 import { spawnEnemy } from "./spawn";
@@ -73,5 +73,41 @@ describe("roaming", () => {
 
   it("anything else keeps the home it spawned at", () => {
     expect(ledAway(false)).toEqual({ x: 10, y: 10 });
+  });
+});
+
+describe("finding the way", () => {
+  // A wall at x 12 from y 0 to 14, leaving a gap at y 15 and below. The
+  // enemy at (10, 10) is after a player at (14, 10), on the far side.
+  function behindWall() {
+    const world = createWorld(createTiles(40, 40), () => 0.5);
+    for (let y = 0; y < 15; y++) setWall(world.tiles, 12, y);
+    const enemy = spawnEnemy(world, testEnemy(), { x: 10.5, y: 10.5 });
+    const player = spawn(world);
+    world.components.position.set(player, { x: 14.5, y: 10.5 });
+    world.components.target.set(enemy, player);
+    return { world, enemy };
+  }
+
+  it("heads around a wall toward the gap, not into it", () => {
+    const { world, enemy } = behindWall();
+
+    brainSystem(world, 0.05);
+
+    const v = world.components.velocity.get(enemy)!;
+    // Down toward the gap more than across toward the wall.
+    expect(v.y).toBeGreaterThan(Math.abs(v.x));
+  });
+
+  it("goes back to its behavior once it can see its target", () => {
+    const { world, enemy } = behindWall();
+    for (let y = 0; y < 15; y++) setWall(world.tiles, 12, y, false);
+
+    brainSystem(world, 0.05);
+
+    // Chasing straight at the player again.
+    const v = world.components.velocity.get(enemy)!;
+    expect(v.y).toBeCloseTo(0);
+    expect(v.x).toBeGreaterThan(0);
   });
 });

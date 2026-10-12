@@ -147,6 +147,8 @@ A definition that `roams` (the Abyss's demons) has no fixed home: when it loses 
 
 Each behavior is a pure steering function from position, origin, target, speed and a small `BehaviorMemory` to a velocity. `brainSystem` picks idle or aggro, starts a fresh memory whenever that switches, and sets velocity, the way player input does. Movement then handles walls for enemies the same as for everything else.
 
+Behaviors steer in straight lines, so they only run while an enemy can see its target. A moving enemy whose target is out of sight follows the target's **flow field** instead (`shared/pathing.ts`): a breadth-first count of steps from the target's tile to every tile within 24 of it, moving 8 ways without cutting wall corners, made once per target per tick and shared by everything chasing it. The enemy heads for the furthest tile down the field (up to 6 steps on) that it can walk straight to, so it rounds corners smoothly, and goes back to its behavior once it can see its target again.
+
 So a group doesn't move as one:
 
 - **Quirks.** Each enemy rolls its own at spawn (from `world.random`, so still deterministic): speed within 10% of its kind's, a `reach` of 0.8–1.2 that scales how far off it stops (`chase`) or circles (`orbit`), and a coin flip on orbit direction.
@@ -328,3 +330,11 @@ How far each pixel is from the art comes from a **distance map** baked when the 
 Sprites are separate 8x8 PNGs under `public/sprites/` so they're easy to edit. A `Sprite` holds its `SpriteArt` directly (`src/ecs/sprite/art.ts`: a static file, a walker's facings or a set of animation clips), and definitions declare that art beside everything else about them. `contentArt()` gathers every piece of content art, and `createManifest` adds the fonts and tiles. At load, every file is packed into one atlas canvas with 1 px of padding and uploaded to the GPU once. To add art, drop in a PNG and point a definition at it. A test fails if the manifest names a file that doesn't exist.
 
 `scripts/generate-sprites.mjs` only seeded the starter art. Re-running it overwrites the PNGs.
+
+# Performance
+
+`npm run perf` runs the suites under `perf/` (never part of `npm test`): ticks with crowds of 500 to 5,000 imps, the slowest systems by name (`runTick` takes an optional `SystemTimings`), an Abyss with and without a crowd hunting through its walls, building frames for the nexus, an Abyss and a crowd (with placeholder art, no GPU), and generating dungeons, stage by stage (`generateDungeon` takes optional `StageTimings`). Everything random is seeded. Results go to `perf/latest.json` and print beside `perf/baseline.json`, flagging anything over 10% slower; `npm run perf:baseline` saves a new baseline. Baselines only compare on the machine that made them.
+
+In the game, the overlay shows smoothed tick time, frame building time and quads drawn beside the fps.
+
+The frame loop asks for its next frame before running this one, and an error in a tick or while drawing is logged once (`createErrorLog`) rather than stopping the loop.

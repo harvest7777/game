@@ -12,7 +12,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sprites": "node scripts/generate-sprites.mjs",
-    "sounds": "node scripts/generate-sounds.mjs"
+    "sounds": "node scripts/generate-sounds.mjs",
+    "perf": "vitest run --config vitest.perf.config.ts",
+    "perf:baseline": "PERF_BASELINE=1 vitest run --config vitest.perf.config.ts"
   },
   "devDependencies": {
     "prettier": "3.9.9",

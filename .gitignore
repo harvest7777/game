@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Perf runs; perf/baseline.json is kept
+perf/latest.json

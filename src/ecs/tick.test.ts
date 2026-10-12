@@ -5,7 +5,7 @@ import { spawnEnemy } from "./enemy/spawn";
 import { addHoldings } from "./inventory/bundle";
 import { Action } from "./input/actions";
 import { CROUCH_SPEED } from "./input/system";
-import { runTick } from "./tick";
+import { runTick, tickSystems, type SystemTimings } from "./tick";
 import { createTiles, setWall } from "./tiles";
 import { createWorld, spawn, type World } from "./world";
 import { STAT } from "./stats/components";
@@ -379,5 +379,21 @@ describe("runTick", () => {
     for (let i = 0; i < 20; i++) runTick(world, DT);
 
     expect(position().x).toBeCloseTo(11 - R, 3);
+  });
+});
+
+describe("runTick timings", () => {
+  it("adds up each system's time by name, across ticks", () => {
+    const world = createWorld(createTiles(5, 5));
+    const timings: SystemTimings = {};
+
+    runTick(world, 0.05, timings);
+    runTick(world, 0.05, timings);
+
+    expect(Object.keys(timings).sort()).toEqual(
+      tickSystems.map((system) => system.name).sort(),
+    );
+    for (const ms of Object.values(timings))
+      expect(ms).toBeGreaterThanOrEqual(0);
   });
 });

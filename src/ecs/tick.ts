@@ -76,8 +76,25 @@ export const tickSystems: System[] = [
   cleanupSystem,
 ];
 
-// Events only last the tick they happen in.
-export function runTick(world: World, dt: number): void {
+// Milliseconds each system has spent, by its name, for profiling.
+export type SystemTimings = Record<string, number>;
+
+// Events only last the tick they happen in. Given `timings`, adds each
+// system's time to it; without, nothing is timed.
+export function runTick(
+  world: World,
+  dt: number,
+  timings?: SystemTimings,
+): void {
   clearEvents(world.events);
-  for (const system of tickSystems) system(world, dt);
+  if (!timings) {
+    for (const system of tickSystems) system(world, dt);
+    return;
+  }
+  for (const system of tickSystems) {
+    const start = performance.now();
+    system(world, dt);
+    timings[system.name] =
+      (timings[system.name] ?? 0) + performance.now() - start;
+  }
 }

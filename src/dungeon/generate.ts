@@ -61,14 +61,19 @@ export const DEFAULT_ATTEMPTS = 50;
 // Which stage an attempt failed at, for the error when all of them do.
 type Failure = "shape" | "placement" | "corridors" | "unreachable";
 
+// Milliseconds each stage took, summed over every attempt, for profiling.
+export type StageTimings = Record<string, number>;
+
+// Given `timings`, adds each stage's time to it.
 export function generateDungeon(
   spec: DungeonSpec,
   seed: number,
   attempts = DEFAULT_ATTEMPTS,
+  timings?: StageTimings,
 ): Dungeon {
   const failures: Failure[] = [];
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const result = tryGenerate(spec, seed, attempt);
+    const result = tryGenerate(spec, seed, attempt, timings);
     if (typeof result !== "string") return result;
     failures.push(result);
   }
@@ -85,36 +90,58 @@ function tryGenerate(
   spec: DungeonSpec,
   seed: number,
   attempt: number,
+  timings?: StageTimings,
 ): Dungeon | Failure {
+  // Runs one stage, timing it when asked.
+  const stage = <T>(name: string, run: () => T): T => {
+    if (!timings) return run();
+    const begin = performance.now();
+    const result = run();
+    timings[name] = (timings[name] ?? 0) + performance.now() - begin;
+    return result;
+  };
   const rng = seeded(deriveSeed(seed, attempt));
-  const graph = generateGraph(rng, spec.graph);
+  const graph = stage("graph", () => generateGraph(rng, spec.graph));
   const roomSpecs = graph.nodes.map((node) =>
     weighted(rng, roomsFor(spec, node.tag)),
   );
 
-  const masks = [];
-  for (const room of roomSpecs) {
-    const mask = makeShape(rng, room.shape);
-    if (!mask) return "shape";
-    masks.push(mask);
-  }
-  const placement = placeRooms(rng, graph, masks, spec.placement);
+  const masks = stage("shapes", () => {
+    const made = [];
+    for (const room of roomSpecs) {
+      const mask = makeShape(rng, room.shape);
+      if (!mask) return null;
+      made.push(mask);
+    }
+    return made;
+  });
+  if (!masks) return "shape";
+  const placement = stage("placement", () =>
+    placeRooms(rng, graph, masks, spec.placement),
+  );
   if (!placement) return "placement";
-  const corridors = routeCorridors(rng, graph, placement, spec.corridors);
+  const corridors = stage("corridors", () =>
+    routeCorridors(rng, graph, placement, spec.corridors),
+  );
   if (!corridors) return "corridors";
 
-  const map = rasterize(graph, placement, corridors);
-  const droppedFeatures = map.rooms.flatMap((room, i) =>
-    decorateRoom(rng, map, room, roomSpecs[i].features ?? []).map((kind) => ({
-      room: i,
-      kind,
-    })),
+  const map = stage("rasterize", () => rasterize(graph, placement, corridors));
+  const droppedFeatures = stage("features", () =>
+    map.rooms.flatMap((room, i) =>
+      decorateRoom(rng, map, room, roomSpecs[i].features ?? []).map((kind) => ({
+        room: i,
+        kind,
+      })),
+    ),
   );
   const start = middleOf(map, map.rooms[0]);
-  if (!start || !allReachable(map, start)) return "unreachable";
+  if (!start || !stage("reachability", () => allReachable(map, start))) {
+    return "unreachable";
+  }
 
   const spawns = [];
   const unplacedSpawns = [];
+  const populateStart = timings ? performance.now() : 0;
   for (const [i, room] of map.rooms.entries()) {
     const placed = populateRoom(rng, map, room, roomSpecs[i].spawns ?? [], [
       start,
@@ -123,6 +150,10 @@ function tryGenerate(
     unplacedSpawns.push(
       ...placed.unplaced.map((enemy) => ({ room: i, enemy })),
     );
+  }
+  if (timings) {
+    timings.populate =
+      (timings.populate ?? 0) + performance.now() - populateStart;
   }
   return {
     seed,
