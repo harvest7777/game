@@ -1,3 +1,5 @@
+import type { Vec2 } from "../shared/physics/math";
+
 export const Action = {
   Up: "UP",
   Down: "DOWN",
@@ -27,7 +29,9 @@ export const playerKeybinds: Keybinds = {
 };
 
 // What the player is asking for this tick, as actions rather than keys.
-export type Input = { held: Set<Action> };
+// `aim` is the world point under the cursor, once the cursor has been over
+// the game.
+export type Input = { held: Set<Action>; aim?: Vec2 };
 
 export function actionsFromKeys(
   keys: Iterable<string>,

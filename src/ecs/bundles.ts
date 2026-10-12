@@ -1,12 +1,19 @@
 import type { Hitbox, WallResponse } from "./movement/components";
+import type { ProjectileId } from "./projectile/definitions";
+import type { Team } from "./projectile/components";
 import type { Sprite } from "./sprite/components";
 import type { Vec2 } from "./shared/physics/math";
 import type { Entity, World } from "./world";
 
-type MovableOptions = { at: Vec2; hitbox: Hitbox; response?: WallResponse };
+type MovableOptions = {
+  at: Vec2;
+  hitbox: Hitbox;
+  // "pass" means it goes through walls and solids.
+  response?: WallResponse | "pass";
+};
 
 // Something that moves and collides: position, a starting velocity of zero,
-// a hitbox, and how it reacts to walls (slides by default).
+// a hitbox, and how it reacts to walls (slides by default, or "pass").
 export function addMovable(
   world: World,
   entity: Entity,
@@ -17,7 +24,7 @@ export function addMovable(
   components.velocity.set(entity, { x: 0, y: 0 });
   // Copied so entities never share one hitbox object.
   components.hitbox.set(entity, { ...hitbox });
-  components.wallResponse.set(entity, response);
+  if (response !== "pass") components.wallResponse.set(entity, response);
 }
 
 type ControllableOptions = { speed: number };
@@ -36,4 +43,16 @@ export function addControllable(
 export function addSprite(world: World, entity: Entity, sprite: Sprite): void {
   world.components.sprite.set(entity, sprite);
   world.components.facing.set(entity, { x: 0, y: 1 });
+}
+
+type ShooterOptions = { projectile: ProjectileId; rate: number; team: Team };
+
+// Autofires `projectile` `rate` times per second, starting right away.
+export function addShooter(
+  world: World,
+  entity: Entity,
+  { projectile, rate, team }: ShooterOptions,
+): void {
+  world.components.shooter.set(entity, { projectile, rate, cooldown: 0 });
+  world.components.team.set(entity, team);
 }

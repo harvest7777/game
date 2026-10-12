@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addControllable, addMovable, addSprite } from "./bundles";
+import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
 import { createTiles } from "./tiles";
 import { createWorld, spawn } from "./world";
 
@@ -15,6 +15,19 @@ describe("addMovable", () => {
     expect(components.velocity.get(e)).toEqual({ x: 0, y: 0 });
     expect(components.hitbox.get(e)).toEqual({ r: 0.4 });
     expect(components.wallResponse.get(e)).toBe("slide");
+  });
+
+  it("leaves out the wall response for things that pass through walls", () => {
+    const world = createWorld(createTiles(1, 1));
+    const e = spawn(world);
+
+    addMovable(world, e, {
+      at: { x: 0, y: 0 },
+      hitbox: { r: 0.1 },
+      response: "pass",
+    });
+
+    expect(world.components.wallResponse.has(e)).toBe(false);
   });
 
   it("doesn't share the hitbox object it was given", () => {
@@ -62,5 +75,21 @@ describe("addSprite", () => {
 
     expect(world.components.sprite.get(e)).toEqual(sprite);
     expect(world.components.facing.get(e)).toEqual({ x: 0, y: 1 });
+  });
+});
+
+describe("addShooter", () => {
+  it("adds a shooter ready to fire, on its team", () => {
+    const world = createWorld(createTiles(1, 1));
+    const e = spawn(world);
+
+    addShooter(world, e, { projectile: "wavy", rate: 3, team: "player" });
+
+    expect(world.components.shooter.get(e)).toEqual({
+      projectile: "wavy",
+      rate: 3,
+      cooldown: 0,
+    });
+    expect(world.components.team.get(e)).toBe("player");
   });
 });

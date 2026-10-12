@@ -1,7 +1,14 @@
 import "./style.css";
 import { drawDebugStats } from "./observability";
-import { addControllable, addMovable, addSprite } from "./ecs/bundles";
+import {
+  addControllable,
+  addMovable,
+  addShooter,
+  addSprite,
+} from "./ecs/bundles";
 import { actionsFromKeys, playerKeybinds } from "./ecs/input/actions";
+import { projectileIds, type ProjectileId } from "./ecs/projectile/definitions";
+import type { Vec2 } from "./ecs/shared/physics/math";
 import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
@@ -11,6 +18,7 @@ import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
 import { buildAtlas } from "./render/loader";
 import { QuadBuffer } from "./render/quads";
+import { screenToWorld, type View } from "./render/view";
 
 const TICKS_PER_SECOND = 20;
 const TIME_PER_TICK_MS = (1 / TICKS_PER_SECOND) * 1000;
@@ -51,6 +59,7 @@ addSprite(world, player, {
   layer: "player",
   outline: { color: [0, 0, 0, 1] },
 });
+addShooter(world, player, { projectile: "bolt", rate: 4, team: "player" });
 world.camera.target = player;
 
 const art = await buildAtlas(
@@ -83,6 +92,19 @@ hitboxToggle.addEventListener("change", () => {
   // Don't keep focus, or movement keys like space would toggle it again.
   hitboxToggle.blur();
 });
+
+// Projectile picker, for trying each kind of projectile.
+const projectilePicker = document.getElementById(
+  "debugProjectile",
+) as HTMLSelectElement;
+for (const id of projectileIds) projectilePicker.add(new Option(id, id));
+projectilePicker.value = world.components.shooter.get(player)!.projectile;
+projectilePicker.addEventListener("change", () => {
+  world.components.shooter.get(player)!.projectile =
+    projectilePicker.value as ProjectileId;
+  projectilePicker.blur();
+});
+
 const quads = new QuadBuffer();
 
 let accumulator: number = 0;
@@ -99,6 +121,20 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => {
   inputs.delete(event.code);
 });
+
+// Where the cursor is, in CSS pixels, and the view it was last drawn with,
+// so aiming uses exactly what's on screen.
+let cursor: Vec2 | undefined;
+let lastView: View | undefined;
+canvas.addEventListener("mousemove", (event) => {
+  cursor = { x: event.clientX, y: event.clientY };
+});
+
+function cursorInWorld(): Vec2 | undefined {
+  if (!cursor || !lastView) return undefined;
+  const dpr = window.devicePixelRatio;
+  return screenToWorld(lastView, { x: cursor.x * dpr, y: cursor.y * dpr });
+}
 
 function callback() {
   const currentTime: number = performance.now();
@@ -122,6 +158,7 @@ function callback() {
   accumulator += deltaTime;
   while (accumulator >= TIME_PER_TICK_MS) {
     world.input.held = actionsFromKeys(inputs, playerKeybinds);
+    world.input.aim = cursorInWorld();
     runTick(world, TICK_SECONDS);
     accumulator -= TIME_PER_TICK_MS;
   }
@@ -145,6 +182,7 @@ function render(time: number) {
 
   const alpha = accumulator / TIME_PER_TICK_MS;
   const view = frameView(world, alpha, width, height, dpr);
+  lastView = view;
   const sections = buildFrame(
     quads,
     world,

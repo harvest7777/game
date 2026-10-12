@@ -23,6 +23,9 @@ const PALETTE = {
   c: [120, 220, 255, 255], // staff gem
   y: [255, 204, 51, 255], // hat star, projectile glow
   w: [255, 248, 224, 255], // projectile core
+  b: [60, 120, 255, 255], // bolt tail
+  B: [120, 180, 255, 255], // bolt body
+  V: [230, 245, 255, 255], // bolt head
   g: [74, 107, 58, 255], // floor
   G: [92, 127, 72, 255], // floor highlight
   q: [61, 90, 48, 255], // floor shadow
@@ -74,7 +77,29 @@ const BODY = {
 };
 
 const SPRITES = {
-  projectile: [
+  // Projectile art points right; the renderer turns it to face its path.
+  "projectiles/bolt": [
+    "........",
+    "........",
+    "..bbBB..",
+    "bBBBBVV.",
+    "bBBBBVV.",
+    "..bbBB..",
+    "........",
+    "........",
+  ],
+  // A pinwheel, so spinning is easy to see.
+  "projectiles/star": [
+    "....y...",
+    "...yy...",
+    "...yy...",
+    "yyywwyy.",
+    ".yywwyyy",
+    "...yy...",
+    "...yy...",
+    "...y....",
+  ],
+  "projectiles/orb": [
     "........",
     "........",
     "...yy...",

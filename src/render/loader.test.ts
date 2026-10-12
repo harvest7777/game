@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { projectileDef, projectileIds } from "../ecs/projectile/definitions";
 import { manifest, manifestFiles, type Manifest } from "./assets";
 import { buildAtlas } from "./loader";
 
@@ -70,6 +71,13 @@ describe("the real manifest", () => {
     expect(onDisk.size).toBeGreaterThan(0);
     for (const file of manifestFiles(manifest)) {
       expect(onDisk.has(file), file).toBe(true);
+    }
+  });
+
+  it("has art for every projectile", () => {
+    for (const id of projectileIds) {
+      const { name } = projectileDef(id).sprite;
+      expect(manifest.sprites[name], `${id} uses "${name}"`).toBeDefined();
     }
   });
 

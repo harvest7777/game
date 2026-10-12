@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addControllable, addMovable, addSprite } from "./bundles";
+import { addControllable, addMovable, addShooter, addSprite } from "./bundles";
 import { Action } from "./input/actions";
 import { CROUCH_SPEED } from "./input/system";
 import { runTick } from "./tick";
@@ -123,6 +123,47 @@ describe("runTick", () => {
       runTick(world, DT);
 
       expect(position().x).toBeCloseTo(START.x + SPEED * DT);
+    });
+  });
+
+  describe("shooting", () => {
+    function shooting() {
+      const setupResult = setup();
+      const { world } = setupResult;
+      const player = [...world.components.playerControlled][0][0];
+      addShooter(world, player, {
+        projectile: "bolt",
+        rate: 2,
+        team: "player",
+      });
+      const shots = () =>
+        [...world.components.projectile].map(([e, p]) => ({
+          ...p,
+          at: world.components.position.get(e)!,
+        }));
+      return { ...setupResult, shots };
+    }
+
+    it("autofires toward the cursor, already moving on the first tick", () => {
+      const { world, shots } = shooting();
+      world.input.aim = { x: START.x, y: START.y - 5 };
+
+      runTick(world, DT);
+
+      const [shot] = shots();
+      expect(shot.direction.x).toBeCloseTo(0);
+      expect(shot.direction.y).toBeCloseTo(-1);
+      expect(shot.at.y).toBeLessThan(START.y);
+    });
+
+    it("aims at the cursor's world point whatever the camera angle", () => {
+      const { world, shots } = shooting();
+      world.camera.angle = Math.PI / 2;
+      world.input.aim = { x: START.x + 5, y: START.y };
+
+      runTick(world, DT);
+
+      expect(shots()[0].direction.x).toBeCloseTo(1);
     });
   });
 

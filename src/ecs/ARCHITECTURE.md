@@ -36,6 +36,29 @@ Because y points down, a positive rotation by the usual formula `(x cos θ - y s
 
 Movement keys are always **screen-relative**: Up moves toward the top of the screen no matter how the camera is rotated. The player input system builds the direction in screen space and rotates it by `camera.angle` to get the world direction. Nothing else should need to know the screen and world differ.
 
+# Projectiles
+
+A projectile is an ordinary entity: a movable bundle, a sprite on the projectile layer, and a `Projectile` component. The component holds who fired it (`owner`), which side it's on (`team`, copied so it outlives the owner), where and which way it was fired (`origin`, unit `direction`), and its `age`. Everything about how it behaves comes from its **definition** in `src/ecs/projectile/definitions.ts`.
+
+## Definitions
+
+Each kind of projectile is a typed data object (`ProjectileDef`), checked with `satisfies`. To add a kind, add an entry and, if it needs new art, a PNG plus a manifest entry. Tests check every definition makes sense and has art. Fields reuse component types where they end up in components (`hitbox: Hitbox`, `sprite` is part of a `Sprite`, `walls` is a `WallResponse` or `"pass"`, speeds are `Speed`), so spawning just copies them, deep-copied so nothing is shared.
+
+## Paths
+
+A projectile's path is a **pure function of its age** (`pathOffset`), in a local frame where x is forward and y is to the right of travel (clockwise on screen):
+
+- It runs along a track at `speed`, changed by `acceleration` and held between `minSpeed` and `maxSpeed`. A negative `minSpeed` lets it fly backwards.
+- `turnRate` curves the track. It's radians per second at the starting speed, applied as a fixed curvature, so speeding up covers the same curve faster.
+- `wave` weaves across the track, perpendicular to it even while turning.
+- `boomerang` retraces the whole path, wave included, back to the origin at the end of its lifetime.
+
+Each tick, `projectileSystem` sets velocity to exactly cover this tick's stretch of the path, and the movement system does the moving. So walls are swept for projectiles too: nothing tunnels, however fast or wavy. Projectiles past their lifetime, or that hit a wall last step (`Blocked`), are removed. `spin` turns the sprite at a fixed rate, and `faceDirection` points it along its movement.
+
+## Shooting
+
+A `Shooter` autofires its projectile at its `rate` (shots per second, several per tick if needed). The player aims at the cursor's world point (`input.aim`, worked out from the view the frame was drawn with, so the camera's rotation and zoom don't matter). Before the cursor has been over the game, and for anything not player controlled, shots go the way the shooter faces. The overlay's projectile picker switches the player's projectile.
+
 # Rendering
 
 Rendering lives in `src/render/`, outside the ECS. It only reads the world; nothing in `src/ecs/` knows about WebGL. The ECS holds plain data the renderer reads: `Sprite` (which art, which layer, outline/glow), `Facing`, and the camera resource.
@@ -63,7 +86,7 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 
-Sprites always stay upright. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
+Sprites stay upright unless the entity has a `Rotation` (a world angle, smoothed between ticks). Rotated art points right. Which way a walker appears to face is worked out on screen, so turning the camera turns them too. Diagonals show the side view, and left is the mirrored side view.
 
 ## Debug renders
 
