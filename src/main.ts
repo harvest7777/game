@@ -16,6 +16,8 @@ import { runTick } from "./ecs/tick";
 import { createTiles, setWall } from "./ecs/tiles";
 import { createWorld, spawn } from "./ecs/world";
 import { manifest } from "./render/assets";
+import { drawHud } from "./hud/draw";
+import { createHudState, uiPixel } from "./hud/state";
 import { createRenderDebug } from "./render/debug";
 import { buildFrame, frameView } from "./render/frame";
 import { createRenderer } from "./render/gl";
@@ -182,6 +184,7 @@ controlsPicker.addEventListener("change", () => {
 });
 
 const quads = new QuadBuffer();
+const hudState = createHudState();
 
 let accumulator: number = 0;
 let lastFrameTime: number = performance.now();
@@ -262,14 +265,26 @@ function render(time: number) {
   const alpha = accumulator / TIME_PER_TICK_MS;
   const view = frameView(world, alpha, width, height, dpr);
   lastView = view;
+  const frameArt = { manifest, regions: art.regions, glyphs: art.glyphs };
   const sections = buildFrame(
     quads,
     world,
     view,
-    { manifest, regions: art.regions, glyphs: art.glyphs },
+    frameArt,
     alpha,
     time,
     renderDebug,
+    (out) =>
+      drawHud(
+        out,
+        frameArt,
+        world,
+        player,
+        hudState,
+        width,
+        height,
+        uiPixel(dpr),
+      ),
   );
   renderer.draw(quads, sections, width, height, time);
 }

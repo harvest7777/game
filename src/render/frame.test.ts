@@ -108,6 +108,32 @@ describe("buildFrame", () => {
     expect(debug[0].ring).toBeGreaterThan(0);
   });
 
+  it("draws extra overlay quads after floating text and before debug renders", () => {
+    const { world } = worldWithPlayer();
+    const view = frameView(world, 1, 400, 400, 1);
+    const out = new QuadBuffer();
+
+    const sections = buildFrame(
+      out,
+      world,
+      view,
+      art,
+      1,
+      0,
+      { hitboxes: true, font: false },
+      (quads) =>
+        quads.push(0, 0, 1, 0, 1, 1, 0, 1, { x: 99, y: 0, w: 1, h: 1 }),
+    );
+
+    const quads = readQuads(out);
+    const overlay = quads.slice(
+      sections.terrain + sections.sprites,
+      sections.terrain + sections.sprites + sections.overlay,
+    );
+    expect(overlay.map((q) => q.region.x)).toEqual([99]);
+    expect(quads[quads.length - 1].ring).toBeGreaterThan(0);
+  });
+
   it("has no debug overlays unless asked", () => {
     const { world } = worldWithPlayer();
     const view = frameView(world, 1, 400, 400, 1);

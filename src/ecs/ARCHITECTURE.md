@@ -175,6 +175,18 @@ Glyph files are named so case can't collide on any file system (`upper-a`, `lowe
 
 Damage numbers are drawn in the bold font at 0.48 of a tile tall, centered over what they follow. They're tinted their color (the quad `tint` multiplies the art), outlined in black, rise 0.95 tiles up the screen easing out (so a stream of numbers separates), and fade over the last third of their life. Their age is interpolated between ticks like positions. They're in the overlay, after sprites and without depth testing, so they show over walls.
 
+## HUD
+
+The HUD lives in `src/hud/`, outside the ECS, and is drawn with the same renderer as the game: same atlas, outline shader and font, so it looks of a piece with the world.
+
+- **It's a view.** It reads the world (e.g. `equipmentView`) and never changes it. Clicking will send the same commands the hotkeys do.
+- **`HudState` is client-side.** It holds where each panel sits, as a screen corner plus an offset, so panels stay put when the window resizes. Dragging a panel will just change its offset.
+- **Panels are pure layouts.** Data in, a size and a list of elements out (boxes, icons, text, and invisible slot areas for clicking), in UI pixels relative to the panel. Drawing turns elements into quads; clicking will hit-test the same list, so what you see is what you can click.
+- **UI scale is its own.** One UI pixel is one art pixel, at 4 CSS pixels rounded to whole device pixels, so the HUD stays crisp and doesn't change size when the world zooms.
+- It's drawn in the overlay, after floating text and before debug renders.
+
+The first panel is **equipment**: weapon, ability, armor and ring slots in a row, bottom-right. Each shows its item's icon, or a dim letter for its kind (W, S, A, R) when empty.
+
 ## Debug renders
 
 `RenderDebug` holds overlays you can turn on from the stats panel. They're drawn last with depth testing off, so they show over everything, walls included.

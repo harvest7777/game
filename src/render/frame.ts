@@ -51,8 +51,8 @@ export type FrameSections = {
 
 // Every quad for one frame: ground and walls, then the sprite section
 // (health bars first so every sprite covers them, then enemies, projectiles
-// and the player, in that order), then the overlay (floating text), then
-// debug renders.
+// and the player, in that order), then the overlay (floating text, then
+// whatever `drawOverlay` adds, like the HUD), then debug renders.
 //
 // Terrain writes depth and the sprite section only tests against it, so a
 // wall hides the part of a sprite or bar behind it but never one in front,
@@ -68,6 +68,7 @@ export function buildFrame(
   alpha: number,
   time: number,
   debug: RenderDebug = createRenderDebug(),
+  drawOverlay?: (out: QuadBuffer) => void,
 ): FrameSections {
   out.reset();
   pushGround(out, world.tiles, view, art);
@@ -77,6 +78,7 @@ export function buildFrame(
   pushSprites(out, world, view, art, alpha, time);
   const sprites = out.count - terrain;
   pushFloatingText(out, world, view, art, alpha);
+  drawOverlay?.(out);
   const overlay = out.count - terrain - sprites;
   pushDebug(out, world, view, art, alpha, debug);
   return {
