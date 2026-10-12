@@ -4,6 +4,7 @@ import {
   penetrationRectCircle,
   sweptCircleCircle,
   sweptRectCircle,
+  type Contact,
 } from "./geometry";
 import type { Circle, Rect, Vec2 } from "./math";
 
@@ -11,11 +12,14 @@ type Body<S> = { shape: S; at: Vec2; moving: Vec2 };
 
 const still: Vec2 = { x: 0, y: 0 };
 
-function sweepCircles(a: Body<Circle>, b: Body<Circle>): number {
+function sweepCircles(a: Body<Circle>, b: Body<Circle>): Contact | null {
   return sweptCircleCircle(a.shape, a.moving, a.at, b.shape, b.moving, b.at);
 }
 
-function sweepRectCircle(rect: Body<Rect>, circle: Body<Circle>): number {
+function sweepRectCircle(
+  rect: Body<Rect>,
+  circle: Body<Circle>,
+): Contact | null {
   return sweptRectCircle(
     rect.shape,
     rect.moving,
@@ -24,6 +28,11 @@ function sweepRectCircle(rect: Body<Rect>, circle: Body<Circle>): number {
     circle.moving,
     circle.at,
   );
+}
+
+function expectNormal(contact: Contact | null, x: number, y: number) {
+  expect(contact?.normal.x).toBeCloseTo(x);
+  expect(contact?.normal.y).toBeCloseTo(y);
 }
 
 describe("sweptCircleCircle", () => {
@@ -37,46 +46,60 @@ describe("sweptCircleCircle", () => {
   describe("touches when the gap closes", () => {
     it("when one circle moves head-on into a stationary one", () => {
       const a = { shape: unit, at: { x: -5, y: 0 }, moving: { x: 1, y: 0 } };
+      const contact = sweepCircles(a, origin);
       // Gap between surfaces is 5 - 2 = 3, closed at 1 tile/s.
-      expect(sweepCircles(a, origin)).toBeCloseTo(3);
+      expect(contact?.t).toBeCloseTo(3);
+      expectNormal(contact, -1, 0);
     });
 
     it("when both circles move toward each other", () => {
       const a = { shape: unit, at: { x: -5, y: 0 }, moving: { x: 1, y: 0 } };
       const b = { shape: unit, at: { x: 5, y: 0 }, moving: { x: -1, y: 0 } };
       // Gap is 10 - 2 = 8, closed at 2 tiles/s.
-      expect(sweepCircles(a, b)).toBeCloseTo(4);
+      expect(sweepCircles(a, b)?.t).toBeCloseTo(4);
     });
   });
 
   describe("never touches", () => {
     it("when moving away", () => {
       const a = { shape: unit, at: { x: -5, y: 0 }, moving: { x: -1, y: 0 } };
-      expect(sweepCircles(a, origin)).toBe(Infinity);
+      expect(sweepCircles(a, origin)).toBe(null);
     });
 
     it("when passing on a parallel line farther than the combined radius", () => {
       const a = { shape: unit, at: { x: -5, y: 3 }, moving: { x: 1, y: 0 } };
-      expect(sweepCircles(a, origin)).toBe(Infinity);
+      expect(sweepCircles(a, origin)).toBe(null);
     });
 
     it("when both are stationary and apart", () => {
       const a = { shape: unit, at: { x: -5, y: 0 }, moving: still };
-      expect(sweepCircles(a, origin)).toBe(Infinity);
+      expect(sweepCircles(a, origin)).toBe(null);
     });
 
     it("when both move with the same velocity", () => {
       const v = { x: 2, y: 1 };
       const a = { shape: unit, at: { x: -5, y: 0 }, moving: v };
       const b = { shape: unit, at: { x: 0, y: 0 }, moving: v };
-      expect(sweepCircles(a, b)).toBe(Infinity);
+      expect(sweepCircles(a, b)).toBe(null);
     });
   });
 
-  describe("touches immediately", () => {
-    it("when already overlapping", () => {
+  describe("when already overlapping", () => {
+    it("touches immediately if moving further in", () => {
+      const a = { shape: unit, at: { x: 1, y: 0 }, moving: { x: -1, y: 0 } };
+      const contact = sweepCircles(a, origin);
+      expect(contact?.t).toBe(0);
+      expectNormal(contact, 1, 0);
+    });
+
+    it("does not touch if moving away", () => {
+      const a = { shape: unit, at: { x: 1, y: 0 }, moving: { x: 1, y: 0 } };
+      expect(sweepCircles(a, origin)).toBe(null);
+    });
+
+    it("does not touch if stationary", () => {
       const a = { shape: unit, at: { x: 1, y: 0 }, moving: still };
-      expect(sweepCircles(a, origin)).toBe(0);
+      expect(sweepCircles(a, origin)).toBe(null);
     });
   });
 });
@@ -93,47 +116,92 @@ describe("sweptRectCircle", () => {
   describe("touches a face", () => {
     it("when the circle moves into a stationary rect", () => {
       const c = { shape: unit, at: { x: 5, y: 0 }, moving: { x: -1, y: 0 } };
+      const contact = sweepRectCircle(box, c);
       // Circle center reaches x = 1 + 1 = 2 after 3s.
-      expect(sweepRectCircle(box, c)).toBeCloseTo(3);
+      expect(contact?.t).toBeCloseTo(3);
+      expectNormal(contact, 1, 0);
     });
 
     it("when the rect moves into a stationary circle", () => {
       const movingBox = { ...box, moving: { x: 1, y: 0 } };
       const c = { shape: unit, at: { x: 5, y: 0 }, moving: still };
-      expect(sweepRectCircle(movingBox, c)).toBeCloseTo(3);
+      expect(sweepRectCircle(movingBox, c)?.t).toBeCloseTo(3);
+    });
+
+    it("on the face it actually enters when moving diagonally", () => {
+      // Reaches y = 2 (top of inflated box) at t = 3, while x is only 1.
+      const c = { shape: unit, at: { x: -2, y: 5 }, moving: { x: 1, y: -1 } };
+      const contact = sweepRectCircle(box, c);
+      expect(contact?.t).toBeCloseTo(3);
+      expectNormal(contact, 0, 1);
     });
   });
 
   describe("touches the rounded corner, not the inflated box", () => {
     it("when moving diagonally into a corner", () => {
       const c = { shape: unit, at: { x: 5, y: 5 }, moving: { x: -1, y: -1 } };
+      const contact = sweepRectCircle(box, c);
       // Contact when the center is 1 from corner (1, 1) along the diagonal.
-      expect(sweepRectCircle(box, c)).toBeCloseTo(4 - Math.SQRT1_2);
+      expect(contact?.t).toBeCloseTo(4 - Math.SQRT1_2);
+      expectNormal(contact, Math.SQRT1_2, Math.SQRT1_2);
     });
 
     it("when grazing a corner", () => {
       const c = { shape: unit, at: { x: 5, y: 1.9 }, moving: { x: -1, y: 0 } };
+      const contact = sweepRectCircle(box, c);
       // Center hits the unit circle around (1, 1) at x = 1 + sqrt(1 - 0.9²).
-      expect(sweepRectCircle(box, c)).toBeCloseTo(4 - Math.sqrt(1 - 0.81));
+      const dx = Math.sqrt(1 - 0.81);
+      expect(contact?.t).toBeCloseTo(4 - dx);
+      expectNormal(contact, dx, 0.9);
+    });
+
+    it("when starting inside the inflated box's corner region", () => {
+      const small = { r: 0.5 };
+      const c = {
+        shape: small,
+        at: { x: 1.45, y: 1.45 },
+        moving: { x: -1, y: -1 },
+      };
+      const contact = sweepRectCircle(box, c);
+      // Corner distance is 0.45√2; contact when it shrinks to 0.5.
+      expect(contact?.t).toBeCloseTo(0.45 - 0.5 * Math.SQRT1_2);
     });
   });
 
   describe("never touches", () => {
     it("when entering the inflated box corner but missing the rounded corner", () => {
       const c = { shape: unit, at: { x: 5, y: 2.1 }, moving: { x: -1, y: 0 } };
-      expect(sweepRectCircle(box, c)).toBe(Infinity);
+      expect(sweepRectCircle(box, c)).toBe(null);
     });
 
     it("when moving away from a face", () => {
       const c = { shape: unit, at: { x: 5, y: 0 }, moving: { x: 1, y: 0 } };
-      expect(sweepRectCircle(box, c)).toBe(Infinity);
+      expect(sweepRectCircle(box, c)).toBe(null);
+    });
+
+    it("when stationary in the inflated box's corner region", () => {
+      const small = { r: 0.5 };
+      const c = { shape: small, at: { x: 1.45, y: 1.45 }, moving: still };
+      expect(sweepRectCircle(box, c)).toBe(null);
     });
   });
 
-  describe("touches immediately", () => {
-    it("when already overlapping", () => {
-      const c = { shape: unit, at: { x: 1.5, y: 0 }, moving: still };
-      expect(sweepRectCircle(box, c)).toBe(0);
+  describe("when already overlapping", () => {
+    it("touches immediately if moving further in", () => {
+      const c = { shape: unit, at: { x: 1.5, y: 0 }, moving: { x: -1, y: 0 } };
+      const contact = sweepRectCircle(box, c);
+      expect(contact?.t).toBe(0);
+      expectNormal(contact, 1, 0);
+    });
+
+    it("does not touch if moving away", () => {
+      const c = { shape: unit, at: { x: 1.5, y: 0 }, moving: { x: 1, y: 0 } };
+      expect(sweepRectCircle(box, c)).toBe(null);
+    });
+
+    it("does not touch if sliding along the face", () => {
+      const c = { shape: unit, at: { x: 2, y: 0 }, moving: { x: 0, y: 1 } };
+      expect(sweepRectCircle(box, c)).toBe(null);
     });
   });
 });

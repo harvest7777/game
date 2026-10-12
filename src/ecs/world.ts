@@ -1,4 +1,13 @@
-import type { Hitbox, Position, Velocity } from "./movement/components";
+import type {
+  Blocked,
+  Hitbox,
+  Position,
+  PreviousPosition,
+  Solid,
+  Velocity,
+  WallResponse,
+} from "./movement/components";
+import type { Tiles } from "./tiles";
 
 export type Entity = number;
 
@@ -6,7 +15,7 @@ export type Entity = number;
 // with this shape (e.g. a sparse set) can replace it without touching systems.
 export type Store<T> = Pick<
   Map<Entity, T>,
-  "get" | "set" | "has" | "delete" | "size" | typeof Symbol.iterator
+  "get" | "set" | "has" | "delete" | "clear" | "size" | typeof Symbol.iterator
 >;
 
 export function createStore<T>(): Store<T> {
@@ -17,22 +26,32 @@ export type Components = {
   position: Store<Position>;
   velocity: Store<Velocity>;
   hitbox: Store<Hitbox>;
+  previousPosition: Store<PreviousPosition>;
+  solid: Store<Solid>;
+  wallResponse: Store<WallResponse>;
+  blocked: Store<Blocked>;
 };
 
 export type World = {
   nextEntity: Entity;
   components: Components;
+  tiles: Tiles;
 };
 
 export type System = (world: World, dt: number) => void;
 
-export function createWorld(): World {
+export function createWorld(tiles: Tiles): World {
   return {
     nextEntity: 0,
+    tiles,
     components: {
       position: createStore(),
       velocity: createStore(),
       hitbox: createStore(),
+      previousPosition: createStore(),
+      solid: createStore(),
+      wallResponse: createStore(),
+      blocked: createStore(),
     },
   };
 }

@@ -71,8 +71,25 @@ export function penetrationRectCircle(
   return { depth, normal: { x: dx / dist, y: dy / dist } };
 }
 
-// Time of first contact between two moving circles, in the same time unit as
-// the velocities. 0 if already overlapping, Infinity if they never touch.
+// When a moving mover first touches a blocker. `t` is in the same time unit
+// as the velocities; `normal` is the unit direction pointing from the
+// blocker's surface toward the mover.
+export type Contact = { t: number; normal: Vec2 };
+
+function normalize(v: Vec2): Vec2 {
+  const len = Math.hypot(v.x, v.y);
+  return { x: v.x / len, y: v.y / len };
+}
+
+// Shapes that already overlap only count as touching if the mover is heading
+// further in. Otherwise something resting against a wall could never leave.
+function contactFromOverlap(pen: Penetration, relVel: Vec2): Contact | null {
+  const into = relVel.x * pen.normal.x + relVel.y * pen.normal.y;
+  return into < 0 ? { t: 0, normal: pen.normal } : null;
+}
+
+// First contact between mover circle A and blocker circle B, or null if they
+// never touch.
 export function sweptCircleCircle(
   circleA: Circle,
   velocityA: Vec2,
@@ -80,16 +97,23 @@ export function sweptCircleCircle(
   circleB: Circle,
   velocityB: Vec2,
   positionB: Vec2,
-): number {
+): Contact | null {
   // Treat B as stationary at the origin and sweep A's center as a ray against
   // a circle with the combined radius.
   const relPos = { x: positionA.x - positionB.x, y: positionA.y - positionB.y };
   const relVel = { x: velocityA.x - velocityB.x, y: velocityA.y - velocityB.y };
-  return rayCircle(relPos, relVel, circleA.r + circleB.r);
+
+  const pen = penetrationCircleCircle(circleA, positionA, circleB, positionB);
+  if (pen) return contactFromOverlap(pen, relVel);
+
+  const t = rayCircle(relPos, relVel, circleA.r + circleB.r);
+  if (t === Infinity) return null;
+  const hit = { x: relPos.x + relVel.x * t, y: relPos.y + relVel.y * t };
+  return { t, normal: normalize(hit) };
 }
 
-// Time of first contact between a moving axis-aligned rect (positioned by its
-// center) and a moving circle. 0 if already overlapping, Infinity if never.
+// First contact between a blocker axis-aligned rect (positioned by its
+// center) and a mover circle, or null if they never touch.
 export function sweptRectCircle(
   rect: Rect,
   velocityRect: Vec2,
@@ -97,7 +121,7 @@ export function sweptRectCircle(
   circle: Circle,
   velocityCircle: Vec2,
   positionCircle: Vec2,
-): number {
+): Contact | null {
   // Rect stationary at the origin; circle center is a ray against the rect
   // inflated by the circle radius (a rounded rect).
   const p = {
@@ -112,39 +136,56 @@ export function sweptRectCircle(
   const hh = rect.h / 2;
   const r = circle.r;
 
-  // Already overlapping: closest point on rect is within r of the center.
-  const cx = Math.max(-hw, Math.min(hw, p.x));
-  const cy = Math.max(-hh, Math.min(hh, p.y));
-  if ((p.x - cx) ** 2 + (p.y - cy) ** 2 <= r * r) return 0;
+  const pen = penetrationRectCircle(rect, positionRect, circle, positionCircle);
+  if (pen) return contactFromOverlap(pen, v);
 
-  // Slab test against the rect expanded by r on every side.
+  // Slab test against the rect expanded by r on every side, remembering which
+  // face was entered last since that's the one hit.
   const ex = hw + r;
   const ey = hh + r;
   let tEnter = -Infinity;
   let tExit = Infinity;
-  for (const [o, d, e] of [
-    [p.x, v.x, ex],
-    [p.y, v.y, ey],
-  ]) {
+  let normal: Vec2 = { x: 0, y: 0 };
+  for (const [o, d, e, axis] of [
+    [p.x, v.x, ex, "x"],
+    [p.y, v.y, ey, "y"],
+  ] as const) {
     if (d === 0) {
-      if (o < -e || o > e) return Infinity;
+      if (o < -e || o > e) return null;
       continue;
     }
     const t1 = (-e - o) / d;
     const t2 = (e - o) / d;
-    tEnter = Math.max(tEnter, Math.min(t1, t2));
+    const enter = Math.min(t1, t2);
+    if (enter > tEnter) {
+      tEnter = enter;
+      const side = d > 0 ? -1 : 1;
+      normal = axis === "x" ? { x: side, y: 0 } : { x: 0, y: side };
+    }
     tExit = Math.min(tExit, Math.max(t1, t2));
   }
-  if (tEnter > tExit || tExit < 0) return Infinity;
+  if (tEnter > tExit || tExit < 0) return null;
 
   // If the entry point lands in a corner region of the expanded box, the real
-  // boundary there is a quarter circle around the rect's corner.
-  const hx = p.x + v.x * tEnter;
-  const hy = p.y + v.y * tEnter;
+  // boundary there is a quarter circle around the rect's corner. tEnter < 0
+  // means the center already sits in the expanded box without overlapping,
+  // which only happens in a corner region, so check from where it is now.
+  const tCheck = Math.max(tEnter, 0);
+  const hx = p.x + v.x * tCheck;
+  const hy = p.y + v.y * tCheck;
   const inCornerX = Math.abs(hx) > hw;
   const inCornerY = Math.abs(hy) > hh;
-  if (!(inCornerX && inCornerY)) return tEnter;
+  if (!(inCornerX && inCornerY)) return { t: tEnter, normal };
 
   const corner = { x: Math.sign(hx) * hw, y: Math.sign(hy) * hh };
-  return rayCircle({ x: p.x - corner.x, y: p.y - corner.y }, v, r);
+  const fromCorner = { x: p.x - corner.x, y: p.y - corner.y };
+  const t = rayCircle(fromCorner, v, r);
+  if (t === Infinity) return null;
+  return {
+    t,
+    normal: normalize({
+      x: fromCorner.x + v.x * t,
+      y: fromCorner.y + v.y * t,
+    }),
+  };
 }

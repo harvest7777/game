@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { createTiles } from "./tiles";
 import { createWorld, despawn, spawn } from "./world";
 
 describe("spawn", () => {
   it("gives every entity a unique id", () => {
-    const world = createWorld();
+    const world = createWorld(createTiles(1, 1));
 
     const ids = [spawn(world), spawn(world), spawn(world)];
 
@@ -13,7 +14,7 @@ describe("spawn", () => {
 
 describe("despawn", () => {
   it("removes the entity from every component store", () => {
-    const world = createWorld();
+    const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
     world.components.position.set(player, { x: 1, y: 2 });
     world.components.velocity.set(player, { x: 3, y: 4 });
@@ -27,7 +28,7 @@ describe("despawn", () => {
   });
 
   it("leaves other entities alone", () => {
-    const world = createWorld();
+    const world = createWorld(createTiles(1, 1));
     const player = spawn(world);
     const rock = spawn(world);
     const rockPosition = { x: 5, y: 6 };
