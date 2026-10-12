@@ -545,104 +545,338 @@ function encodePng(rows, palette = PALETTE) {
 // Sprites that recolor a shared template: their own colors for some keys.
 const RECOLORED = {};
 
-// Item icons. Staves share one template, told apart by their gem: "1" is the
-// gem, "2" its shine, "o" the wooden shaft.
-const STAFF = [
-  ".....11.",
-  "....1211",
-  "....o11.",
-  "...oo...",
-  "..oo....",
-  ".oo.....",
-  "oo......",
-  "o.......",
-];
-const STAFF_GEMS = {
-  apprenticeStaff: [
-    [70, 120, 230],
-    [170, 200, 255],
-  ],
-  hasteStaff: [
-    [60, 210, 230],
-    [200, 250, 255],
-  ],
-  serpentStaff: [
-    [60, 180, 70],
-    [170, 240, 160],
-  ],
-  currentStaff: [
-    [40, 160, 150],
-    [150, 230, 220],
-  ],
-  cometStaff: [
-    [240, 130, 40],
-    [255, 210, 140],
-  ],
-  mireStaff: [
-    [120, 110, 50],
-    [190, 180, 110],
-  ],
-  spiralStaff: [
-    [140, 70, 200],
-    [210, 170, 250],
-  ],
-  phantomStaff: [
-    [190, 220, 240],
-    [255, 255, 255],
-  ],
-  prejudiceStaff: [
-    [230, 60, 220],
-    [255, 190, 250],
-  ],
-  helixStaff: [
-    [220, 70, 110],
-    [255, 180, 200],
-  ],
-  demonfireStaff: [
-    [230, 60, 20],
-    [255, 180, 80],
-  ],
-  leafStaff: [
-    [110, 190, 50],
-    [210, 250, 150],
-  ],
-  forkStaff: [
-    [140, 150, 210],
-    [225, 230, 255],
-  ],
-  bloomStaff: [
-    [240, 110, 170],
-    [255, 215, 235],
-  ],
+// Item icons. Each staff is drawn for its name, RotMG style: a shaft one
+// pixel wide running up the diagonal in two alternating shades (never
+// blocks of one color), a collar, and a head that says what it is. Every
+// staff lists its own colors.
+const WOOD = {
+  W: [176, 120, 70, 255], // light wood
+  w: [120, 76, 40, 255], // dark wood
 };
-for (const [item, [gem, shine]] of Object.entries(STAFF_GEMS)) {
-  RECOLORED[`items/${item}`] = {
-    rows: STAFF,
-    colors: { 1: [...gem, 255], 2: [...shine, 255] },
-  };
+const IRON = {
+  K: [120, 120, 132, 255], // light iron
+  k: [62, 62, 72, 255], // dark iron
+};
+
+const STAFFS = {
+  // A plain wooden staff with a small blue gem in a brass collar.
+  apprenticeStaff: {
+    rows: [
+      "......Bb",
+      "......bb",
+      ".....g..",
+      "....W...",
+      "...w....",
+      "..W.....",
+      ".w......",
+      "W.......",
+    ],
+    colors: {
+      ...WOOD,
+      b: [70, 120, 230, 255],
+      B: [180, 210, 255, 255],
+      g: [200, 160, 60, 255],
+    },
+  },
+  // A cyan gem with white streaks trailing behind it, on a silver shaft.
+  hasteStaff: {
+    rows: [
+      "....w.cC",
+      ".....wcc",
+      ".....S..",
+      "....s...",
+      "...S....",
+      "..s.....",
+      ".S......",
+      "s.......",
+    ],
+    colors: {
+      c: [60, 200, 230, 255],
+      C: [200, 250, 255, 255],
+      w: [235, 245, 250, 255],
+      S: [210, 214, 222, 255],
+      s: [130, 136, 150, 255],
+    },
+  },
+  // A green snake coiled up a wooden shaft, its head the top, a red eye.
+  serpentStaff: {
+    rows: [
+      "......Vr",
+      ".....vvV",
+      ".....v..",
+      "....W...",
+      "...v....",
+      "..W.....",
+      ".v......",
+      "W.......",
+    ],
+    colors: {
+      ...WOOD,
+      v: [60, 160, 70, 255],
+      V: [150, 230, 130, 255],
+      r: [220, 40, 40, 255],
+    },
+  },
+  // A wave curling over at the head, foam on its crest, on a deep blue
+  // shaft.
+  currentStaff: {
+    rows: [
+      ".....ttw",
+      ".....T.t",
+      ".....dTt",
+      "....D...",
+      "...d....",
+      "..D.....",
+      ".d......",
+      "D.......",
+    ],
+    colors: {
+      t: [40, 160, 160, 255],
+      T: [130, 225, 215, 255],
+      w: [240, 252, 255, 255],
+      D: [60, 100, 170, 255],
+      d: [30, 50, 100, 255],
+    },
+  },
+  // A blazing ball with an ember trailing it, on an iron shaft.
+  cometStaff: {
+    rows: [
+      "......oY",
+      "....roYo",
+      ".....ko.",
+      "....K...",
+      "...k....",
+      "..K.....",
+      ".k......",
+      "K.......",
+    ],
+    colors: {
+      ...IRON,
+      o: [240, 130, 40, 255],
+      Y: [255, 236, 150, 255],
+      r: [180, 50, 30, 255],
+    },
+  },
+  // A murky, mossy bulb dripping on a gnarled dark shaft.
+  mireStaff: {
+    rows: [
+      ".....mM.",
+      "....mmmM",
+      ".....n.d",
+      "....N...",
+      "...n....",
+      "..N.....",
+      ".n......",
+      "N.......",
+    ],
+    colors: {
+      m: [90, 100, 50, 255],
+      M: [150, 170, 80, 255],
+      d: [70, 80, 40, 255],
+      N: [110, 84, 56, 255],
+      n: [60, 44, 30, 255],
+    },
+  },
+  // A violet spiral, open on one side, around a bright eye, on a plum
+  // shaft.
+  spiralStaff: {
+    rows: [
+      ".....ppP",
+      ".....pWp",
+      ".....Up.",
+      "....u...",
+      "...U....",
+      "..u.....",
+      ".U......",
+      "u.......",
+    ],
+    colors: {
+      p: [150, 70, 210, 255],
+      P: [220, 170, 255, 255],
+      W: [255, 240, 255, 255],
+      U: [130, 80, 120, 255],
+      u: [70, 36, 70, 255],
+    },
+  },
+  // A pale ghost with hollow eyes, rising from a bone shaft.
+  phantomStaff: {
+    rows: [
+      ".....GG.",
+      "....gege",
+      ".....bgg",
+      "....B...",
+      "...b....",
+      "..B.....",
+      ".b......",
+      "B.......",
+    ],
+    colors: {
+      g: [190, 220, 240, 255],
+      G: [245, 252, 255, 255],
+      e: [40, 50, 80, 255],
+      B: [235, 228, 210, 255],
+      b: [170, 160, 140, 255],
+    },
+  },
+  // A red cross with a white heart, on a black shaft banded red.
+  prejudiceStaff: {
+    rows: [
+      ".....r.r",
+      "......W.",
+      ".....r.r",
+      "....R...",
+      "...k....",
+      "..R.....",
+      ".k......",
+      "k.......",
+    ],
+    colors: {
+      r: [210, 30, 50, 255],
+      R: [170, 20, 40, 255],
+      W: [255, 240, 245, 255],
+      k: [30, 26, 30, 255],
+    },
+  },
+  // Pink and cyan strands winding up the shaft into twin gems.
+  helixStaff: {
+    rows: [
+      "......hC",
+      ".....wch",
+      ".....s..",
+      "....h...",
+      "...c....",
+      "..h.....",
+      ".c......",
+      "h.......",
+    ],
+    colors: {
+      h: [225, 80, 130, 255],
+      c: [60, 190, 220, 255],
+      C: [190, 245, 255, 255],
+      w: [255, 255, 255, 255],
+      s: [200, 200, 210, 255],
+    },
+  },
+  // A pointed green leaf with a pale midrib, on a light wooden shaft.
+  leafStaff: {
+    rows: [
+      "......lL",
+      ".....lLl",
+      ".....Wl.",
+      "....w...",
+      "...W....",
+      "..w.....",
+      ".W......",
+      "w.......",
+    ],
+    colors: {
+      ...WOOD,
+      l: [70, 160, 60, 255],
+      L: [190, 240, 150, 255],
+    },
+  },
+  // Two bright prongs forking off an iron shaft.
+  forkStaff: {
+    rows: [
+      "......S.",
+      ".....s.S",
+      ".....ss.",
+      "....K...",
+      "...k....",
+      "..K.....",
+      ".k......",
+      "K.......",
+    ],
+    colors: {
+      ...IRON,
+      s: [170, 180, 200, 255],
+      S: [240, 245, 255, 255],
+    },
+  },
+  // A pink flower with a yellow heart on a green stem.
+  bloomStaff: {
+    rows: [
+      "......p.",
+      ".....pyp",
+      ".....Gp.",
+      "....g...",
+      "...G....",
+      "..g.....",
+      ".G......",
+      "g.......",
+    ],
+    colors: {
+      p: [240, 120, 170, 255],
+      y: [255, 220, 80, 255],
+      G: [110, 190, 80, 255],
+      g: [50, 120, 50, 255],
+    },
+  },
+  // A flame between a horn, on an obsidian shaft glowing red.
+  demonfireStaff: {
+    rows: [
+      ".....hFy",
+      ".....fFf",
+      ".....kr.",
+      "....R...",
+      "...k....",
+      "..R.....",
+      ".k......",
+      "R.......",
+    ],
+    colors: {
+      h: [225, 215, 195, 255],
+      F: [255, 200, 80, 255],
+      y: [255, 245, 190, 255],
+      f: [230, 80, 30, 255],
+      r: [160, 30, 20, 255],
+      R: [190, 40, 30, 255],
+      k: [36, 24, 30, 255],
+    },
+  },
+};
+for (const [item, sprite] of Object.entries(STAFFS)) {
+  SPRITES[`items/${item}`] = sprite;
 }
 
-SPRITES["items/boomerang"] = [
-  "........",
-  ".nnn....",
-  ".nZZn...",
-  "..nZZn..",
-  "...nZn..",
-  "..nZZn..",
-  ".nZZn...",
-  ".nnn....",
-];
-// A long spear with a steel head.
-SPRITES["items/lance"] = [
-  "......TT",
-  ".....TtT",
-  "....oTT.",
-  "...oo...",
-  "..oo....",
-  ".oo.....",
-  "oo......",
-  "o.......",
-];
+// A bent wooden boomerang, its wood in alternating shades with a red band
+// painted at the elbow.
+SPRITES["items/boomerang"] = {
+  rows: [
+    "........",
+    "..wWwWw.",
+    ".wWrw...",
+    ".Wr.....",
+    ".wW.....",
+    ".Ww.....",
+    "..w.....",
+    "........",
+  ],
+  colors: {
+    ...WOOD,
+    r: [200, 50, 40, 255],
+  },
+};
+// A long spear: a steel head with a bright edge, a red tassel at its foot,
+// on a wooden shaft.
+SPRITES["items/lance"] = {
+  rows: [
+    "......sS",
+    ".....sSs",
+    "....rs..",
+    "...rW...",
+    "...w....",
+    "..W.....",
+    ".w......",
+    "W.......",
+  ],
+  colors: {
+    ...WOOD,
+    s: [160, 170, 185, 255],
+    S: [240, 245, 255, 255],
+    r: [200, 40, 40, 255],
+  },
+};
 
 // A plain headstone with two engraved lines.
 SPRITES["characters/gravestone"] = [
