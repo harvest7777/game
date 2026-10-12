@@ -20,6 +20,7 @@ export const bruteWarrior = defineEnemy({
   speed: 2.8,
   weapon: bruteShotgun,
   detectRange: 9,
+  roams: true,
   idle: { kind: "wander", radius: 2 },
   aggro: { kind: "chase", stopAt: 0.8 },
   phases: {

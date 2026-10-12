@@ -18,6 +18,7 @@ export const demonMage = defineEnemy({
   speed: 2,
   weapon: mageRing,
   detectRange: 11,
+  roams: true,
   idle: { kind: "stationary" },
   aggro: { kind: "orbit", radius: 6 },
   loot: demonLoot,

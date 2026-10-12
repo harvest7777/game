@@ -12,7 +12,8 @@ import { movementSpeed } from "../stats/runtime";
 // starts the new behavior fresh. Enemies that move also ease apart from
 // each other so they don't pile up. It only sets velocity, the way player
 // input does, so movement handles walls for enemies too. Slow ground, like
-// water, slows them as it does the player.
+// water, slows them as it does the player. A roaming enemy makes wherever
+// it loses its target its new home.
 export function brainSystem(world: World, dt: number): void {
   const { enemy, brain, position, target, velocity } = world.components;
   const pushes = separation(world);
@@ -31,6 +32,8 @@ export function brainSystem(world: World, dt: number): void {
     if (mind.mode !== mode) {
       mind.mode = mode;
       mind.memory = freshMemory();
+      // Losing its target, a roamer settles where it is.
+      if (mode === "idle" && def.roams) e.origin = { x: at.x, y: at.y };
     }
 
     const behavior = phaseOf(def, e.phase?.name)?.[mode] ?? def[mode];

@@ -22,6 +22,7 @@ export const malphasProtector = defineEnemy({
   speed: 1.5,
   weapon: protectorPinwheel,
   detectRange: 10,
+  roams: true,
   idle: { kind: "stationary" },
   aggro: { kind: "orbit", radius: 4 },
   phases: {

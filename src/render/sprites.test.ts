@@ -619,3 +619,16 @@ describe("attackProgress", () => {
     expect(attackProgress(later.world, later.e)).toBeUndefined();
   });
 });
+
+describe("floor layer", () => {
+  it("draws things set into the floor under things lying on the ground", () => {
+    const { world, view } = setup();
+    // The bag is higher on screen, so within one layer it would draw first.
+    addAt(world, { x: 10, y: 9.5 }, { art: ORB, layer: "ground" });
+    addAt(world, CENTER, { art: IMP, layer: "floor" });
+
+    const files = draw(world, view).map(fileOf);
+
+    expect(files.indexOf("imp-idle-0")).toBeLessThan(files.indexOf("orb"));
+  });
+});

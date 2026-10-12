@@ -143,6 +143,8 @@ How an enemy moves is data too (`src/ecs/enemy/behaviors.ts`). Each definition h
 - `charge`: winds up, dashes at where the target was when the windup ended, then rests.
 - `returnHome`: walks back to its origin.
 
+A definition that `roams` (the Abyss's demons) has no fixed home: when it loses its target, wherever it is becomes its origin, so the player can lead it away for good.
+
 Each behavior is a pure steering function from position, origin, target, speed and a small `BehaviorMemory` to a velocity. `brainSystem` picks idle or aggro, starts a fresh memory whenever that switches, and sets velocity, the way player input does. Movement then handles walls for enemies the same as for everything else.
 
 So a group doesn't move as one:
@@ -244,7 +246,7 @@ Screen pixels are device pixels with the origin at the canvas's top-left and y d
 
 1. Ground tiles: rotate with the camera, farthest back. Tiles outside the map aren't drawn.
 2. Walls: cubes one tile tall, each in its own style (the default wall unless its legend gave one). Each wall draws the side faces that face the viewer after rotation and don't touch another wall in the map, then its raised top; faces looking out at void show. Walls are sorted back to front by screen y. Void tiles draw nothing, leaving the black background.
-3. Sprites: enemies, then projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
+3. Sprites: things set into the floor (portals), things lying on the ground (bags, gravestones), enemies, projectiles, then the player. Within a layer, sprites lower on screen draw over higher ones.
 
 Every quad carries a depth from how far down the screen it stands (a wall's tile center, a sprite's position). Lower on screen is nearer. Ground and walls write their depth into the GPU depth buffer, and sprites only test against it. So a wall hides the part of a sprite standing behind it (north of it, unrotated), never one standing in front. Sprites don't write depth, so they still stack purely by layer among themselves.
 

@@ -16,6 +16,7 @@ export const imp = defineEnemy({
   speed: 4.5,
   weapon: impShot,
   detectRange: 9,
+  roams: true,
   idle: { kind: "wander", radius: 2, speedScale: 0.7 },
   aggro: { kind: "orbit", radius: 3 },
   loot: impLoot,

@@ -18,6 +18,7 @@ export const demonWarrior = defineEnemy({
   speed: 3,
   weapon: demonSlash,
   detectRange: 9,
+  roams: true,
   idle: { kind: "wander", radius: 3 },
   aggro: {
     kind: "charge",

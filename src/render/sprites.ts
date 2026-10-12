@@ -25,6 +25,7 @@ const MIN_LOOT_BAG_FLASH_BRIGHTNESS = 0.35;
 
 // Sprite layers in the order they're drawn, so the player ends up on top.
 export const SPRITE_LAYERS: SpriteLayer[] = [
+  "floor",
   "ground",
   "enemy",
   "projectile",

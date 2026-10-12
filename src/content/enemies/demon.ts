@@ -15,6 +15,7 @@ export const demon = defineEnemy({
   speed: 2.5,
   weapon: demonVolley,
   detectRange: 10,
+  roams: true,
   idle: { kind: "wander", radius: 3 },
   aggro: { kind: "chase", stopAt: 3 },
   loot: demonLoot,

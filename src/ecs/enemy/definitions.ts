@@ -46,6 +46,9 @@ export type EnemyDef<
   deathSound: SoundId;
   // Opened where it dies, like a dungeon boss's way home.
   deathPortal?: PortalDef;
+  // Has no home to go back to: when it loses its target, wherever it is
+  // becomes its home, so the player can lead it away for good.
+  roams?: boolean;
   // What the player is here to beat, like a dungeon's boss: the HUD points
   // the way to it.
   quest?: boolean;

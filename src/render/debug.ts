@@ -20,6 +20,7 @@ export function createRenderDebug(): RenderDebug {
 }
 
 export const HITBOX_COLORS: Record<SpriteLayer | "other", Color> = {
+  floor: [0.6, 0.6, 0.6, 1],
   ground: [0.6, 0.6, 0.6, 1],
   player: [0.3, 1, 0.4, 1],
   enemy: [1, 0.3, 0.3, 1],

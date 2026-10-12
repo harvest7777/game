@@ -51,3 +51,27 @@ describe("brainSystem", () => {
     expect(c.brain.get(slime)!.memory.waypoint).toBeUndefined();
   });
 });
+
+describe("roaming", () => {
+  // Chased the player from (10, 10) to (30, 10), then lost them.
+  function ledAway(roams: boolean) {
+    const world = createWorld(createTiles(40, 40), () => 0.5);
+    const enemy = spawnEnemy(world, testEnemy({ roams }), { x: 10, y: 10 });
+    const player = spawn(world);
+    world.components.position.set(player, { x: 32, y: 10 });
+    world.components.target.set(enemy, player);
+    brainSystem(world, 0.05);
+    world.components.position.set(enemy, { x: 30, y: 10 });
+    world.components.target.delete(enemy);
+    brainSystem(world, 0.05);
+    return world.components.enemy.get(enemy)!.origin;
+  }
+
+  it("a roamer makes where it lost its target its new home", () => {
+    expect(ledAway(true)).toEqual({ x: 30, y: 10 });
+  });
+
+  it("anything else keeps the home it spawned at", () => {
+    expect(ledAway(false)).toEqual({ x: 10, y: 10 });
+  });
+});
